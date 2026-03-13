@@ -1,0 +1,200 @@
+import React, { useState, useRef, useCallback } from 'react';
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Download, Loader2, Film, Tv } from "lucide-react";
+import html2canvas from 'html2canvas';
+import { motion, AnimatePresence } from 'framer-motion';
+
+import SearchBar from '../components/banner/SearchBar';
+import MovieGrid from '../components/banner/MovieGrid';
+import LogoUploader from '../components/banner/LogoUploader';
+import BannerPost from '../components/banner/BannerPost';
+import BannerStory from '../components/banner/BannerStory';
+
+const TMDB_KEY = "ed3d0c9bfea7f601924b810c07471202";
+
+export default function Home() {
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [providers, setProviders] = useState([]);
+  const [details, setDetails] = useState(null);
+  const [logo, setLogo] = useState(null);
+  const [whatsapp, setWhatsapp] = useState('');
+  const [activeTab, setActiveTab] = useState('post');
+  const [downloading, setDownloading] = useState(false);
+
+  const bannerRef = useRef(null);
+
+  const handleSelect = useCallback(async (item) => {
+    setSelected(item);
+    const type = item.media_type === 'tv' ? 'tv' : 'movie';
+    
+    // Fetch watch providers
+    const resProviders = await fetch(
+      `https://api.themoviedb.org/3/${type}/${item.id}/watch/providers?api_key=${TMDB_KEY}`
+    );
+    const dataProviders = await resProviders.json();
+    const br = dataProviders.results?.BR;
+    const providerList = br?.flatrate || br?.buy || br?.rent || [];
+    setProviders(providerList.slice(0, 5));
+    
+    // Fetch details (runtime, genres)
+    const resDetails = await fetch(
+      `https://api.themoviedb.org/3/${type}/${item.id}?api_key=${TMDB_KEY}&language=pt-BR`
+    );
+    const dataDetails = await resDetails.json();
+    setDetails(dataDetails);
+  }, []);
+
+  const handleDownload = async () => {
+    const bannerId = activeTab === 'post' ? 'banner-post' : 'banner-story';
+    const el = document.getElementById(bannerId);
+    if (!el) return;
+
+    setDownloading(true);
+    const canvas = await html2canvas(el, {
+      scale: 1,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#000000',
+      width: el.offsetWidth,
+      height: el.offsetHeight,
+    });
+
+    const link = document.createElement('a');
+    link.download = `banner-${activeTab}-${(selected.title || selected.name || 'movie').replace(/\s+/g, '-').toLowerCase()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    setDownloading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a]">
+      {/* Header */}
+      <header className="border-b border-white/5 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center">
+              <Film className="w-5 h-5 text-black" />
+            </div>
+            <h1 className="text-white font-bold text-xl tracking-tight">Banner Studio</h1>
+          </div>
+          <LogoUploader 
+            logo={logo} 
+            onLogoChange={setLogo}
+            whatsapp={whatsapp}
+            onWhatsappChange={setWhatsapp}
+          />
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        {/* Search */}
+        <div className="text-center mb-8">
+          <h2 className="text-white/90 text-3xl sm:text-4xl font-bold mb-2">Gerador de Banners</h2>
+          <p className="text-white/40 text-lg mb-8">Busque um filme ou série e gere banners prontos para postar</p>
+          <SearchBar onResults={setResults} onLoading={setSearching} />
+        </div>
+
+        {/* Loading */}
+        {searching && (
+          <div className="flex justify-center py-16">
+            <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+          </div>
+        )}
+
+        {/* Results */}
+        {!selected && !searching && (
+          <MovieGrid results={results} onSelect={handleSelect} />
+        )}
+
+        {/* Banner Editor */}
+        <AnimatePresence>
+          {selected && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 30 }}
+            >
+              {/* Back + Controls */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <button
+                  onClick={() => { setSelected(null); setProviders([]); setDetails(null); }}
+                  className="text-white/50 hover:text-white text-sm transition-colors"
+                >
+                  ← Voltar aos resultados
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <TabsList className="bg-white/5 border border-white/10">
+                      <TabsTrigger value="post" className="data-[state=active]:bg-amber-500 data-[state=active]:text-black text-white/60">
+                        Post 1080×1080
+                      </TabsTrigger>
+                      <TabsTrigger value="story" className="data-[state=active]:bg-amber-500 data-[state=active]:text-black text-white/60">
+                        Story 1080×1920
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+
+                  <Button
+                    onClick={handleDownload}
+                    disabled={downloading}
+                    className="bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+                  >
+                    {downloading ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Download className="w-4 h-4 mr-2" />
+                    )}
+                    Baixar PNG
+                  </Button>
+                </div>
+              </div>
+
+              {/* Banner Preview */}
+              <div className="flex justify-center overflow-x-auto pb-8">
+                <div
+                  ref={bannerRef}
+                  style={{
+                    transform: activeTab === 'post' ? 'scale(0.45)' : 'scale(0.35)',
+                    transformOrigin: 'top center',
+                  }}
+                >
+                  {activeTab === 'post' ? (
+                    <BannerPost 
+                      movie={selected} 
+                      providers={providers} 
+                      logo={logo}
+                      whatsapp={whatsapp}
+                      details={details}
+                    />
+                  ) : (
+                    <BannerStory 
+                      movie={selected} 
+                      providers={providers} 
+                      logo={logo}
+                      whatsapp={whatsapp}
+                      details={details}
+                    />
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Empty state */}
+        {!searching && results.length === 0 && !selected && (
+          <div className="text-center py-24">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/5 ring-1 ring-white/10 mb-6">
+              <Tv className="w-10 h-10 text-white/20" />
+            </div>
+            <p className="text-white/30 text-lg">Pesquise por um filme ou série para começar</p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

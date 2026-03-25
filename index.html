@@ -135,20 +135,29 @@
 
                 <div class="flex-1"></div>
 
-                <!-- Download e Copiar -->
-                <div class="flex gap-2">
-                    <button id="downloadBtn" class="flex-1 bg-white text-black font-bold uppercase tracking-widest py-4 hover:bg-zinc-200 transition-all flex items-center justify-center gap-3 rounded-lg">
+                <!-- Download, Copiar e Trailer -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex gap-2">
+                        <button id="downloadBtn" class="flex-1 bg-white text-black font-bold uppercase tracking-widest py-4 hover:bg-zinc-200 transition-all flex items-center justify-center gap-3 rounded-lg">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,132.69V40a8,8,0,0,0-16,0v92.69L93.66,106.34a8,8,0,0,0-11.32,11.32Z"/>
+                            </svg>
+                            Baixar
+                        </button>
+                        <button id="copyBtn" class="flex-1 bg-zinc-800 text-white font-bold uppercase tracking-widest py-4 hover:bg-zinc-700 transition-all flex items-center justify-center gap-3 rounded-lg border border-zinc-700">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/>
+                            </svg>
+                            Copiar
+                        </button>
+                    </div>
+                    <button id="trailerBtn" class="w-full bg-red-600 text-white font-bold uppercase tracking-widest py-4 hover:bg-red-500 transition-all flex items-center justify-center gap-3 rounded-lg">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
-                            <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,132.69V40a8,8,0,0,0-16,0v92.69L93.66,106.34a8,8,0,0,0-11.32,11.32Z"/>
+                            <path d="M232,128a104,104,0,1,1-104-104A104.11,104.11,0,0,1,232,128Zm-74.34-10.78-52-36A12,12,0,0,0,88,92v72a12,12,0,0,0,17.66,10.78l52-36a12,12,0,0,0,0-21.56Z"/>
                         </svg>
-                        Baixar
+                        <span id="trailerBtnText">Baixar Trailer</span>
                     </button>
-                    <button id="copyBtn" class="flex-1 bg-zinc-800 text-white font-bold uppercase tracking-widest py-4 hover:bg-zinc-700 transition-all flex items-center justify-center gap-3 rounded-lg border border-zinc-700">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
-                            <path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/>
-                        </svg>
-                        Copiar
-                    </button>
+                    <p id="trailerStatus" class="text-xs text-zinc-500 text-center hidden"></p>
                 </div>
             </aside>
 
@@ -195,8 +204,13 @@
         const removeLogo = document.getElementById('removeLogo');
         const downloadBtn = document.getElementById('downloadBtn');
         const copyBtn = document.getElementById('copyBtn');
+        const trailerBtn = document.getElementById('trailerBtn');
+        const trailerBtnText = document.getElementById('trailerBtnText');
+        const trailerStatus = document.getElementById('trailerStatus');
         const canvas = document.getElementById('bannerCanvas');
         const ctx = canvas.getContext('2d');
+        
+        const BACKEND_URL = window.location.origin;
 
         // ===== CARREGAR CONFIG SALVA =====
         function loadConfig() {
@@ -337,6 +351,23 @@
                 } else if (brProviders?.rent?.[0]) {
                     content.streamingPlatform = brProviders.rent[0].provider_name;
                 }
+                
+                // Buscar trailer do YouTube
+                const videosRes = await fetch(`${TMDB_BASE_URL}/${endpoint}/${content.id}/videos?api_key=${TMDB_API_KEY}&language=pt-BR`);
+                const videosData = await videosRes.json();
+                let trailer = videosData.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+                
+                // Se não encontrar em PT-BR, buscar em inglês
+                if (!trailer) {
+                    const videosEnRes = await fetch(`${TMDB_BASE_URL}/${endpoint}/${content.id}/videos?api_key=${TMDB_API_KEY}`);
+                    const videosEnData = await videosEnRes.json();
+                    trailer = videosEnData.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+                    if (!trailer) {
+                        trailer = videosEnData.results?.find(v => v.site === 'YouTube');
+                    }
+                }
+                
+                content.youtubeId = trailer?.key || null;
             } catch (e) {
                 content.genres = 'N/A';
                 content.runtime = 'N/A';
@@ -716,6 +747,96 @@ ${selectedContent.overview}`;
                 }, 2000);
             });
         });
+
+        // Trailer download
+        let isProcessingTrailer = false;
+        
+        trailerBtn.addEventListener('click', async () => {
+            if (!selectedContent || isProcessingTrailer) return;
+            
+            if (!selectedContent.youtubeId) {
+                trailerStatus.textContent = 'Trailer não disponível para este conteúdo';
+                trailerStatus.classList.remove('hidden');
+                setTimeout(() => trailerStatus.classList.add('hidden'), 3000);
+                return;
+            }
+            
+            isProcessingTrailer = true;
+            trailerBtnText.textContent = 'Processando...';
+            trailerBtn.disabled = true;
+            trailerBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            trailerStatus.classList.remove('hidden');
+            trailerStatus.textContent = 'Iniciando download do trailer...';
+            
+            try {
+                // Enviar requisição para processar trailer
+                const response = await fetch(`${BACKEND_URL}/api/generate-trailer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        youtube_id: selectedContent.youtubeId,
+                        title: selectedContent.title,
+                        rating: selectedContent.rating,
+                        year: selectedContent.year,
+                        genre: selectedContent.genres?.split(',')[0]?.trim() || '',
+                        runtime: selectedContent.runtime,
+                        platform: platformSelect.value,
+                        synopsis: selectedContent.overview,
+                        whatsapp_text: whatsappText.value,
+                        cta_text: ctaText.value,
+                        logo_base64: uploadedLogo?.src || null,
+                        format: currentFormat
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.job_id) {
+                    // Verificar status periodicamente
+                    const checkStatus = async () => {
+                        const statusRes = await fetch(`${BACKEND_URL}/api/trailer-status/${data.job_id}`);
+                        const statusData = await statusRes.json();
+                        
+                        if (statusData.status === 'completed') {
+                            trailerStatus.textContent = 'Download pronto!';
+                            
+                            // Baixar o arquivo
+                            const link = document.createElement('a');
+                            link.href = `${BACKEND_URL}/api/download-trailer/${data.job_id}`;
+                            link.download = `${selectedContent.title.replace(/[^a-zA-Z0-9]/g, '_')}_trailer.mp4`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            
+                            resetTrailerButton();
+                        } else if (statusData.status === 'error') {
+                            trailerStatus.textContent = `Erro: ${statusData.message || 'Falha ao processar'}`;
+                            resetTrailerButton();
+                        } else {
+                            trailerStatus.textContent = `${statusData.status}... ${statusData.progress || 0}%`;
+                            setTimeout(checkStatus, 2000);
+                        }
+                    };
+                    
+                    setTimeout(checkStatus, 2000);
+                } else {
+                    trailerStatus.textContent = 'Erro ao iniciar processamento';
+                    resetTrailerButton();
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                trailerStatus.textContent = 'Erro de conexão';
+                resetTrailerButton();
+            }
+        });
+        
+        function resetTrailerButton() {
+            isProcessingTrailer = false;
+            trailerBtnText.textContent = 'Baixar Trailer';
+            trailerBtn.disabled = false;
+            trailerBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            setTimeout(() => trailerStatus.classList.add('hidden'), 5000);
+        }
 
         // Init
         loadConfig();

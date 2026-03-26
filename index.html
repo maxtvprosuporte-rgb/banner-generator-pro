@@ -864,6 +864,34 @@
                     downloadBtn.addEventListener('click', downloadMovieBanner);
                 }
             }, 100);
+
+            // Mostrar preview inicial
+            showMoviesPreview();
+        }
+
+        function showMoviesPreview() {
+            canvas.width = 1080;
+            canvas.height = 1080;
+            canvas.style.maxWidth = '400px';
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 1080);
+            gradient.addColorStop(0, '#7f1d1d');
+            gradient.addColorStop(1, '#18181b');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1080, 1080);
+
+            ctx.fillStyle = '#ef4444';
+            ctx.font = '700 64px Oswald, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('BANNERS DE', 540, 500);
+            ctx.fillText('FILMES', 540, 580);
+            
+            ctx.font = '400 28px Manrope, sans-serif';
+            ctx.fillStyle = '#71717a';
+            ctx.fillText('Busque um filme ou série', 540, 660);
         }
 
         async function searchMovies(query) {
@@ -1026,8 +1054,12 @@
             canvas.height = height;
             canvas.style.maxWidth = isPost ? '400px' : '280px';
             canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
             
             console.log('Canvas configurado:', width, 'x', height);
+            console.log('Canvas display:', canvas.style.display);
+            console.log('Canvas visibility:', canvas.style.visibility);
 
             if (posterImage) {
                 const imgRatio = posterImage.width / posterImage.height;

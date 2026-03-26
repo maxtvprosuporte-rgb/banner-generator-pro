@@ -1,4 +1,3 @@
-1. server.js (atualizado com proxy de imagens + endpoints que faltam)
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');

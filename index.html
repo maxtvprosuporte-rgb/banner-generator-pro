@@ -986,14 +986,18 @@
             }
 
             const posterUrl = movie.poster || movie.backdrop;
+            console.log('Carregando poster:', posterUrl);
+            
             if (posterUrl) {
                 try {
                     posterImage = await loadImage(posterUrl);
+                    console.log('✅ Poster carregado com sucesso');
                 } catch (e) {
-                    console.error('Erro ao carregar poster:', e);
+                    console.error('❌ Erro ao carregar poster:', e);
                     posterImage = null;
                 }
             } else {
+                console.warn('⚠️ Nenhum poster disponível');
                 posterImage = null;
             }
 
@@ -1060,8 +1064,10 @@
             console.log('Canvas configurado:', width, 'x', height);
             console.log('Canvas display:', canvas.style.display);
             console.log('Canvas visibility:', canvas.style.visibility);
+            console.log('posterImage:', posterImage);
 
             if (posterImage) {
+                console.log('✅ Desenhando poster - dimensões:', posterImage.width, 'x', posterImage.height);
                 const imgRatio = posterImage.width / posterImage.height;
                 const canvasRatio = width / height;
                 let dw, dh, ox, oy;
@@ -1072,8 +1078,16 @@
                     dw = width; dh = width / imgRatio;
                     ox = 0; oy = (height - dh) / 2;
                 }
-                ctx.drawImage(posterImage, ox, oy, dw, dh);
+                try {
+                    ctx.drawImage(posterImage, ox, oy, dw, dh);
+                    console.log('✅ Poster desenhado com sucesso');
+                } catch (e) {
+                    console.error('❌ Erro ao desenhar poster:', e);
+                    ctx.fillStyle = '#1a1a2e';
+                    ctx.fillRect(0, 0, width, height);
+                }
             } else {
+                console.warn('⚠️ Nenhum poster para desenhar - usando fundo sólido');
                 ctx.fillStyle = '#1a1a2e';
                 ctx.fillRect(0, 0, width, height);
             }
@@ -1575,9 +1589,12 @@
         function loadImage(url) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
-                img.crossOrigin = 'anonymous';
+                // Não usar crossOrigin para evitar bloqueio CORS
                 img.onload = () => resolve(img);
-                img.onerror = reject;
+                img.onerror = (e) => {
+                    console.error('Erro ao carregar imagem:', url, e);
+                    reject(e);
+                };
                 img.src = url;
             });
         }

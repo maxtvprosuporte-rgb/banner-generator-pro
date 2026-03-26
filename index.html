@@ -221,7 +221,6 @@
 
     <script>
         // ===== CONFIGURAÇÃO =====
-        // APIs agora protegidas pelo backend (sem expor chaves no frontend)
         const API_BASE_URL = window.location.origin;
         const TMDB_BASE_URL = `${API_BASE_URL}/api/tmdb`;
         const TMDB_IMG_BASE = 'https://image.tmdb.org/t/p';
@@ -445,6 +444,7 @@
             canvas.width = 1080;
             canvas.height = 1080;
             canvas.style.maxWidth = '500px';
+            canvas.style.display = 'block';
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 1080);
             gradient.addColorStop(0, '#0a4d0a');
@@ -488,7 +488,6 @@
                     return;
                 }
 
-                // FILTRAR APENAS LIGAS PERMITIDAS
                 const filteredMatches = data.response.filter(match => {
                     return ALLOWED_LEAGUES.some(league => 
                         match.league.name.includes(league) || league.includes(match.league.name)
@@ -518,12 +517,10 @@
                     broadcast: 'A definir'
                 }));
 
-                // Ordenar por horário (timestamp)
                 allMatches.sort((a, b) => a.timestamp - b.timestamp);
 
                 statusEl.textContent = `Encontrados ${allMatches.length} jogos. Carregando imagens...`;
 
-                // Carregar logos
                 for (let match of allMatches) {
                     if (match.homeLogo) {
                         match.homeLogoImg = await loadImage(match.homeLogo);
@@ -533,10 +530,8 @@
                     }
                 }
 
-                // Agrupar apenas para estatísticas (não usado mais)
                 statusEl.textContent = 'Gerando banners...';
 
-                // Gerar banners com 5 jogos cada
                 generatedBanners = [];
                 let bannerNum = 1;
                 const gamesPerBanner = 5;
@@ -548,10 +543,8 @@
                     bannerNum++;
                 }
 
-                // Exibir banners na lista
                 displayGeneratedBanners();
 
-                // Esconder o canvas de preview
                 canvas.style.display = 'none';
 
                 statusEl.textContent = `✅ ${generatedBanners.length} banner(s) gerado(s)!`;
@@ -570,12 +563,11 @@
 
         async function generateFootballBanner(matches, bannerNum) {
             const width = 1080;
-            const height = 1920; // Story format
+            const height = 1920;
             
             canvas.width = width;
             canvas.height = height;
 
-            // Fundo
             if (footballBgImage) {
                 const imgRatio = footballBgImage.width / footballBgImage.height;
                 const canvasRatio = width / height;
@@ -596,11 +588,9 @@
                 ctx.fillRect(0, 0, width, height);
             }
 
-            // Overlay escuro
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
             ctx.fillRect(0, 0, width, height);
 
-            // Logo no topo
             if (uploadedLogo) {
                 const logoH = 150;
                 const logoRatio = uploadedLogo.width / uploadedLogo.height;
@@ -608,7 +598,6 @@
                 ctx.drawImage(uploadedLogo, (width - logoW) / 2, 50, logoW, logoH);
             }
 
-            // Título "JOGOS DO DIA"
             const today = new Date();
             const dayNames = ['DOMINGO', 'SEGUNDA', 'TERÇA', 'QUARTA', 'QUINTA', 'SEXTA', 'SÁBADO'];
             const dateStr = `${dayNames[today.getDay()]} - ${today.getDate().toString().padStart(2, '0')}`;
@@ -622,7 +611,6 @@
             ctx.font = '600 32px Oswald, sans-serif';
             ctx.fillText(dateStr, width/2, 400);
 
-            // Barra lateral "DIA DE JOGO"
             ctx.save();
             ctx.translate(width - 60, height/2);
             ctx.rotate(Math.PI / 2);
@@ -633,44 +621,36 @@
             ctx.fillText(sideText, 0, 0);
             ctx.restore();
 
-            // Lista de jogos (até 5)
             let yPos = 500;
             const cardHeight = 200;
             const cardSpacing = 20;
             
             for (let match of matches) {
-                // Card do jogo
                 ctx.fillStyle = 'rgba(40,40,40,0.9)';
                 roundRect(ctx, 60, yPos, width - 120, cardHeight, 16);
                 ctx.fill();
                 
-                // Header do card: [Liga] [Horário] [Ícone Transmissão]
                 ctx.fillStyle = 'rgba(255,255,255,0.95)';
                 roundRect(ctx, 80, yPos + 20, width - 160, 50, 12);
                 ctx.fill();
                 
-                // Liga
                 ctx.fillStyle = '#000';
                 ctx.font = '700 20px Oswald, sans-serif';
                 ctx.textAlign = 'left';
                 const leagueName = match.league.length > 25 ? match.league.substring(0, 22) + '...' : match.league;
                 ctx.fillText(leagueName, 100, yPos + 53);
                 
-                // Horário
                 ctx.font = '700 24px Oswald, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(match.time, width/2, yPos + 53);
                 
-                // Ícone Transmissão (📺)
                 ctx.font = '24px Arial';
                 ctx.textAlign = 'right';
                 ctx.fillText('📺', width - 100, yPos + 53);
 
-                // Logos e times: [Time 1] x [Time 2]
                 const teamY = yPos + 105;
                 const logoSize = 60;
                 
-                // Time da casa
                 if (match.homeLogoImg) {
                     ctx.drawImage(match.homeLogoImg, 100, teamY, logoSize, logoSize);
                 }
@@ -681,12 +661,10 @@
                 const homeTeam = match.homeTeam.length > 15 ? match.homeTeam.substring(0, 12) + '...' : match.homeTeam;
                 ctx.fillText(homeTeam, 170, teamY + 35);
 
-                // VS
                 ctx.font = '700 28px Oswald, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText('X', width/2, teamY + 35);
 
-                // Time visitante
                 if (match.awayLogoImg) {
                     ctx.drawImage(match.awayLogoImg, width - 160, teamY, logoSize, logoSize);
                 }
@@ -699,7 +677,6 @@
                 yPos += cardHeight + cardSpacing;
             }
 
-            // Rodapé com WhatsApp
             const footerY = height - 100;
             ctx.fillStyle = 'rgba(255,255,255,0.95)';
             roundRect(ctx, 60, footerY, width - 120, 70, 16);
@@ -733,7 +710,7 @@
                             <img src="${banner.dataUrl}" class="w-full rounded-lg shadow-lg" alt="${banner.title}">
                         </div>
                         <div class="p-4 bg-zinc-800/50">
-                            <button onclick="downloadBanner(${index})" class="w-full bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                            <button onclick="downloadBanner(${index})" class="w-full bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
                                     <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,132.69V40a8,8,0,0,0-16,0v92.69L93.66,106.34a8,8,0,0,0-11.32,11.32Z"/>
                                 </svg>
@@ -756,13 +733,6 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
-            // Fechar e limpar após download
-            setTimeout(() => {
-                document.getElementById('bannersContainer').innerHTML = '';
-                canvas.style.display = 'none';
-                selectMode('main');
-            }, 500);
         }
 
         // ===== MODO FILMES =====
@@ -815,16 +785,15 @@
                         </select>
                     </section>
 
-                    <button id="movieDownloadBtn" class="w-full bg-red-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-red-400 transition-all flex items-center justify-center gap-3 rounded-lg">
+                    <button id="movieDownloadBtn" class="w-full bg-red-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-red-400 transition-all flex items-center justify-center gap-3 rounded-lg cursor-pointer">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
-                            <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Z"/>
+                            <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,132.69V40a8,8,0,0,0-16,0v92.69L93.66,106.34a8,8,0,0,0-11.32,11.32Z"/>
                         </svg>
-                        Baixar Banner
+                        BAIXAR BANNER
                     </button>
                 </section>
             `;
 
-            // Aguardar DOM atualizar
             setTimeout(() => {
                 let searchTimeout;
                 const searchInput = document.getElementById('movieSearch');
@@ -865,7 +834,6 @@
                 }
             }, 100);
 
-            // Mostrar preview inicial
             showMoviesPreview();
         }
 
@@ -874,8 +842,6 @@
             canvas.height = 1080;
             canvas.style.maxWidth = '400px';
             canvas.style.display = 'block';
-            canvas.style.visibility = 'visible';
-            canvas.style.opacity = '1';
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 1080);
             gradient.addColorStop(0, '#7f1d1d');
@@ -952,10 +918,8 @@
                 </div>
             `).join('');
 
-            // Guardar resultados globalmente para acesso via click
             window.movieSearchResults = results;
 
-            // Adicionar event listeners aos resultados
             setTimeout(() => {
                 document.querySelectorAll('.search-result').forEach(el => {
                     el.addEventListener('click', function() {
@@ -985,19 +949,17 @@
                 console.error('Erro ao buscar detalhes:', e);
             }
 
+            // Carregar poster via proxy para evitar CORS
             const posterUrl = movie.poster || movie.backdrop;
-            console.log('Carregando poster:', posterUrl);
-            
             if (posterUrl) {
                 try {
-                    posterImage = await loadImage(posterUrl);
-                    console.log('✅ Poster carregado com sucesso');
+                    const proxyUrl = `${API_BASE_URL}/api/image-proxy?url=${encodeURIComponent(posterUrl)}`;
+                    posterImage = await loadImage(proxyUrl);
                 } catch (e) {
-                    console.error('❌ Erro ao carregar poster:', e);
+                    console.error('Erro ao carregar poster:', e);
                     posterImage = null;
                 }
             } else {
-                console.warn('⚠️ Nenhum poster disponível');
                 posterImage = null;
             }
 
@@ -1019,9 +981,7 @@
                 </button>
             `;
 
-            // Aguardar um pouco para garantir que o DOM foi atualizado
             setTimeout(() => {
-                console.log('Gerando banner para:', selectedContent.title);
                 generateMovieBanner();
             }, 200);
         }
@@ -1043,10 +1003,7 @@
         }
 
         function generateMovieBanner() {
-            console.log('generateMovieBanner chamado - selectedContent:', selectedContent, 'currentMode:', currentMode);
-            
             if (!selectedContent || currentMode !== 'movies') {
-                console.warn('Banner não gerado:', !selectedContent ? 'selectedContent vazio' : 'currentMode incorreto');
                 return;
             }
 
@@ -1058,16 +1015,9 @@
             canvas.height = height;
             canvas.style.maxWidth = isPost ? '400px' : '280px';
             canvas.style.display = 'block';
-            canvas.style.visibility = 'visible';
-            canvas.style.opacity = '1';
-            
-            console.log('Canvas configurado:', width, 'x', height);
-            console.log('Canvas display:', canvas.style.display);
-            console.log('Canvas visibility:', canvas.style.visibility);
-            console.log('posterImage:', posterImage);
 
+            // Desenhar fundo (poster)
             if (posterImage) {
-                console.log('✅ Desenhando poster - dimensões:', posterImage.width, 'x', posterImage.height);
                 const imgRatio = posterImage.width / posterImage.height;
                 const canvasRatio = width / height;
                 let dw, dh, ox, oy;
@@ -1080,18 +1030,16 @@
                 }
                 try {
                     ctx.drawImage(posterImage, ox, oy, dw, dh);
-                    console.log('✅ Poster desenhado com sucesso');
                 } catch (e) {
-                    console.error('❌ Erro ao desenhar poster:', e);
                     ctx.fillStyle = '#1a1a2e';
                     ctx.fillRect(0, 0, width, height);
                 }
             } else {
-                console.warn('⚠️ Nenhum poster para desenhar - usando fundo sólido');
                 ctx.fillStyle = '#1a1a2e';
                 ctx.fillRect(0, 0, width, height);
             }
 
+            // Gradiente overlay
             const gradient = ctx.createLinearGradient(0, height * 0.15, 0, height);
             gradient.addColorStop(0, 'rgba(0,0,0,0)');
             gradient.addColorStop(0.35, 'rgba(0,0,0,0.5)');
@@ -1100,6 +1048,7 @@
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, width, height);
 
+            // Logo watermark
             if (uploadedLogo) {
                 ctx.save();
                 ctx.globalAlpha = 0.15;
@@ -1127,6 +1076,7 @@
             const footerY = height - padding;
             const boxH = 50;
 
+            // Box WhatsApp
             const waW = 180;
             ctx.fillStyle = '#25D366';
             roundRect(ctx, padding, footerY - boxH, waW, boxH, 8);
@@ -1137,6 +1087,7 @@
             const whatsappNum = globalSettings.whatsappNumber || globalSettings.whatsappText;
             ctx.fillText(whatsappNum, padding + waW/2, footerY - boxH/2 + 7);
 
+            // Box CTA
             const ctaW = 180;
             const ctaX = padding + waW + 15;
             ctx.fillStyle = '#ef4444';
@@ -1148,6 +1099,7 @@
 
             let currentY = footerY - boxH - 25;
 
+            // Sinopse
             ctx.font = '400 24px Manrope, sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.9)';
             ctx.textAlign = 'left';
@@ -1162,6 +1114,7 @@
 
             currentY -= 15;
 
+            // Informações (rating, ano, gênero, duração, plataforma)
             ctx.font = '600 24px Manrope, sans-serif';
             let metaX = padding;
             const sep = '  •  ';
@@ -1209,6 +1162,7 @@
 
             currentY -= 50;
 
+            // ===== TÍTULO DO FILME (CORRIGIDO) =====
             ctx.font = '700 68px Oswald, sans-serif';
             ctx.fillStyle = '#fff';
             const titleLines = wrapText(ctx, selectedContent.title.toUpperCase(), maxTextWidth);
@@ -1230,20 +1184,20 @@
             }
         }
 
+        // ===== FUNÇÃO DE DOWNLOAD CORRIGIDA =====
         function downloadMovieBanner() {
-            if (!selectedContent) return;
+            if (!selectedContent) {
+                alert('Selecione um filme ou série primeiro!');
+                return;
+            }
+            
+            const dataUrl = canvas.toDataURL('image/png');
             const link = document.createElement('a');
             link.download = `${selectedContent.title.replace(/[^a-zA-Z0-9]/g, '_')}_${currentFormat}.png`;
-            link.href = canvas.toDataURL('image/png');
+            link.href = dataUrl;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
-            // Fechar e limpar após download
-            setTimeout(() => {
-                canvas.style.display = 'none';
-                selectMode('main');
-            }, 500);
         }
 
         // ===== MODO VÍDEO =====
@@ -1254,103 +1208,9 @@
             controlPanel.innerHTML = `
                 <header class="border-b border-zinc-800 pb-5">
                     <h2 class="font-oswald text-2xl font-bold text-purple-400">🎥 Banner de Vídeo</h2>
+                    <p class="text-zinc-500 text-sm mt-2">Em desenvolvimento...</p>
                 </header>
-
-                <section class="mt-5">
-                    <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Buscar Filme ou Série</label>
-                    <div class="relative">
-                        <input type="text" id="videoSearch" placeholder="Digite o nome..."
-                            class="bg-black border-2 border-zinc-800 p-4 pr-14 text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition-colors w-full rounded-lg">
-                        <button id="videoSearchBtn" class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors p-2">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
-                                <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div id="videoResults" class="mt-2 max-h-96 overflow-y-auto"></div>
-                </section>
-
-                <section id="videoControls" class="hidden flex flex-col gap-5 mt-5">
-                    <div id="videoSelectedInfo" class="border border-zinc-800 p-4 bg-black/30 rounded-lg"></div>
-                    
-                    <section class="flex flex-col gap-3">
-                        <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label>
-                        <div class="flex gap-2">
-                            <button id="videoFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white">Post</button>
-                            <button id="videoFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600">Story</button>
-                        </div>
-                    </section>
-
-                    <section class="flex flex-col gap-3">
-                        <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Plataforma</label>
-                        <select id="videoPlatform" class="bg-black border border-zinc-800 p-4 text-white focus:outline-none focus:border-purple-500 transition-colors w-full appearance-none cursor-pointer rounded pr-10">
-                            <option value="">Selecione</option>
-                            <option value="Netflix">Netflix</option>
-                            <option value="Amazon Prime Video">Amazon Prime Video</option>
-                            <option value="Disney+">Disney+</option>
-                            <option value="HBO Max">HBO Max</option>
-                            <option value="Max">Max</option>
-                            <option value="Apple TV+">Apple TV+</option>
-                            <option value="Paramount+">Paramount+</option>
-                            <option value="Globoplay">Globoplay</option>
-                            <option value="Star+">Star+</option>
-                        </select>
-                    </section>
-
-                    <div class="border-t border-zinc-800 pt-5">
-                        <h3 class="text-sm font-semibold text-zinc-300 mb-4">📹 Origem do Vídeo:</h3>
-                        
-                        <button id="autoVideoBtn" class="w-full mb-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-4 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
-                                <path d="M232,128a104,104,0,1,1-104-104A104.11,104.11,0,0,1,232,128Zm-74.34-10.78-52-36A12,12,0,0,0,88,92v72a12,12,0,0,0,17.66,10.78l52-36a12,12,0,0,0,0-21.56Z"/>
-                            </svg>
-                            🎬 Gerar Automaticamente (Trailer)
-                        </button>
-
-                        <div class="mb-3 p-4 border border-zinc-800 rounded-lg">
-                            <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-2">🔗 Ou cole link do YouTube:</label>
-                            <div class="flex gap-2">
-                                <input type="url" id="youtubeUrlInput" placeholder="https://youtube.com/watch?v=..."
-                                    class="flex-1 bg-black border border-zinc-800 p-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 rounded-lg">
-                                <button id="loadYoutubeBtn" class="bg-purple-600 hover:bg-purple-500 text-white px-6 rounded-lg transition-all whitespace-nowrap">
-                                    Carregar
-                                </button>
-                            </div>
-                        </div>
-
-                        <label class="border-2 border-dashed border-zinc-700 p-5 text-center cursor-pointer hover:border-purple-500 transition-colors flex flex-col items-center gap-2 rounded-lg">
-                            <svg class="w-8 h-8 text-zinc-500" fill="currentColor" viewBox="0 0 256 256">
-                                <path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-42.34-77.66a8,8,0,0,1,0,11.32l-24,24a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L120,148.69V104a8,8,0,0,1,16,0v44.69l10.34-10.35A8,8,0,0,1,157.66,138.34Z"/>
-                            </svg>
-                            <span id="videoLocalText" class="text-sm text-zinc-400">📁 Ou carregar vídeo local</span>
-                            <span class="text-xs text-zinc-600">MP4, WebM (Máx 100MB)</span>
-                            <input type="file" id="videoLocalUpload" accept="video/mp4,video/webm" class="hidden">
-                        </label>
-                    </div>
-
-                    <section id="videoPreviewSection" class="hidden border border-purple-500/30 rounded-lg p-5 bg-purple-900/10">
-                        <h3 class="text-sm font-semibold text-purple-300 mb-3">✅ Vídeo Carregado</h3>
-                        <div id="videoPreviewContainer" class="bg-black rounded-lg overflow-hidden mb-4"></div>
-                        
-                        <button id="downloadVideoBtn" class="w-full bg-gradient-to-r from-green-600 to-green-500 text-white font-bold uppercase tracking-widest py-4 hover:from-green-500 hover:to-green-400 transition-all rounded-lg shadow-lg flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
-                                <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,132.69V40a8,8,0,0,0-16,0v92.69L93.66,106.34a8,8,0,0,0-11.32,11.32Z"/>
-                            </svg>
-                            Baixar Vídeo
-                        </button>
-                    </section>
-
-                    <p id="videoStatus" class="text-sm text-center hidden"></p>
-                </section>
             `;
-
-            const searchInput = document.getElementById('videoSearch');
-            const searchBtn = document.getElementById('videoSearchBtn');
-            
-            searchInput.addEventListener('keyup', (e) => {
-                if (e.key === 'Enter') searchVideoContent();
-            });
-            searchBtn.addEventListener('click', searchVideoContent);
 
             showVideoPreview();
         }
@@ -1358,7 +1218,7 @@
         function showVideoPreview() {
             canvas.width = 1080;
             canvas.height = 1920;
-            canvas.style.maxWidth = '400px';
+            canvas.style.maxWidth = '280px';
             canvas.style.display = 'block';
             
             const gradient = ctx.createLinearGradient(0, 0, 0, 1920);
@@ -1375,221 +1235,14 @@
             
             ctx.font = '400 28px Manrope, sans-serif';
             ctx.fillStyle = '#71717a';
-            ctx.fillText('Busque um filme ou série', 540, 1060);
-        }
-
-        async function searchVideoContent() {
-            const query = document.getElementById('videoSearch').value.trim();
-            const resultsContainer = document.getElementById('videoResults');
-            
-            if (!query) {
-                resultsContainer.innerHTML = '';
-                return;
-            }
-
-            resultsContainer.innerHTML = '<p class="text-zinc-500 text-sm p-4">🔍 Buscando...</p>';
-
-            try {
-                const [moviesRes, seriesRes] = await Promise.all([
-                    fetch(`${TMDB_BASE_URL}/search/movie?language=pt-BR&query=${encodeURIComponent(query)}`),
-                    fetch(`${TMDB_BASE_URL}/search/tv?language=pt-BR&query=${encodeURIComponent(query)}`)
-                ]);
-
-                const moviesData = await moviesRes.json();
-                const seriesData = await seriesRes.json();
-
-                const allResults = [
-                    ...moviesData.results.map(m => ({ ...m, type: 'movie' })),
-                    ...seriesData.results.map(s => ({ ...s, type: 'tv' }))
-                ].sort((a, b) => (b.popularity || 0) - (a.popularity || 0)).slice(0, 10);
-
-                if (allResults.length === 0) {
-                    resultsContainer.innerHTML = '<p class="text-zinc-500 text-sm p-4">❌ Nenhum resultado encontrado</p>';
-                    return;
-                }
-
-                resultsContainer.innerHTML = allResults.map(item => {
-                    const title = item.title || item.name;
-                    const year = (item.release_date || item.first_air_date || '').split('-')[0];
-                    const poster = item.poster_path ? `${TMDB_IMG_BASE}/w200${item.poster_path}` : '';
-                    const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
-                    const type = item.type === 'movie' ? '🎬 Filme' : '📺 Série';
-                    
-                    return `
-                        <div class="search-result flex items-center gap-4 p-3 cursor-pointer border-b border-zinc-800 hover:bg-zinc-800/50 transition-colors" 
-                             onclick="selectVideoMovie(${item.id}, '${item.type}', '${title.replace(/'/g, "\\'")}', '${poster}', '${year}', '${rating}', '${(item.overview || '').replace(/'/g, "\\'")}')">
-                            ${poster ? `<img src="${poster}" class="w-16 h-24 object-cover rounded" />` : '<div class="w-16 h-24 bg-zinc-800 rounded flex items-center justify-center text-2xl">🎬</div>'}
-                            <div class="flex-1">
-                                <h4 class="font-semibold text-white">${title}</h4>
-                                <p class="text-sm text-zinc-400">${type} • ${year || 'N/A'} • ⭐ ${rating}</p>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-            } catch (error) {
-                console.error('Erro:', error);
-                resultsContainer.innerHTML = '<p class="text-red-500 text-sm p-4">❌ Erro ao buscar</p>';
-            }
-        }
-
-        function selectVideoMovie(id, type, title, poster, year, rating, overview) {
-            selectedVideoMovie = { id, type, title, poster, year, rating, overview };
-            
-            document.getElementById('videoResults').innerHTML = '';
-            document.getElementById('videoSearch').value = title;
-            document.getElementById('videoControls').classList.remove('hidden');
-            
-            document.getElementById('videoSelectedInfo').innerHTML = `
-                <div class="flex gap-3 mb-3">
-                    ${poster ? `<img src="${poster}" class="w-20 h-30 object-cover rounded">` : ''}
-                    <div class="flex-1">
-                        <h3 class="font-oswald text-lg font-bold">${title}</h3>
-                        <p class="text-zinc-500 text-sm">${year} • ${type === 'movie' ? 'Filme' : 'Série'} • ⭐ ${rating}</p>
-                        <p class="text-zinc-400 text-xs mt-2 line-clamp-3">${overview || 'Sem descrição'}</p>
-                    </div>
-                </div>
-                <button onclick="copyVideoInfo()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 256 256">
-                        <path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/>
-                    </svg>
-                    Copiar Informações
-                </button>
-            `;
-
-            // Formatação
-            document.getElementById('videoFormatPost').onclick = () => { currentFormat = 'post'; updateVideoFormatButtons(); };
-            document.getElementById('videoFormatStory').onclick = () => { currentFormat = 'story'; updateVideoFormatButtons(); };
-
-            // Vídeo
-            document.getElementById('autoVideoBtn').onclick = autoGenerateVideo;
-            document.getElementById('loadYoutubeBtn').onclick = loadYoutubeVideo;
-            document.getElementById('videoLocalUpload').onchange = loadLocalVideo;
-        }
-
-        function updateVideoFormatButtons() {
-            const postBtn = document.getElementById('videoFormatPost');
-            const storyBtn = document.getElementById('videoFormatStory');
-            
-            if (currentFormat === 'post') {
-                postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white';
-                storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600';
-            } else {
-                storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white';
-                postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600';
-            }
-        }
-
-        function copyVideoInfo() {
-            if (!selectedVideoMovie) return;
-            const info = `📽️ ${selectedVideoMovie.title}\n\n` +
-                `🎬 Tipo: ${selectedVideoMovie.type === 'movie' ? 'Filme' : 'Série'}\n` +
-                `📅 Ano: ${selectedVideoMovie.year}\n` +
-                `⭐ Avaliação: ${selectedVideoMovie.rating}/10\n\n` +
-                `📝 Sinopse:\n${selectedVideoMovie.overview || 'Sem descrição'}`;
-            navigator.clipboard.writeText(info).then(() => {
-                alert('✅ Informações copiadas!');
-            }).catch(() => {
-                alert('❌ Erro ao copiar');
-            });
-        }
-
-        async function autoGenerateVideo() {
-            const statusEl = document.getElementById('videoStatus');
-            statusEl.classList.remove('hidden');
-            statusEl.className = 'text-sm text-center text-yellow-500';
-            statusEl.textContent = '🎬 Buscando trailer...';
-
-            setTimeout(() => {
-                statusEl.className = 'text-sm text-center text-orange-500';
-                statusEl.textContent = '⚠️ Busca automática de trailer em desenvolvimento. Use uma das outras opções.';
-                setTimeout(() => statusEl.classList.add('hidden'), 5000);
-            }, 2000);
-        }
-
-        function loadYoutubeVideo() {
-            const url = document.getElementById('youtubeUrlInput').value.trim();
-            const statusEl = document.getElementById('videoStatus');
-            
-            if (!url) {
-                statusEl.classList.remove('hidden');
-                statusEl.className = 'text-sm text-center text-red-500';
-                statusEl.textContent = '❌ Cole um link do YouTube!';
-                setTimeout(() => statusEl.classList.add('hidden'), 3000);
-                return;
-            }
-
-            videoTrailerUrl = url;
-            displayVideoPreview(url, 'youtube');
-        }
-
-        function loadLocalVideo(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            if (file.size > 100 * 1024 * 1024) {
-                alert('⚠️ Arquivo muito grande! Máximo 100MB');
-                return;
-            }
-
-            document.getElementById('videoLocalText').textContent = `✅ ${file.name}`;
-            displayVideoPreview(file, 'file');
-        }
-
-        function displayVideoPreview(source, type) {
-            const previewSection = document.getElementById('videoPreviewSection');
-            const previewContainer = document.getElementById('videoPreviewContainer');
-            
-            previewSection.classList.remove('hidden');
-            
-            if (type === 'youtube') {
-                let videoId = '';
-                if (source.includes('youtube.com')) {
-                    videoId = source.split('v=')[1]?.split('&')[0];
-                } else if (source.includes('youtu.be')) {
-                    videoId = source.split('youtu.be/')[1]?.split('?')[0];
-                }
-
-                if (videoId) {
-                    previewContainer.innerHTML = `
-                        <iframe width="100%" height="300" src="https://www.youtube.com/embed/${videoId}" 
-                            frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                            allowfullscreen class="rounded-lg"></iframe>
-                    `;
-                } else {
-                    previewContainer.innerHTML = '<p class="text-red-500 text-sm p-4">❌ Link inválido</p>';
-                }
-            } else {
-                const videoEl = document.createElement('video');
-                videoEl.controls = true;
-                videoEl.className = 'w-full max-h-96 object-contain rounded-lg';
-                videoEl.src = URL.createObjectURL(source);
-                
-                previewContainer.innerHTML = '';
-                previewContainer.appendChild(videoEl);
-            }
-
-            document.getElementById('downloadVideoBtn').onclick = downloadVideo;
-        }
-
-        function downloadVideo() {
-            const statusEl = document.getElementById('videoStatus');
-            statusEl.classList.remove('hidden');
-            statusEl.className = 'text-sm text-center text-yellow-500';
-            statusEl.textContent = '⚠️ Download/processamento de vídeo em desenvolvimento...';
-            
-            setTimeout(() => {
-                statusEl.className = 'text-sm text-center text-blue-500';
-                statusEl.textContent = '💡 Por enquanto, baixe o vídeo do YouTube e edite externamente';
-                setTimeout(() => statusEl.classList.add('hidden'), 5000);
-            }, 2000);
+            ctx.fillText('Em desenvolvimento', 540, 1060);
         }
 
         // ===== UTILS =====
         function loadImage(url) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
-                // Não usar crossOrigin para evitar bloqueio CORS
+                img.crossOrigin = 'anonymous';
                 img.onload = () => resolve(img);
                 img.onerror = (e) => {
                     console.error('Erro ao carregar imagem:', url, e);
@@ -1612,9 +1265,10 @@
         }
 
         function wrapText(ctx, text, maxWidth) {
+            if (!text) return [''];
             const words = text.split(' ');
             const lines = [];
-            let currentLine = words[0];
+            let currentLine = words[0] || '';
 
             for (let i = 1; i < words.length; i++) {
                 const word = words[i];

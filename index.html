@@ -221,11 +221,11 @@
 
     <script>
         // ===== CONFIGURAÇÃO =====
-        const TMDB_API_KEY = 'ed3d0c9bfea7f601924b810c07471202';
-        const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+        // APIs agora protegidas pelo backend (sem expor chaves no frontend)
+        const API_BASE_URL = window.location.origin;
+        const TMDB_BASE_URL = `${API_BASE_URL}/api/tmdb`;
         const TMDB_IMG_BASE = 'https://image.tmdb.org/t/p';
-        const FOOTBALL_API_KEY = 'dc433b84ecfd94dc8b65fb80c5b1f05e';
-        const FOOTBALL_API_URL = 'https://v3.football.api-sports.io';
+        const FOOTBALL_API_URL = `${API_BASE_URL}/api/football`;
 
         // LIGAS PERMITIDAS
         const ALLOWED_LEAGUES = [
@@ -475,7 +475,7 @@
             try {
                 const today = new Date().toISOString().split('T')[0];
                 const response = await fetch(`${FOOTBALL_API_URL}/fixtures?date=${today}`, {
-                    headers: { 'x-apisports-key': FOOTBALL_API_KEY }
+                    headers: { 'Content-Type': 'application/json' }
                 });
 
                 const data = await response.json();
@@ -842,8 +842,8 @@
 
             try {
                 const [moviesRes, seriesRes] = await Promise.all([
-                    fetch(`${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&language=pt-BR&query=${encodeURIComponent(query)}`),
-                    fetch(`${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&language=pt-BR&query=${encodeURIComponent(query)}`)
+                    fetch(`${TMDB_BASE_URL}/search/movie?language=pt-BR&query=${encodeURIComponent(query)}`),
+                    fetch(`${TMDB_BASE_URL}/search/tv?language=pt-BR&query=${encodeURIComponent(query)}`)
                 ]);
 
                 const moviesData = await moviesRes.json();
@@ -900,7 +900,7 @@
 
             const endpoint = movie.type === 'movie' ? 'movie' : 'tv';
             try {
-                const detailsRes = await fetch(`${TMDB_BASE_URL}/${endpoint}/${movie.id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
+                const detailsRes = await fetch(`${TMDB_BASE_URL}/${endpoint}/${movie.id}?language=pt-BR`);
                 const details = await detailsRes.json();
 
                 selectedContent.genres = details.genres?.map(g => g.name).join(', ') || 'N/A';

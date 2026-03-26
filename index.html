@@ -913,8 +913,8 @@
                 return;
             }
 
-            resultsDiv.innerHTML = results.map(item => `
-                <div class="search-result flex items-center gap-3 p-3 cursor-pointer border-b border-zinc-800 last:border-b-0 hover:bg-zinc-800/50 transition-colors rounded" onclick='selectMovie(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
+            resultsDiv.innerHTML = results.map((item, index) => `
+                <div class="search-result flex items-center gap-3 p-3 cursor-pointer border-b border-zinc-800 last:border-b-0 hover:bg-zinc-800/50 transition-colors rounded" data-movie-index="${index}">
                     ${item.poster ? `<img src="${item.poster}" class="w-12 h-16 object-cover rounded">` : 
                     `<div class="w-12 h-16 bg-zinc-800 flex items-center justify-center rounded"><svg class="w-5 h-5 text-zinc-600" fill="currentColor" viewBox="0 0 256 256"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Z"/></svg></div>`}
                     <div class="flex-1 min-w-0">
@@ -923,6 +923,20 @@
                     </div>
                 </div>
             `).join('');
+
+            // Guardar resultados globalmente para acesso via click
+            window.movieSearchResults = results;
+
+            // Adicionar event listeners aos resultados
+            setTimeout(() => {
+                document.querySelectorAll('.search-result').forEach(el => {
+                    el.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-movie-index'));
+                        const movie = window.movieSearchResults[index];
+                        if (movie) selectMovie(movie);
+                    });
+                });
+            }, 50);
         }
 
         async function selectMovie(movie) {
@@ -993,6 +1007,7 @@
             canvas.width = width;
             canvas.height = height;
             canvas.style.maxWidth = isPost ? '400px' : '280px';
+            canvas.style.display = 'block';
 
             if (posterImage) {
                 const imgRatio = posterImage.width / posterImage.height;

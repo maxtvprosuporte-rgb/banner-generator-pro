@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 // ========== CONFIGURAÇÃO DAS APIs ==========
-const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY || 'dc433b84ecfd94dc8b65fb80c5b1f05e';
+const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY || '2d3321116e5faf5c03edf1a6f6dccff5';
 const TMDB_API_KEY = process.env.TMDB_API_KEY || 'ed3d0c9bfea7f601924b810c07471202';
 
 const FOOTBALL_API_URL = 'https://v3.football.api-sports.io';

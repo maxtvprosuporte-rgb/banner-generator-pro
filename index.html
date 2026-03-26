@@ -551,6 +551,9 @@
                 // Exibir banners na lista
                 displayGeneratedBanners();
 
+                // Esconder o canvas de preview
+                canvas.style.display = 'none';
+
                 statusEl.textContent = `✅ ${generatedBanners.length} banner(s) gerado(s)!`;
                 infoBox.classList.remove('hidden');
                 setTimeout(() => statusEl.classList.add('hidden'), 3000);
@@ -1105,34 +1108,171 @@
         }
 
         // ===== MODO VÍDEO =====
+        let videoSource = null;
+        let videoFile = null;
+        let videoUrl = null;
+
         function loadVideoMode() {
             controlPanel.innerHTML = `
-                <header class="border-b border-zinc-800 pb-5">
-                    <h2 class="font-oswald text-2xl font-bold text-purple-400">🎥 Banner em Vídeo MP4</h2>
-                    <p class="text-zinc-500 text-sm mt-1">Em desenvolvimento</p>
+                <header class="border-b border-zinc-800 pb-5 mb-6">
+                    <h2 class="font-oswald text-2xl font-bold text-purple-400">🎥 Gerador de Banner em Vídeo</h2>
+                    <p class="text-zinc-500 text-sm mt-1">Adicione texto e marca d'água em vídeos</p>
                 </header>
 
-                <div class="flex flex-col items-center justify-center gap-4 py-12">
-                    <svg class="w-20 h-20 text-purple-500 animate-pulse-slow" fill="currentColor" viewBox="0 0 256 256">
-                        <path d="M232,128a104,104,0,1,1-104-104A104.11,104.11,0,0,1,232,128Zm-74.34-10.78-52-36A12,12,0,0,0,88,92v72a12,12,0,0,0,17.66,10.78l52-36a12,12,0,0,0,0-21.56Z"/>
-                    </svg>
-                    <p class="text-zinc-400 text-center">Funcionalidade de geração de vídeo<br>em desenvolvimento</p>
-                    <p class="text-xs text-zinc-600 text-center">Opções:<br>• Upload de MP4<br>• Link do YouTube<br>• Download de trailer</p>
+                <div class="space-y-6">
+                    <!-- Opção 1: Upload de Vídeo -->
+                    <section class="border border-zinc-800 rounded-lg p-5">
+                        <label class="text-sm font-semibold text-zinc-300 mb-3 block">📁 Opção 1: Carregar Vídeo Local</label>
+                        <label class="border-2 border-dashed border-zinc-700 p-6 text-center cursor-pointer hover:border-purple-500 transition-colors flex flex-col items-center gap-3 rounded-lg">
+                            <svg class="w-10 h-10 text-zinc-500" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-42.34-77.66a8,8,0,0,1,0,11.32l-24,24a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L120,148.69V104a8,8,0,0,1,16,0v44.69l10.34-10.35A8,8,0,0,1,157.66,138.34Z"/>
+                            </svg>
+                            <span id="videoUploadText" class="text-sm text-zinc-400">Clique para carregar vídeo MP4</span>
+                            <span class="text-xs text-zinc-600">Máx 100MB</span>
+                            <input type="file" id="videoUploadInput" accept="video/mp4,video/webm" class="hidden">
+                        </label>
+                    </section>
+
+                    <!-- Opção 2: Link do Vídeo -->
+                    <section class="border border-zinc-800 rounded-lg p-5">
+                        <label class="text-sm font-semibold text-zinc-300 mb-3 block">🔗 Opção 2: Link do Vídeo</label>
+                        <input type="url" id="videoLinkInput" placeholder="Cole o link do vídeo ou YouTube" 
+                            class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition-colors w-full rounded-lg">
+                        <button id="loadVideoLinkBtn" class="mt-3 w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold py-3 px-4 rounded-lg transition-all">
+                            Carregar Vídeo
+                        </button>
+                    </section>
+
+                    <!-- Opção 3: Carregar Arquivo -->
+                    <section class="border border-zinc-800 rounded-lg p-5">
+                        <label class="text-sm font-semibold text-zinc-300 mb-3 block">📂 Opção 3: Buscar Arquivo</label>
+                        <button id="browseVideoBtn" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-4 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V158.75l-26.07-26.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L40,149.37V56ZM40,172l52-52,80,80H40Zm176,28H194.63l-36-36,20-20L216,181.38V200ZM144,100a12,12,0,1,1,12,12A12,12,0,0,1,144,100Z"/>
+                            </svg>
+                            Buscar no Computador
+                        </button>
+                    </section>
+
+                    <!-- Preview e Controles -->
+                    <section id="videoPreviewSection" class="hidden border border-purple-500/30 rounded-lg p-5 bg-purple-900/10">
+                        <h3 class="text-sm font-semibold text-purple-300 mb-3">✅ Vídeo Carregado</h3>
+                        <div id="videoPreview" class="bg-black rounded-lg overflow-hidden mb-4"></div>
+                        
+                        <div class="space-y-3">
+                            <input type="text" id="videoTextOverlay" placeholder="Texto para adicionar no vídeo" 
+                                class="bg-black border border-zinc-800 p-3 text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 w-full rounded-lg text-sm">
+                            
+                            <button id="generateVideoBannerBtn" class="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold uppercase tracking-widest py-4 hover:from-purple-500 hover:to-purple-400 transition-all rounded-lg shadow-lg">
+                                🎬 Gerar Banner em Vídeo
+                            </button>
+                        </div>
+                    </section>
+
+                    <p id="videoStatus" class="text-sm text-zinc-500 text-center hidden"></p>
                 </div>
             `;
 
+            // Event Listeners
+            document.getElementById('videoUploadInput').addEventListener('change', handleVideoUpload);
+            document.getElementById('loadVideoLinkBtn').addEventListener('click', handleVideoLink);
+            document.getElementById('browseVideoBtn').addEventListener('click', () => {
+                document.getElementById('videoUploadInput').click();
+            });
+
+            showVideoPreview();
+        }
+
+        function showVideoPreview() {
             canvas.width = 1080;
-            canvas.height = 1080;
+            canvas.height = 1920;
             canvas.style.maxWidth = '400px';
-            ctx.fillStyle = '#18181b';
-            ctx.fillRect(0, 0, 1080, 1080);
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, 1920);
+            gradient.addColorStop(0, '#581c87');
+            gradient.addColorStop(1, '#18181b');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1080, 1920);
+
             ctx.fillStyle = '#a855f7';
-            ctx.font = '700 48px Oswald, sans-serif';
+            ctx.font = '700 64px Oswald, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('MODO VÍDEO', 540, 500);
-            ctx.font = '400 24px Manrope, sans-serif';
+            ctx.fillText('BANNER', 540, 900);
+            ctx.fillText('EM VÍDEO', 540, 980);
+            
+            ctx.font = '400 28px Manrope, sans-serif';
             ctx.fillStyle = '#71717a';
-            ctx.fillText('Em desenvolvimento', 540, 580);
+            ctx.fillText('Carregue um vídeo ao lado', 540, 1060);
+        }
+
+        function handleVideoUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 100 * 1024 * 1024) {
+                alert('⚠️ Arquivo muito grande! Máximo 100MB');
+                return;
+            }
+
+            videoFile = file;
+            videoSource = 'file';
+            document.getElementById('videoUploadText').textContent = `✅ ${file.name}`;
+            displayVideoPreview(file);
+        }
+
+        function handleVideoLink() {
+            const link = document.getElementById('videoLinkInput').value.trim();
+            if (!link) {
+                alert('⚠️ Cole um link válido!');
+                return;
+            }
+
+            // Detectar se é YouTube
+            if (link.includes('youtube.com') || link.includes('youtu.be')) {
+                alert('🎥 Links do YouTube serão suportados em breve!\nPor enquanto, use vídeos diretos (MP4, WebM)');
+                return;
+            }
+
+            videoUrl = link;
+            videoSource = 'url';
+            displayVideoPreview(link);
+        }
+
+        function displayVideoPreview(source) {
+            const previewSection = document.getElementById('videoPreviewSection');
+            const previewContainer = document.getElementById('videoPreview');
+            
+            previewSection.classList.remove('hidden');
+            
+            const videoEl = document.createElement('video');
+            videoEl.controls = true;
+            videoEl.className = 'w-full max-h-96 object-contain';
+            
+            if (typeof source === 'string') {
+                videoEl.src = source;
+            } else {
+                videoEl.src = URL.createObjectURL(source);
+            }
+            
+            previewContainer.innerHTML = '';
+            previewContainer.appendChild(videoEl);
+
+            // Event listener para gerar banner
+            document.getElementById('generateVideoBannerBtn').addEventListener('click', generateVideoBanner);
+        }
+
+        async function generateVideoBanner() {
+            const statusEl = document.getElementById('videoStatus');
+            const textOverlay = document.getElementById('videoTextOverlay').value.trim();
+            
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = '⚠️ Funcionalidade de processamento de vídeo em desenvolvimento...';
+            statusEl.classList.add('text-yellow-500');
+            
+            setTimeout(() => {
+                statusEl.textContent = '💡 Por enquanto, você pode baixar o vídeo e editar externamente';
+                setTimeout(() => statusEl.classList.add('hidden'), 5000);
+            }, 2000);
         }
 
         // ===== UTILS =====

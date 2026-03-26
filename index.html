@@ -824,24 +824,46 @@
                 </section>
             `;
 
-            let searchTimeout;
-            document.getElementById('movieSearch').addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => searchMovies(e.target.value), 500);
-            });
+            // Aguardar DOM atualizar
+            setTimeout(() => {
+                let searchTimeout;
+                const searchInput = document.getElementById('movieSearch');
+                const formatPost = document.getElementById('movieFormatPost');
+                const formatStory = document.getElementById('movieFormatStory');
+                const platformSelect = document.getElementById('moviePlatform');
+                const downloadBtn = document.getElementById('movieDownloadBtn');
 
-            document.getElementById('movieFormatPost')?.addEventListener('click', () => {
-                currentFormat = 'post';
-                updateMovieFormatButtons();
-                generateMovieBanner();
-            });
-            document.getElementById('movieFormatStory')?.addEventListener('click', () => {
-                currentFormat = 'story';
-                updateMovieFormatButtons();
-                generateMovieBanner();
-            });
-            document.getElementById('moviePlatform')?.addEventListener('change', generateMovieBanner);
-            document.getElementById('movieDownloadBtn')?.addEventListener('click', downloadMovieBanner);
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => {
+                        clearTimeout(searchTimeout);
+                        searchTimeout = setTimeout(() => searchMovies(e.target.value), 500);
+                    });
+                }
+
+                if (formatPost) {
+                    formatPost.addEventListener('click', () => {
+                        currentFormat = 'post';
+                        updateMovieFormatButtons();
+                        generateMovieBanner();
+                    });
+                }
+
+                if (formatStory) {
+                    formatStory.addEventListener('click', () => {
+                        currentFormat = 'story';
+                        updateMovieFormatButtons();
+                        generateMovieBanner();
+                    });
+                }
+
+                if (platformSelect) {
+                    platformSelect.addEventListener('change', generateMovieBanner);
+                }
+
+                if (downloadBtn) {
+                    downloadBtn.addEventListener('click', downloadMovieBanner);
+                }
+            }, 100);
         }
 
         async function searchMovies(query) {

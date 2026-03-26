@@ -1,3 +1,4 @@
+1. server.js (atualizado com proxy de imagens + endpoints que faltam)
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
@@ -18,6 +19,46 @@ const TMDB_API_KEY = process.env.TMDB_API_KEY || 'ed3d0c9bfea7f601924b810c074712
 
 const FOOTBALL_API_URL = 'https://v3.football.api-sports.io';
 const TMDB_API_URL = 'https://api.themoviedb.org/3';
+
+// ========== PROXY DE IMAGENS (CORS FIX) ==========
+app.get('/api/image-proxy', async (req, res) => {
+    try {
+        const { url } = req.query;
+
+        if (!url) {
+            return res.status(400).json({ error: 'O parâmetro "url" é obrigatório' });
+        }
+
+        console.log(`🖼️ [Image Proxy] Carregando: ${url.substring(0, 50)}...`);
+
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        });
+
+        if (!response.ok) {
+            console.error('❌ [Image Proxy] Erro ao carregar imagem');
+            return res.status(response.status).json({ error: 'Erro ao carregar imagem' });
+        }
+
+        const buffer = await response.buffer();
+        const contentType = response.headers.get('content-type') || 'image/jpeg';
+
+        res.set({
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=86400',
+            'Access-Control-Allow-Origin': '*'
+        });
+
+        console.log(`✅ [Image Proxy] Imagem carregada com sucesso`);
+        res.send(buffer);
+
+    } catch (error) {
+        console.error('❌ [Image Proxy] Erro interno:', error.message);
+        res.status(500).json({ error: 'Erro interno ao carregar imagem', message: error.message });
+    }
+});
 
 // ========== PROXY API FOOTBALL ==========
 app.get('/api/football/fixtures', async (req, res) => {
@@ -114,6 +155,62 @@ app.get('/api/tmdb/search/tv', async (req, res) => {
     }
 });
 
+// ========== PROXY API TMDB - DETALHES DO FILME ==========
+app.get('/api/tmdb/movie/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { language = 'pt-BR' } = req.query;
+
+        console.log(`📡 [TMDB API] Buscando detalhes do filme ID: ${id}`);
+
+        const response = await fetch(
+            `${TMDB_API_URL}/movie/${id}?api_key=${TMDB_API_KEY}&language=${language}`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('❌ [TMDB API] Erro:', data);
+            return res.status(response.status).json({ error: 'Erro ao buscar detalhes do filme', details: data });
+        }
+
+        console.log(`✅ [TMDB API] Detalhes do filme "${data.title}" carregados`);
+        res.json(data);
+
+    } catch (error) {
+        console.error('❌ [TMDB API] Erro interno:', error.message);
+        res.status(500).json({ error: 'Erro interno ao buscar detalhes', message: error.message });
+    }
+});
+
+// ========== PROXY API TMDB - DETALHES DA SÉRIE ==========
+app.get('/api/tmdb/tv/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { language = 'pt-BR' } = req.query;
+
+        console.log(`📡 [TMDB API] Buscando detalhes da série ID: ${id}`);
+
+        const response = await fetch(
+            `${TMDB_API_URL}/tv/${id}?api_key=${TMDB_API_KEY}&language=${language}`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('❌ [TMDB API] Erro:', data);
+            return res.status(response.status).json({ error: 'Erro ao buscar detalhes da série', details: data });
+        }
+
+        console.log(`✅ [TMDB API] Detalhes da série "${data.name}" carregados`);
+        res.json(data);
+
+    } catch (error) {
+        console.error('❌ [TMDB API] Erro interno:', error.message);
+        res.status(500).json({ error: 'Erro interno ao buscar detalhes', message: error.message });
+    }
+});
+
 // ========== ROTA RAIZ - SERVIR O HTML ==========
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
@@ -138,8 +235,11 @@ app.listen(PORT, () => {
     console.log(`🎬 API TMDB: ${TMDB_API_KEY ? '✅ Configurada' : '❌ Faltando'}`);
     console.log(`\n📍 Endpoints disponíveis:`);
     console.log(`   GET  /                          - Frontend HTML`);
+    console.log(`   GET  /api/image-proxy           - Proxy de Imagens (CORS)`);
     console.log(`   GET  /api/football/fixtures     - Proxy Football API`);
     console.log(`   GET  /api/tmdb/search/movie     - Proxy TMDB Movies`);
     console.log(`   GET  /api/tmdb/search/tv        - Proxy TMDB Series`);
+    console.log(`   GET  /api/tmdb/movie/:id        - Detalhes do Filme`);
+    console.log(`   GET  /api/tmdb/tv/:id           - Detalhes da Série`);
     console.log(`   GET  /health                    - Health Check\n`);
 });

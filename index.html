@@ -1,1483 +1,1483 @@
-1|<!DOCTYPE html>
-2|<html lang="pt-BR">
-3|<head>
-4|    <meta charset="UTF-8">
-5|    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-6|    <title>Banner Generator Pro - Futebol, Filmes e Vídeos</title>
-7|    <script src="https://cdn.tailwindcss.com"></script>
-8|    <link rel="preconnect" href="https://fonts.googleapis.com">
-9|    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-10|    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
-11|    <style>
-12|        * { scrollbar-width: thin; scrollbar-color: #27272a #0f0f11; }
-13|        *::-webkit-scrollbar { width: 6px; }
-14|        *::-webkit-scrollbar-track { background: #0f0f11; }
-15|        *::-webkit-scrollbar-thumb { background-color: #27272a; border-radius: 3px; }
-16|        body { font-family: 'Manrope', sans-serif; background: #050505; margin: 0; }
-17|        .font-oswald { font-family: 'Oswald', sans-serif; }
-18|        .search-result:hover { background: linear-gradient(90deg, rgba(239,68,68,0.1) 0%, transparent 100%); }
-19|        .canvas-glow { box-shadow: 0 0 80px rgba(239,68,68,0.15), 0 25px 50px -12px rgba(0,0,0,0.8); }
-20|        @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }
-21|        .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
-22|        select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; }
-23|        .box-selector { transition: all 0.3s ease; cursor: pointer; }
-24|        .box-selector:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
-25|        .sidebar-nav { transition: all 0.3s ease; }
-26|        .modal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
-27|        .modal.active { display: flex; }
-28|        .banner-item { transition: all 0.2s ease; }
-29|        .banner-item:hover { transform: scale(1.02); }
-30|    </style>
-31|</head>
-32|<body class="min-h-screen text-white">
-33|
-34|    <!-- BOTÃO DE CONFIGURAÇÕES (FIXO) -->
-35|    <button onclick="openSettings()" class="fixed top-6 right-6 z-50 w-12 h-12 bg-zinc-800 hover:bg-zinc-700 rounded-full flex items-center justify-center transition-all shadow-lg" title="Configurações">
-36|        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 256 256">
-37|            <path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88-29.84q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.21,107.21,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.71,107.71,0,0,0-26.25-10.87,8,8,0,0,0-7.06,1.49L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.21,107.21,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06Zm-16.1-6.5a73.93,73.93,0,0,1,0,8.68,8,8,0,0,0,1.74,5.48l14.19,17.73a91.57,91.57,0,0,1-6.23,15L187,173.11a8,8,0,0,0-5.1,2.64,74.11,74.11,0,0,1-6.14,6.14,8,8,0,0,0-2.64,5.1l-2.51,22.58a91.32,91.32,0,0,1-15,6.23l-17.74-14.19a8,8,0,0,0-5-1.75h-.48a73.93,73.93,0,0,1-8.68,0,8,8,0,0,0-5.48,1.74L100.45,215.8a91.57,91.57,0,0,1-15-6.23L82.89,187a8,8,0,0,0-2.64-5.1,74.11,74.11,0,0,1-6.14-6.14,8,8,0,0,0-5.1-2.64L46.43,170.6a91.32,91.32,0,0,1-6.23-15l14.19-17.74a8,8,0,0,0,1.74-5.48,73.93,73.93,0,0,1,0-8.68,8,8,0,0,0-1.74-5.48L40.2,100.45a91.57,91.57,0,0,1,6.23-15L69,82.89a8,8,0,0,0,5.1-2.64,74.11,74.11,0,0,1,6.14-6.14A8,8,0,0,0,82.89,69L85.4,46.43a91.32,91.32,0,0,1,15-6.23l17.74,14.19a8,8,0,0,0,5.48,1.74,73.93,73.93,0,0,1,8.68,0,8,8,0,0,0,5.48-1.74L155.55,40.2a91.57,91.57,0,0,1,15,6.23L173.11,69a8,8,0,0,0,2.64,5.1,74.11,74.11,0,0,1,6.14,6.14,8,8,0,0,0,5.1,2.64l22.58,2.51a91.32,91.32,0,0,1,6.23,15l-14.19,17.74A8,8,0,0,0,199.87,123.66Z"/>
-38|        </svg>
-39|    </button>
-40|
-41|    <!-- MODAL DE CONFIGURAÇÕES -->
-42|    <div id="settingsModal" class="modal">
-43|        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-44|            <header class="flex items-center justify-between mb-6">
-45|                <h2 class="font-oswald text-3xl font-bold">⚙️ Configurações Globais</h2>
-46|                <button onclick="closeSettings()" class="text-zinc-500 hover:text-white transition-colors">
-47|                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 256 256">
-48|                        <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/>
-49|                    </svg>
-50|                </button>
-51|            </header>
-52|
-53|            <div class="flex flex-col gap-6">
-54|                <!-- Logo Padrão -->
-55|                <section class="border border-zinc-800 rounded-lg p-5">
-56|                    <label class="text-sm font-semibold text-zinc-300 mb-3 block">Logo / Marca d'água Padrão</label>
-57|                    <label class="border border-dashed border-zinc-700 p-5 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg">
-58|                        <svg class="w-8 h-8 text-zinc-500" fill="currentColor" viewBox="0 0 256 256">
-59|                            <path d="M248,128a87.34,87.34,0,0,1-17.6,52.81,8,8,0,1,1-12.8-9.62A71.34,71.34,0,0,0,232,128a72,72,0,0,0-144,0,8,8,0,0,1-16,0,88,88,0,0,1,176,0ZM128,24A104.11,104.11,0,0,0,24,128a8,8,0,0,0,16,0,88,88,0,0,1,88-88,8,8,0,0,0,0-16Zm40,104a8,8,0,0,0-8-8H136V96a8,8,0,0,0-16,0v24H96a8,8,0,0,0,0,16h24v24a8,8,0,0,0,16,0V136h24A8,8,0,0,0,168,128Z"/>
-60|                        </svg>
-61|                        <span id="settingsLogoText" class="text-sm text-zinc-400">Carregar logo padrão</span>
-62|                        <span class="text-xs text-zinc-600">PNG ou JPG</span>
-63|                        <input type="file" id="settingsLogoInput" accept="image/*" class="hidden">
-64|                    </label>
-65|                    <button id="settingsRemoveLogo" class="mt-2 text-xs text-red-500 hover:text-red-400 transition-colors hidden">✕ Remover logo</button>
-66|                </section>
-67|
-68|                <!-- Fundo Futebol -->
-69|                <section class="border border-zinc-800 rounded-lg p-5">
-70|                    <label class="text-sm font-semibold text-zinc-300 mb-1 block">Fundo para Banners de Futebol</label>
-71|                    <p class="text-xs text-zinc-500 mb-3">📐 Dimensões recomendadas: <strong>1080x1080px</strong> (Post) ou <strong>1080x1920px</strong> (Story)</p>
-72|                    <label class="border border-dashed border-zinc-700 p-5 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg">
-73|                        <svg class="w-8 h-8 text-zinc-500" fill="currentColor" viewBox="0 0 256 256">
-74|                            <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V158.75l-26.07-26.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L40,149.37V56ZM40,172l52-52,80,80H40Zm176,28H194.63l-36-36,20-20L216,181.38V200ZM144,100a12,12,0,1,1,12,12A12,12,0,0,1,144,100Z"/>
-75|                        </svg>
-76|                        <span id="settingsBgText" class="text-sm text-zinc-400">Carregar fundo personalizado</span>
-77|                        <span class="text-xs text-zinc-600">PNG ou JPG</span>
-78|                        <input type="file" id="settingsBgInput" accept="image/*" class="hidden">
-79|                    </label>
-80|                    <button id="settingsRemoveBg" class="mt-2 text-xs text-red-500 hover:text-red-400 transition-colors hidden">✕ Remover fundo</button>
-81|                </section>
-82|
-83|                <!-- Número WhatsApp -->
-84|                <section class="border border-zinc-800 rounded-lg p-5">
-85|                    <label class="text-sm font-semibold text-zinc-300 mb-3 block">Número do WhatsApp</label>
-86|                    <input type="tel" id="settingsWhatsappNumber" placeholder="(00) 00000-0000" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-green-500 transition-colors w-full rounded-lg">
-87|                    <p class="text-xs text-zinc-500 mt-2">Aparecerá no box do WhatsApp</p>
-88|                </section>
-89|
-90|                <!-- Texto Box WhatsApp -->
-91|                <section class="border border-zinc-800 rounded-lg p-5">
-92|                    <label class="text-sm font-semibold text-zinc-300 mb-3 block">Texto do Box WhatsApp</label>
-93|                    <input type="text" id="settingsWhatsappText" value="Grupo VIP" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-green-500 transition-colors w-full rounded-lg">
-94|                </section>
-95|
-96|                <!-- Texto CTA -->
-97|                <section class="border border-zinc-800 rounded-lg p-5">
-98|                    <label class="text-sm font-semibold text-zinc-300 mb-3 block">Texto do Botão CTA</label>
-99|                    <input type="text" id="settingsCtaText" value="ASSINA JÁ" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 transition-colors w-full rounded-lg">
-100|                </section>
-101|
-102|                <!-- Botões -->
-103|                <div class="flex gap-3 pt-4 border-t border-zinc-800">
-104|                    <button onclick="saveSettings()" class="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-4 rounded-lg transition-all">
-105|                        Salvar Configurações
-106|                    </button>
-107|                    <button onclick="closeSettings()" class="px-8 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 rounded-lg transition-all">
-108|                        Cancelar
-109|                    </button>
-110|                </div>
-111|            </div>
-112|        </div>
-113|    </div>
-114|
-115|    <!-- TELA INICIAL: SELEÇÃO DE TIPO -->
-116|    <div id="homeScreen" class="min-h-screen flex items-center justify-center p-6">
-117|        <div class="w-full max-w-6xl">
-118|            <header class="text-center mb-16">
-119|                <h1 class="font-oswald text-6xl font-bold tracking-tight flex items-center justify-center gap-4 mb-4">
-120|                    <svg class="w-16 h-16 text-red-500" fill="currentColor" viewBox="0 0 256 256">
-121|                        <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,160H40V56H216V200ZM184,96a8,8,0,0,1-8,8H136v40a8,8,0,0,1-16,0V104H80a8,8,0,0,1,0-16h96A8,8,0,0,1,184,96Z"/>
-122|                    </svg>
-123|                    Banner Generator Pro
-124|                </h1>
-125|                <p class="text-zinc-500 text-xl">Escolha o tipo de banner que deseja criar</p>
-126|            </header>
-127|
-128|            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-129|                <!-- Box 1: Futebol -->
-130|                <div class="box-selector bg-gradient-to-br from-green-900/20 to-zinc-900 border-2 border-green-500/30 rounded-2xl p-8 hover:border-green-500" onclick="selectMode('football')">
-131|                    <div class="text-center">
-132|                        <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-133|                            <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 256 256">
-134|                                <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,16a88,88,0,0,1,73.72,40H158.31l-27-40.37A87.55,87.55,0,0,1,128,40ZM40,128a87.55,87.55,0,0,1,1.55-16H73.72L83.81,147,54,175.5A87.87,87.87,0,0,1,40,128Zm74.5,88L93.4,170.18,115.1,144h25.8l21.7,26.18L141.5,216A88.19,88.19,0,0,1,114.5,216Zm87.5-40.5L172.19,147l10.09-35H214.45a87.55,87.55,0,0,1-1.55,16A87.87,87.87,0,0,1,202,175.5Z"/>
-135|                            </svg>
-136|                        </div>
-137|                        <h3 class="font-oswald text-2xl font-bold mb-3">Futebol do Dia</h3>
-138|                        <p class="text-zinc-400 text-sm mb-6">Gere banners para jogos de futebol com times, horário e onde assistir</p>
-139|                        <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-140|                            <p class="text-xs text-green-400 font-semibold">⚽ JOGOS DE HOJE</p>
-141|                        </div>
-142|                    </div>
-143|                </div>
-144|
-145|                <!-- Box 2: Filmes -->
-146|                <div class="box-selector bg-gradient-to-br from-red-900/20 to-zinc-900 border-2 border-red-500/30 rounded-2xl p-8 hover:border-red-500" onclick="selectMode('movies')">
-147|                    <div class="text-center">
-148|                        <div class="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-149|                            <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 256 256">
-150|                                <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H56V72H40ZM40,88H56v16H40Zm0,32H56v16H40Zm176,80H40V152H216v48Zm0-64H72V120H216v16Zm0-32H72V88H216v16Zm0-32H72V56H216V72Z"/>
-151|                            </svg>
-152|                        </div>
-153|                        <h3 class="font-oswald text-2xl font-bold mb-3">Filmes e Séries</h3>
-154|                        <p class="text-zinc-400 text-sm mb-6">Crie banners incríveis para filmes e séries com informações completas</p>
-155|                        <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-156|                            <p class="text-xs text-red-400 font-semibold">🎬 CATÁLOGO COMPLETO</p>
-157|                        </div>
-158|                    </div>
-159|                </div>
-160|
-161|                <!-- Box 3: Vídeo MP4 -->
-162|                <div class="box-selector bg-gradient-to-br from-purple-900/20 to-zinc-900 border-2 border-purple-500/30 rounded-2xl p-8 hover:border-purple-500" onclick="selectMode('video')">
-163|                    <div class="text-center">
-164|                        <div class="w-20 h-20 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
-165|                            <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 256 256">
-166|                                <path d="M232,128a104,104,0,1,1-104-104A104.11,104.11,0,0,1,232,128Zm-74.34-10.78-52-36A12,12,0,0,0,88,92v72a12,12,0,0,0,17.66,10.78l52-36a12,12,0,0,0,0-21.56Z"/>
-167|                            </svg>
-168|                        </div>
-169|                        <h3 class="font-oswald text-2xl font-bold mb-3">Banner em Vídeo</h3>
-170|                        <p class="text-zinc-400 text-sm mb-6">Crie banners animados em MP4 com upload ou link do YouTube</p>
-171|                        <div class="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
-172|                            <p class="text-xs text-purple-400 font-semibold">🎥 VÍDEO ANIMADO</p>
-173|                        </div>
-174|                    </div>
-175|                </div>
-176|            </div>
-177|        </div>
-178|    </div>
-179|
-180|    <!-- EDITOR: FUTEBOL, FILMES OU VÍDEO -->
-181|    <div id="editorScreen" class="min-h-screen hidden">
-182|        <div class="flex flex-col lg:flex-row min-h-screen">
-183|            <!-- Sidebar de Navegação -->
-184|            <div class="sidebar-nav w-full lg:w-20 bg-zinc-950 border-r border-zinc-800 flex lg:flex-col items-center justify-start lg:justify-center gap-4 p-4">
-185|                <button onclick="goHome()" class="w-12 h-12 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors" title="Voltar ao início">
-186|                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 256 256">
-187|                        <path d="M224,115.55V208a16,16,0,0,1-16,16H168a16,16,0,0,1-16-16V168a8,8,0,0,0-8-8H112a8,8,0,0,0-8,8v40a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V115.55a16,16,0,0,1,5.17-11.78l80-75.48.11-.11a16,16,0,0,1,21.53,0,1.14,1.14,0,0,0,.11.11l80,75.48A16,16,0,0,1,224,115.55Z"/>
-188|                    </svg>
-189|                </button>
-190|                <button id="navFootball" class="w-12 h-12 rounded-lg bg-zinc-800 hover:bg-green-500 flex items-center justify-center transition-colors hidden" onclick="selectMode('football')" title="Futebol">
-191|                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 256 256">
-192|                        <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,16a88,88,0,0,1,73.72,40H158.31l-27-40.37A87.55,87.55,0,0,1,128,40Z"/>
-193|                    </svg>
-194|                </button>
-195|                <button id="navMovies" class="w-12 h-12 rounded-lg bg-zinc-800 hover:bg-red-500 flex items-center justify-center transition-colors hidden" onclick="selectMode('movies')" title="Filmes">
-196|                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 256 256">
-197|                        <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Z"/>
-198|                    </svg>
-199|                </button>
-200|                <button id="navVideo" class="w-12 h-12 rounded-lg bg-zinc-800 hover:bg-purple-500 flex items-center justify-center transition-colors hidden" onclick="selectMode('video')" title="Vídeo">
-201|                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 256 256">
-202|                        <path d="M232,128a104,104,0,1,1-104-104A104.11,104.11,0,0,1,232,128Zm-74.34-10.78-52-36A12,12,0,0,0,88,92v72a12,12,0,0,0,17.66,10.78l52-36a12,12,0,0,0,0-21.56Z"/>
-203|                    </svg>
-204|                </button>
-205|            </div>
-206|
-207|            <!-- Painel de Controles -->
-208|            <aside id="controlPanel" class="w-full lg:w-[420px] border-r border-zinc-800 bg-zinc-900/50 p-6 lg:p-8 overflow-y-auto lg:h-screen flex flex-col gap-5">
-209|                <!-- Controles específicos serão inseridos aqui dinamicamente -->
-210|            </aside>
-211|
-212|            <!-- Preview -->
-213|            <main id="previewArea" class="flex-1 relative flex items-center justify-center p-6 lg:p-12 bg-[#050505] min-h-[600px] lg:min-h-screen overflow-y-auto">
-214|                <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_#18181b_0%,_#050505_70%)] opacity-50"></div>
-215|                <div class="relative z-10 w-full max-w-4xl" id="bannersContainer">
-216|                    <canvas id="bannerCanvas" class="canvas-glow max-w-full h-auto rounded-lg mx-auto"></canvas>
-217|                </div>
-218|            </main>
-219|        </div>
-220|    </div>
-221|
-222|    <script>
-223|        // ===== CONFIGURAÇÃO =====
-224|        // APIs agora protegidas pelo backend (sem expor chaves no frontend)
-225|        const API_BASE_URL = window.location.origin;
-226|        const TMDB_BASE_URL = `${API_BASE_URL}/api/tmdb`;
-227|        const TMDB_IMG_BASE = 'https://image.tmdb.org/t/p';
-228|        const FOOTBALL_API_URL = `${API_BASE_URL}/api/football`;
-229|
-230|        // LIGAS PERMITIDAS
-231|        const ALLOWED_LEAGUES = [
-232|            'Serie A',
-233|            'Serie B',
-234|            'Copa do Brasil',
-235|            'Copa Libertadores',
-236|            'UEFA Champions League',
-237|            'Premier League',
-238|            'Bundesliga',
-239|            'Ligue 1'
-240|        ];
-241|
-242|        // ===== ESTADO GLOBAL =====
-243|        let currentMode = null;
-244|        let selectedContent = null;
-245|        let currentFormat = 'post';
-246|        let uploadedLogo = null;
-247|        let posterImage = null;
-248|        let footballBgImage = null;
-249|        let globalSettings = {
-250|            logo: null,
-251|            footballBg: null,
-252|            whatsappNumber: '',
-253|            whatsappText: 'Grupo VIP',
-254|            ctaText: 'ASSINA JÁ'
-255|        };
-256|
-257|        // ===== ELEMENTOS =====
-258|        const homeScreen = document.getElementById('homeScreen');
-259|        const editorScreen = document.getElementById('editorScreen');
-260|        const controlPanel = document.getElementById('controlPanel');
-261|        const canvas = document.getElementById('bannerCanvas');
-262|        const ctx = canvas.getContext('2d');
-263|        const bannersContainer = document.getElementById('bannersContainer');
-264|
-265|        // ===== CONFIGURAÇÕES =====
-266|        function loadGlobalSettings() {
-267|            try {
-268|                const saved = localStorage.getItem('bannerGeneratorSettings');
-269|                if (saved) {
-270|                    globalSettings = JSON.parse(saved);
-271|                    
-272|                    if (globalSettings.logo) {
-273|                        const img = new Image();
-274|                        img.onload = () => { uploadedLogo = img; };
-275|                        img.src = globalSettings.logo;
-276|                        document.getElementById('settingsLogoText').textContent = 'Logo carregada';
-277|                        document.getElementById('settingsRemoveLogo').classList.remove('hidden');
-278|                    }
-279|                    
-280|                    if (globalSettings.footballBg) {
-281|                        const img = new Image();
-282|                        img.onload = () => { footballBgImage = img; };
-283|                        img.src = globalSettings.footballBg;
-284|                        document.getElementById('settingsBgText').textContent = 'Fundo carregado';
-285|                        document.getElementById('settingsRemoveBg').classList.remove('hidden');
-286|                    }
-287|                    
-288|                    document.getElementById('settingsWhatsappNumber').value = globalSettings.whatsappNumber || '';
-289|                    document.getElementById('settingsWhatsappText').value = globalSettings.whatsappText || 'Grupo VIP';
-290|                    document.getElementById('settingsCtaText').value = globalSettings.ctaText || 'ASSINA JÁ';
-291|                }
-292|            } catch (e) {
-293|                console.error('Erro ao carregar configurações:', e);
-294|            }
-295|        }
-296|
-297|        function openSettings() {
-298|            document.getElementById('settingsModal').classList.add('active');
-299|        }
-300|
-301|        function closeSettings() {
-302|            document.getElementById('settingsModal').classList.remove('active');
-303|        }
-304|
-305|        function saveSettings() {
-306|            globalSettings.whatsappNumber = document.getElementById('settingsWhatsappNumber').value;
-307|            globalSettings.whatsappText = document.getElementById('settingsWhatsappText').value;
-308|            globalSettings.ctaText = document.getElementById('settingsCtaText').value;
-309|            
-310|            localStorage.setItem('bannerGeneratorSettings', JSON.stringify(globalSettings));
-311|            
-312|            alert('✅ Configurações salvas com sucesso!');
-313|            closeSettings();
-314|        }
-315|
-316|        // Event listeners para configurações
-317|        document.getElementById('settingsLogoInput').addEventListener('change', (e) => {
-318|            const file = e.target.files[0];
-319|            if (file) {
-320|                const reader = new FileReader();
-321|                reader.onload = (ev) => {
-322|                    globalSettings.logo = ev.target.result;
-323|                    const img = new Image();
-324|                    img.onload = () => { uploadedLogo = img; };
-325|                    img.src = ev.target.result;
-326|                    document.getElementById('settingsLogoText').textContent = file.name;
-327|                    document.getElementById('settingsRemoveLogo').classList.remove('hidden');
-328|                };
-329|                reader.readAsDataURL(file);
-330|            }
-331|        });
-332|
-333|        document.getElementById('settingsRemoveLogo').addEventListener('click', () => {
-334|            globalSettings.logo = null;
-335|            uploadedLogo = null;
-336|            document.getElementById('settingsLogoInput').value = '';
-337|            document.getElementById('settingsLogoText').textContent = 'Carregar logo padrão';
-338|            document.getElementById('settingsRemoveLogo').classList.add('hidden');
-339|        });
-340|
-341|        document.getElementById('settingsBgInput').addEventListener('change', (e) => {
-342|            const file = e.target.files[0];
-343|            if (file) {
-344|                const reader = new FileReader();
-345|                reader.onload = (ev) => {
-346|                    globalSettings.footballBg = ev.target.result;
-347|                    const img = new Image();
-348|                    img.onload = () => { footballBgImage = img; };
-349|                    img.src = ev.target.result;
-350|                    document.getElementById('settingsBgText').textContent = file.name;
-351|                    document.getElementById('settingsRemoveBg').classList.remove('hidden');
-352|                };
-353|                reader.readAsDataURL(file);
-354|            }
-355|        });
-356|
-357|        document.getElementById('settingsRemoveBg').addEventListener('click', () => {
-358|            globalSettings.footballBg = null;
-359|            footballBgImage = null;
-360|            document.getElementById('settingsBgInput').value = '';
-361|            document.getElementById('settingsBgText').textContent = 'Carregar fundo personalizado';
-362|            document.getElementById('settingsRemoveBg').classList.add('hidden');
-363|        });
-364|
-365|        // ===== NAVEGAÇÃO =====
-366|        function selectMode(mode) {
-367|            currentMode = mode;
-368|            homeScreen.classList.add('hidden');
-369|            editorScreen.classList.remove('hidden');
-370|            
-371|            document.getElementById('navFootball').classList.remove('hidden');
-372|            document.getElementById('navMovies').classList.remove('hidden');
-373|            document.getElementById('navVideo').classList.remove('hidden');
-374|            
-375|            document.querySelectorAll('.sidebar-nav button').forEach(btn => {
-376|                btn.classList.remove('bg-green-500', 'bg-red-500', 'bg-purple-500');
-377|            });
-378|            
-379|            if (mode === 'football') {
-380|                document.getElementById('navFootball').classList.add('bg-green-500');
-381|                loadFootballMode();
-382|            } else if (mode === 'movies') {
-383|                document.getElementById('navMovies').classList.add('bg-red-500');
-384|                loadMoviesMode();
-385|            } else if (mode === 'video') {
-386|                document.getElementById('navVideo').classList.add('bg-purple-500');
-387|                loadVideoMode();
-388|            }
-389|        }
-390|
-391|        function goHome() {
-392|            editorScreen.classList.add('hidden');
-393|            homeScreen.classList.remove('hidden');
-394|            currentMode = null;
-395|            selectedContent = null;
-396|            posterImage = null;
-397|        }
-398|
-399|        // ===== MODO FUTEBOL =====
-400|        let allMatches = [];
-401|        let generatedBanners = [];
-402|
-403|        async function loadFootballMode() {
-404|            controlPanel.innerHTML = `
-405|                <header class="border-b border-zinc-800 pb-5 mb-6">
-406|                    <h2 class="font-oswald text-2xl font-bold text-green-400">⚽ Gerador de Banners de Futebol</h2>
-407|                    <p class="text-zinc-500 text-sm mt-1">Banners com 5 jogos em ordem cronológica</p>
-408|                </header>
-409|
-410|                <div class="mb-6 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
-411|                    <h4 class="text-sm font-semibold text-zinc-300 mb-3">🏆 Ligas incluídas:</h4>
-412|                    <div class="text-xs text-zinc-400 space-y-1">
-413|                        <p>• Brasileirão Série A</p>
-414|                        <p>• Brasileirão Série B</p>
-415|                        <p>• Copa do Brasil</p>
-416|                        <p>• Libertadores</p>
-417|                        <p>• Champions League</p>
-418|                        <p>• Premier League</p>
-419|                        <p>• Bundesliga</p>
-420|                        <p>• Ligue 1</p>
-421|                    </div>
-422|                    <p class="text-xs text-zinc-500 mt-3">💡 Os jogos serão agrupados em banners de até 5 partidas cada, em ordem de horário.</p>
-423|                </div>
-424|
-425|                <button id="generateAllBtn" class="w-full bg-gradient-to-r from-green-600 to-green-500 text-white font-bold uppercase tracking-widest py-5 hover:from-green-500 hover:to-green-400 transition-all flex items-center justify-center gap-3 rounded-lg shadow-lg mb-4">
-426|                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 256 256">
-427|                        <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,132.69V40a8,8,0,0,0-16,0v92.69L93.66,106.34a8,8,0,0,0-11.32,11.32Z"/>
-428|                    </svg>
-429|                    Gerar Banners dos Jogos
-430|                </button>
-431|                
-432|                <p id="generateAllStatus" class="text-sm text-zinc-500 text-center hidden mb-4"></p>
-433|
-434|                <div id="generatedBannersInfo" class="hidden mt-6 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
-435|                    <p class="text-sm text-green-400 font-semibold mb-2">✅ Banners gerados!</p>
-436|                    <p class="text-xs text-zinc-400">Os banners aparecem na área de preview ao lado. Role para ver todos e clique em "Baixar" em cada um.</p>
-437|                </div>
-438|            `;
-439|
-440|            document.getElementById('generateAllBtn').addEventListener('click', generateAllFootballBanners);
-441|            showFootballPreview();
-442|        }
-443|
-444|        function showFootballPreview() {
-445|            canvas.width = 1080;
-446|            canvas.height = 1080;
-447|            canvas.style.maxWidth = '500px';
-448|
-449|            const gradient = ctx.createLinearGradient(0, 0, 0, 1080);
-450|            gradient.addColorStop(0, '#0a4d0a');
-451|            gradient.addColorStop(1, '#001a00');
-452|            ctx.fillStyle = gradient;
-453|            ctx.fillRect(0, 0, 1080, 1080);
-454|
-455|            ctx.font = '700 56px Oswald, sans-serif';
-456|            ctx.fillStyle = '#fff';
-457|            ctx.textAlign = 'center';
-458|            ctx.fillText('JOGOS DE HOJE', 540, 500);
-459|            
-460|            ctx.font = '400 24px Manrope, sans-serif';
-461|            ctx.fillStyle = '#10b981';
-462|            ctx.fillText('Clique em "Gerar Banners"', 540, 580);
-463|        }
-464|
-465|        async function generateAllFootballBanners() {
-466|            const statusEl = document.getElementById('generateAllStatus');
-467|            const btn = document.getElementById('generateAllBtn');
-468|            const infoBox = document.getElementById('generatedBannersInfo');
-469|            
-470|            statusEl.classList.remove('hidden');
-471|            statusEl.textContent = 'Buscando jogos de hoje...';
-472|            btn.disabled = true;
-473|            btn.classList.add('opacity-50');
-474|
-475|            try {
-476|                const today = new Date().toISOString().split('T')[0];
-477|                const response = await fetch(`${FOOTBALL_API_URL}/fixtures?date=${today}`, {
-478|                    headers: { 'Content-Type': 'application/json' }
-479|                });
-480|
-481|                const data = await response.json();
-482|                
-483|                if (!data.response || data.response.length === 0) {
-484|                    statusEl.textContent = '❌ Nenhum jogo encontrado para hoje';
-485|                    btn.disabled = false;
-486|                    btn.classList.remove('opacity-50');
-487|                    setTimeout(() => statusEl.classList.add('hidden'), 3000);
-488|                    return;
-489|                }
-490|
-491|                // FILTRAR APENAS LIGAS PERMITIDAS
-492|                const filteredMatches = data.response.filter(match => {
-493|                    return ALLOWED_LEAGUES.some(league => 
-494|                        match.league.name.includes(league) || league.includes(match.league.name)
-495|                    );
-496|                });
-497|
-498|                if (filteredMatches.length === 0) {
-499|                    statusEl.textContent = '❌ Nenhum jogo das ligas selecionadas encontrado para hoje';
-500|                    btn.disabled = false
-1|                      btn.classList.remove('opacity-50');
-2|                      setTimeout(() => statusEl.classList.add('hidden'), 3000);
-3|                      return;
-4|                }
-5|
-6|                allMatches = filteredMatches.map(match => ({
-7|                    id: match.fixture.id,
-8|                    homeTeam: match.teams.home.name,
-9|                    awayTeam: match.teams.away.name,
-10|                    homeLogo: match.teams.home.logo,
-11|                    awayLogo: match.teams.away.logo,
-12|                    league: match.league.name,
-13|                    country: match.league.country,
-14|                    date: new Date(match.fixture.date).toLocaleDateString('pt-BR'),
-15|                    time: new Date(match.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-16|                    timestamp: new Date(match.fixture.date).getTime(),
-17|                    venue: match.fixture.venue.name || 'A definir',
-18|                    broadcast: 'A definir'
-19|                }));
-20|
-21|                // Ordenar por horário (timestamp)
-22|                allMatches.sort((a, b) => a.timestamp - b.timestamp);
-23|
-24|                statusEl.textContent = `Encontrados ${allMatches.length} jogos. Carregando imagens...`;
-25|
-26|                // Carregar logos
-27|                for (let match of allMatches) {
-28|                    if (match.homeLogo) {
-29|                        match.homeLogoImg = await loadImage(match.homeLogo);
-30|                    }
-31|                    if (match.awayLogo) {
-32|                        match.awayLogoImg = await loadImage(match.awayLogo);
-33|                    }
-34|                }
-35|
-36|                // Agrupar apenas para estatísticas (não usado mais)
-37|                statusEl.textContent = 'Gerando banners...';
-38|
-39|                // Gerar banners com 5 jogos cada
-40|                generatedBanners = [];
-41|                let bannerNum = 1;
-42|                const gamesPerBanner = 5;
-43|                
-44|                for (let i = 0; i < allMatches.length; i += gamesPerBanner) {
-45|                    const matchesChunk = allMatches.slice(i, i + gamesPerBanner);
-46|                    const bannerData = await generateFootballBanner(matchesChunk, bannerNum);
-47|                    generatedBanners.push(bannerData);
-48|                    bannerNum++;
-49|                }
-50|
-51|                // Exibir banners na lista
-52|                displayGeneratedBanners();
-53|
-54|                // Esconder o canvas de preview
-55|                canvas.style.display = 'none';
-56|
-57|                statusEl.textContent = `✅ ${generatedBanners.length} banner(s) gerado(s)!`;
-58|                infoBox.classList.remove('hidden');
-59|                setTimeout(() => statusEl.classList.add('hidden'), 3000);
-60|
-61|            } catch (error) {
-62|                console.error('Erro:', error);
-63|                statusEl.textContent = '❌ Erro ao buscar jogos. Tente novamente.';
-64|                setTimeout(() => statusEl.classList.add('hidden'), 3000);
-65|            } finally {
-66|                btn.disabled = false;
-67|                btn.classList.remove('opacity-50');
-68|            }
-69|        }
-70|
-71|        async function generateFootballBanner(matches, bannerNum) {
-72|            const width = 1080;
-73|            const height = 1920; // Story format
-74|            
-75|            canvas.width = width;
-76|            canvas.height = height;
-77|
-78|            // Fundo
-79|            if (footballBgImage) {
-80|                const imgRatio = footballBgImage.width / footballBgImage.height;
-81|                const canvasRatio = width / height;
-82|                let dw, dh, ox, oy;
-83|                if (imgRatio > canvasRatio) {
-84|                    dh = height; dw = height * imgRatio;
-85|                    ox = (width - dw) / 2; oy = 0;
-86|                } else {
-87|                    dw = width; dh = width / imgRatio;
-88|                    ox = 0; oy = (height - dh) / 2;
-89|                }
-90|                ctx.drawImage(footballBgImage, ox, oy, dw, dh);
-91|            } else {
-92|                const gradient = ctx.createLinearGradient(0, 0, 0, height);
-93|                gradient.addColorStop(0, '#1a1a1a');
-94|                gradient.addColorStop(1, '#000000');
-95|                ctx.fillStyle = gradient;
-96|                ctx.fillRect(0, 0, width, height);
-97|            }
-98|
-99|            // Overlay escuro
-100|            ctx.fillStyle = 'rgba(0,0,0,0.6)';
-101|            ctx.fillRect(0, 0, width, height);
-102|
-103|            // Logo no topo
-104|            if (uploadedLogo) {
-105|                const logoH = 150;
-106|                const logoRatio = uploadedLogo.width / uploadedLogo.height;
-107|                const logoW = logoH * logoRatio;
-108|                ctx.drawImage(uploadedLogo, (width - logoW) / 2, 50, logoW, logoH);
-109|            }
-110|
-111|            // Título "JOGOS DO DIA"
-112|            const today = new Date();
-113|            const dayNames = ['DOMINGO', 'SEGUNDA', 'TERÇA', 'QUARTA', 'QUINTA', 'SEXTA', 'SÁBADO'];
-114|            const dateStr = `${dayNames[today.getDay()]} - ${today.getDate().toString().padStart(2, '0')}`;
-115|
-116|            ctx.font = '700 64px Oswald, sans-serif';
-117|            ctx.fillStyle = '#fff';
-118|            ctx.textAlign = 'center';
-119|            ctx.fillText('JOGOS', width/2, 280);
-120|            ctx.fillText('DO DIA', width/2, 350);
-121|            
-122|            ctx.font = '600 32px Oswald, sans-serif';
-123|            ctx.fillText(dateStr, width/2, 400);
-124|
-125|            // Barra lateral "DIA DE JOGO"
-126|            ctx.save();
-127|            ctx.translate(width - 60, height/2);
-128|            ctx.rotate(Math.PI / 2);
-129|            ctx.font = '700 24px Oswald, sans-serif';
-130|            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-131|            ctx.textAlign = 'center';
-132|            const sideText = 'DIA DE JOGO  —  DIA DE JOGO  —  DIA DE JOGO';
-133|            ctx.fillText(sideText, 0, 0);
-134|            ctx.restore();
-135|
-136|            // Lista de jogos (até 5)
-137|            let yPos = 500;
-138|            const cardHeight = 200;
-139|            const cardSpacing = 20;
-140|            
-141|            for (let match of matches) {
-142|                // Card do jogo
-143|                ctx.fillStyle = 'rgba(40,40,40,0.9)';
-144|                roundRect(ctx, 60, yPos, width - 120, cardHeight, 16);
-145|                ctx.fill();
-146|                
-147|                // Header do card: [Liga] [Horário] [Ícone Transmissão]
-148|                ctx.fillStyle = 'rgba(255,255,255,0.95)';
-149|                roundRect(ctx, 80, yPos + 20, width - 160, 50, 12);
-150|                ctx.fill();
-151|                
-152|                // Liga
-153|                ctx.fillStyle = '#000';
-154|                ctx.font = '700 20px Oswald, sans-serif';
-155|                ctx.textAlign = 'left';
-156|                const leagueName = match.league.length > 25 ? match.league.substring(0, 22) + '...' : match.league;
-157|                ctx.fillText(leagueName, 100, yPos + 53);
-158|                
-159|                // Horário
-160|                ctx.font = '700 24px Oswald, sans-serif';
-161|                ctx.textAlign = 'center';
-162|                ctx.fillText(match.time, width/2, yPos + 53);
-163|                
-164|                // Ícone Transmissão (📺)
-165|                ctx.font = '24px Arial';
-166|                ctx.textAlign = 'right';
-167|                ctx.fillText('📺', width - 100, yPos + 53);
-168|
-169|                // Logos e times: [Time 1] x [Time 2]
-170|                const teamY = yPos + 105;
-171|                const logoSize = 60;
-172|                
-173|                // Time da casa
-174|                if (match.homeLogoImg) {
-175|                    ctx.drawImage(match.homeLogoImg, 100, teamY, logoSize, logoSize);
-176|                }
-177|                
-178|                ctx.fillStyle = '#fff';
-179|                ctx.font = '600 20px Manrope, sans-serif';
-180|                ctx.textAlign = 'left';
-181|                const homeTeam = match.homeTeam.length > 15 ? match.homeTeam.substring(0, 12) + '...' : match.homeTeam;
-182|                ctx.fillText(homeTeam, 170, teamY + 35);
-183|
-184|                // VS
-185|                ctx.font = '700 28px Oswald, sans-serif';
-186|                ctx.textAlign = 'center';
-187|                ctx.fillText('X', width/2, teamY + 35);
-188|
-189|                // Time visitante
-190|                if (match.awayLogoImg) {
-191|                    ctx.drawImage(match.awayLogoImg, width - 160, teamY, logoSize, logoSize);
-192|                }
-193|                
-194|                ctx.textAlign = 'right';
-195|                ctx.font = '600 20px Manrope, sans-serif';
-196|                const awayTeam = match.awayTeam.length > 15 ? match.awayTeam.substring(0, 12) + '...' : match.awayTeam;
-197|                ctx.fillText(awayTeam, width - 230, teamY + 35);
-198|
-199|                yPos += cardHeight + cardSpacing;
-200|            }
-201|
-202|            // Rodapé com WhatsApp
-203|            const footerY = height - 100;
-204|            ctx.fillStyle = 'rgba(255,255,255,0.95)';
-205|            roundRect(ctx, 60, footerY, width - 120, 70, 16);
-206|            ctx.fill();
-207|            
-208|            ctx.fillStyle = '#25D366';
-209|            ctx.font = '700 28px Oswald, sans-serif';
-210|            ctx.textAlign = 'center';
-211|            const whatsappNum = globalSettings.whatsappNumber || '(XX) XXXXX-XXXX';
-212|            ctx.fillText(`📱 ${whatsappNum}`, width/2, footerY + 45);
-213|
-214|            return {
-215|                title: `Banner ${bannerNum}`,
-216|                dataUrl: canvas.toDataURL('image/png'),
-217|                num: bannerNum,
-218|                gamesCount: matches.length
-219|            };
-220|        }
-221|
-222|        function displayGeneratedBanners() {
-223|            bannersContainer.innerHTML = '<div class="space-y-8 w-full max-w-2xl mx-auto">';
-224|            
-225|            generatedBanners.forEach((banner, index) => {
-226|                const bannerHtml = `
-227|                    <div class="banner-item bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-228|                        <div class="p-4 bg-zinc-800 border-b border-zinc-700">
-229|                            <h3 class="font-oswald text-xl font-bold text-green-400">${banner.title}</h3>
-230|                            <p class="text-zinc-500 text-sm">${banner.gamesCount} jogo(s)</p>
-231|                        </div>
-232|                        <div class="p-4">
-233|                            <img src="${banner.dataUrl}" class="w-full rounded-lg shadow-lg" alt="${banner.title}">
-234|                        </div>
-235|                        <div class="p-4 bg-zinc-800/50">
-236|                            <button onclick="downloadBanner(${index})" class="w-full bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
-237|                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
-238|                                    <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,132.69V40a8,8,0,0,0-16,0v92.69L93.66,106.34a8,8,0,0,0-11.32,11.32Z"/>
-239|                                </svg>
-240|                                Baixar Banner
-241|                            </button>
-242|                        </div>
-243|                    </div>
-244|                `;
-245|                bannersContainer.innerHTML += bannerHtml;
-246|            });
-247|            
-248|            bannersContainer.innerHTML += '</div>';
-249|        }
-250|
-251|        function downloadBanner(index) {
-252|            const banner = generatedBanners[index];
-253|            const link = document.createElement('a');
-254|            link.download = `jogos_banner_${banner.num}.png`;
-255|            link.href = banner.dataUrl;
-256|            document.body.appendChild(link);
-257|            link.click();
-258|            document.body.removeChild(link);
-259|            
-260|            // Fechar e limpar após download
-261|            setTimeout(() => {
-262|                document.getElementById('bannersContainer').innerHTML = '';
-263|                canvas.style.display = 'none';
-264|                selectMode('main');
-265|            }, 500);
-266|        }
-267|
-268|        // ===== MODO FILMES =====
-269|        async function loadMoviesMode() {
-270|            controlPanel.innerHTML = `
-271|                <header class="border-b border-zinc-800 pb-5">
-272|                    <h2 class="font-oswald text-2xl font-bold text-red-400">🎬 Banner de Filmes e Séries</h2>
-273|                </header>
-274|
-275|                <section class="mt-5">
-276|                    <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Buscar Filme ou Série</label>
-277|                    <div class="relative">
-278|                        <input type="text" id="movieSearch" placeholder="Digite o nome..."
-279|                            class="bg-black border-2 border-zinc-800 p-4 pr-14 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 transition-colors w-full rounded-lg">
-280|                        <button id="movieSearchBtn" class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors p-2">
-281|                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
-282|                                <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/>
-283|                            </svg>
-284|                        </button>
-285|                    </div>
-286|                    <div id="movieResults" class="mt-2 max-h-96 overflow-y-auto"></div>
-287|                </section>
-288|
-289|                <section id="movieControls" class="hidden flex flex-col gap-5 mt-5">
-290|                    <div id="movieSelectedInfo" class="border border-zinc-800 p-4 bg-black/30 rounded-lg"></div>
-291|                    
-292|                    <section class="flex flex-col gap-3">
-293|                        <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label>
-294|                        <div class="flex gap-2">
-295|                            <button id="movieFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white">Post</button>
-296|                            <button id="movieFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600">Story</button>
-297|                        </div>
-298|                    </section>
-299|
-300|                    <section class="flex flex-col gap-3">
-301|                        <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Plataforma</label>
-302|                        <select id="moviePlatform" class="bg-black border border-zinc-800 p-4 text-white focus:outline-none focus:border-red-500 transition-colors w-full appearance-none cursor-pointer rounded pr-10">
-303|                            <option value="">Selecione</option>
-304|                            <option value="Netflix">Netflix</option>
-305|                            <option value="Amazon Prime Video">Amazon Prime Video</option>
-306|                            <option value="Disney+">Disney+</option>
-307|                            <option value="HBO Max">HBO Max</option>
-308|                            <option value="Max">Max</option>
-309|                            <option value="Apple TV+">Apple TV+</option>
-310|                            <option value="Paramount+">Paramount+</option>
-311|                            <option value="Globoplay">Globoplay</option>
-312|                            <option value="Star+">Star+</option>
-313|                            <option value="Crunchyroll">Crunchyroll</option>
-314|                            <option value="Cinema">Cinema</option>
-315|                        </select>
-316|                    </section>
-317|
-318|                    <button id="movieDownloadBtn" class="w-full bg-red-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-red-400 transition-all flex items-center justify-center gap-3 rounded-lg">
-319|                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
-320|                            <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Z"/>
-321|                        </svg>
-322|                        Baixar Banner
-323|                    </button>
-324|                </section>
-325|            `;
-326|
-327|            let searchTimeout;
-328|            document.getElementById('movieSearch').addEventListener('input', (e) => {
-329|                clearTimeout(searchTimeout);
-330|                searchTimeout = setTimeout(() => searchMovies(e.target.value), 500);
-331|            });
-332|
-333|            document.getElementById('movieFormatPost')?.addEventListener('click', () => {
-334|                currentFormat = 'post';
-335|                updateMovieFormatButtons();
-336|                generateMovieBanner();
-337|            });
-338|            document.getElementById('movieFormatStory')?.addEventListener('click', () => {
-339|                currentFormat = 'story';
-340|                updateMovieFormatButtons();
-341|                generateMovieBanner();
-342|            });
-343|            document.getElementById('moviePlatform')?.addEventListener('change', generateMovieBanner);
-344|            document.getElementById('movieDownloadBtn')?.addEventListener('click', downloadMovieBanner);
-345|        }
-346|
-347|        async function searchMovies(query) {
-348|            if (!query.trim()) {
-349|                document.getElementById('movieResults').innerHTML = '';
-350|                return;
-351|            }
-352|
-353|            try {
-354|                const [moviesRes, seriesRes] = await Promise.all([
-355|                    fetch(`${TMDB_BASE_URL}/search/movie?language=pt-BR&query=${encodeURIComponent(query)}`),
-356|                    fetch(`${TMDB_BASE_URL}/search/tv?language=pt-BR&query=${encodeURIComponent(query)}`)
-357|                ]);
-358|
-359|                const moviesData = await moviesRes.json();
-360|                const seriesData = await seriesRes.json();
-361|
-362|                const movies = (moviesData.results || []).slice(0, 5).map(m => ({
-363|                    id: m.id, type: 'movie', title: m.title,
-364|                    year: m.release_date ? m.release_date.split('-')[0] : 'N/A',
-365|                    rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A',
-366|                    overview: m.overview || 'Sinopse não disponível.',
-367|                    poster: m.poster_path ? `${TMDB_IMG_BASE}/w500${m.poster_path}` : null,
-368|                    backdrop: m.backdrop_path ? `${TMDB_IMG_BASE}/original${m.backdrop_path}` : null
-369|                }));
-370|
-371|                const series = (seriesData.results || []).slice(0, 5).map(s => ({
-372|                    id: s.id, type: 'tv', title: s.name,
-373|                    year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A',
-374|                    rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A',
-375|                    overview: s.overview || 'Sinopse não disponível.',
-376|                    poster: s.poster_path ? `${TMDB_IMG_BASE}/w500${s.poster_path}` : null,
-377|                    backdrop: s.backdrop_path ? `${TMDB_IMG_BASE}/original${s.backdrop_path}` : null
-378|                }));
-379|
-380|                displayMovieResults([...movies, ...series]);
-381|            } catch (error) {
-382|                console.error('Erro na busca:', error);
-383|            }
-384|        }
-385|
-386|        function displayMovieResults(results) {
-387|            const resultsDiv = document.getElementById('movieResults');
-388|
-389|            if (results.length === 0) {
-390|                resultsDiv.innerHTML = '<p class="text-zinc-500 text-sm p-3">Nenhum resultado</p>';
-391|                return;
-392|            }
-393|
-394|            resultsDiv.innerHTML = results.map(item => `
-395|                <div class="search-result flex items-center gap-3 p-3 cursor-pointer border-b border-zinc-800 last:border-b-0 hover:bg-zinc-800/50 transition-colors rounded" onclick='selectMovie(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
-396|                    ${item.poster ? `<img src="${item.poster}" class="w-12 h-16 object-cover rounded">` : 
-397|                    `<div class="w-12 h-16 bg-zinc-800 flex items-center justify-center rounded"><svg class="w-5 h-5 text-zinc-600" fill="currentColor" viewBox="0 0 256 256"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Z"/></svg></div>`}
-398|                    <div class="flex-1 min-w-0">
-399|                        <p class="font-semibold text-sm truncate">${item.title}</p>
-400|                        <p class="text-zinc-500 text-xs">${item.year} • ${item.type === 'movie' ? 'Filme' : 'Série'} • ⭐ ${item.rating}</p>
-401|                    </div>
-402|                </div>
-403|            `).join('');
-404|        }
-405|
-406|        async function selectMovie(movie) {
-407|            selectedContent = movie;
-408|            document.getElementById('movieResults').innerHTML = '';
-409|            document.getElementById('movieSearch').value = '';
-410|
-411|            const endpoint = movie.type === 'movie' ? 'movie' : 'tv';
-412|            try {
-413|                const detailsRes = await fetch(`${TMDB_BASE_URL}/${endpoint}/${movie.id}?language=pt-BR`);
-414|                const details = await detailsRes.json();
-415|
-416|                selectedContent.genres = details.genres?.map(g => g.name).join(', ') || 'N/A';
-417|                selectedContent.runtime = movie.type === 'movie' 
-418|                    ? (details.runtime ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}min` : 'N/A')
-419|                    : (details.episode_run_time?.[0] ? `${details.episode_run_time[0]}min/ep` : 'N/A');
-420|            } catch (e) {}
-421|
-422|            const posterUrl = movie.poster || movie.backdrop;
-423|            if (posterUrl) {
-424|                posterImage = await loadImage(posterUrl);
-425|            }
-426|
-427|            document.getElementById('movieControls').classList.remove('hidden');
-428|            document.getElementById('movieSelectedInfo').innerHTML = `
-429|                <div class="flex gap-3 mb-3">
-430|                    ${movie.poster ? `<img src="${movie.poster}" class="w-20 h-30 object-cover rounded">` : ''}
-431|                    <div class="flex-1">
-432|                        <h3 class="font-oswald text-lg font-bold">${movie.title}</h3>
-433|                        <p class="text-zinc-500 text-sm">${movie.year} • ${movie.type === 'movie' ? 'Filme' : 'Série'} • ⭐ ${movie.rating}</p>
-434|                        <p class="text-zinc-400 text-xs mt-2 line-clamp-3">${movie.overview || 'Sem descrição disponível'}</p>
-435|                    </div>
-436|                </div>
-437|                <button onclick="copyMovieInfo()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
-438|                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 256 256">
-439|                        <path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/>
-440|                    </svg>
-441|                    Copiar Informações
-442|                </button>
-443|            `;
-444|
-445|            generateMovieBanner();
-446|        }
-447|
-448|        function copyMovieInfo() {
-449|            if (!selectedContent) return;
-450|            const info = `📽️ ${selectedContent.title}\n\n` +
-451|                `🎬 Tipo: ${selectedContent.type === 'movie' ? 'Filme' : 'Série'}\n` +
-452|                `📅 Ano: ${selectedContent.year}\n` +
-453|                `⭐ Avaliação: ${selectedContent.rating}/10\n` +
-454|                `🎭 Gêneros: ${selectedContent.genres || 'N/A'}\n` +
-455|                `⏱️ Duração: ${selectedContent.runtime || 'N/A'}\n\n` +
-456|                `📝 Sinopse:\n${selectedContent.overview || 'Sem descrição'}`;
-457|            navigator.clipboard.writeText(info).then(() => {
-458|                alert('✅ Informações copiadas!');
-459|            }).catch(() => {
-460|                alert('❌ Erro ao copiar');
-461|            });
-462|        }
-463|
-464|        function generateMovieBanner() {
-465|            if (!selectedContent || currentMode !== 'movies') return;
-466|
-467|            const isPost = currentFormat === 'post';
-468|            const width = 1080;
-469|            const height = isPost ? 1080 : 1920;
-470|
-471|            canvas.width = width;
-472|            canvas.height = height;
-473|            canvas.style.maxWidth = isPost ? '400px' : '280px';
-474|
-475|            if (posterImage) {
-476|                const imgRatio = posterImage.width / posterImage.height;
-477|                const canvasRatio = width / height;
-478|                let dw, dh, ox, oy;
-479|                if (imgRatio > canvasRatio) {
-480|                    dh = height; dw = height * imgRatio;
-481|                    ox = (width - dw) / 2; oy = 0;
-482|                } else {
-483|                    dw = width; dh = width / imgRatio;
-484|                    ox = 0; oy = (height - dh) / 2;
-485|                }
-486|                ctx.drawImage(posterImage, ox, oy, dw, dh);
-487|            } else {
-488|                ctx.fillStyle = '#1a1a2e';
-489|                ctx.fillRect(0, 0, width, height);
-490|            }
-491|
-492|            const gradient = ctx.createLinearGradient(0, height * 0.15, 0, height);
-493|            gradient.addColorStop(0, 'rgba(0,0,0,0)');
-494|            gradient.addColorStop(0.35, 'rgba(0,0,0,0.5)');
-495|            gradient.addColorStop(0.6, 'rgba(0,0,0,0.8)');
-496|            gradient.addColorStop(1, 'rgba(0,0,0,0.95)');
-497|            ctx.fillStyle = gradient;
-498|            ctx.fillRect(0, 0, width, height);
-499|
-500|            if (uploadedLogo) {
-                  ctx.save();
-2|                ctx.globalAlpha = 0.15;
-3|                const pSize = 80;
-4|                const logoRatio = uploadedLogo.width / uploadedLogo.height;
-5|                const pW = pSize * logoRatio, pH = pSize;
-6|                const spX = pW + 60, spY = pH + 60;
-7|                ctx.translate(width/2, height/2);
-8|                ctx.rotate(-30 * Math.PI / 180);
-9|                ctx.translate(-width/2, -height/2);
-10|                for (let y = -height; y < height*2; y += spY) {
-11|                    for (let x = -width; x < width*2; x += spX) {
-12|                        ctx.drawImage(uploadedLogo, x, y, pW, pH);
-13|                    }
-14|                }
-15|                ctx.restore();
-16|
-17|                const cornerH = 300;
-18|                const cornerW = cornerH * logoRatio;
-19|                ctx.globalAlpha = 1;
-20|                ctx.drawImage(uploadedLogo, width - cornerW, 0, cornerW, cornerH);
-21|            }
-22|
-23|            const padding = 50;
-24|            const footerY = height - padding;
-25|            const boxH = 50;
-26|
-27|            const waW = 180;
-28|            ctx.fillStyle = '#25D366';
-29|            roundRect(ctx, padding, footerY - boxH, waW, boxH, 8);
-30|            ctx.fill();
-31|            ctx.fillStyle = '#fff';
-32|            ctx.font = '600 20px Manrope, sans-serif';
-33|            ctx.textAlign = 'center';
-34|            const whatsappNum = globalSettings.whatsappNumber || globalSettings.whatsappText;
-35|            ctx.fillText(whatsappNum, padding + waW/2, footerY - boxH/2 + 7);
-36|
-37|            const ctaW = 180;
-38|            const ctaX = padding + waW + 15;
-39|            ctx.fillStyle = '#ef4444';
-40|            roundRect(ctx, ctaX, footerY - boxH, ctaW, boxH, 8);
-41|            ctx.fill();
-42|            ctx.fillStyle = '#fff';
-43|            ctx.font = '700 20px Manrope, sans-serif';
-44|            ctx.fillText(globalSettings.ctaText, ctaX + ctaW/2, footerY - boxH/2 + 7);
-45|
-46|            let currentY = footerY - boxH - 25;
-47|
-48|            ctx.font = '400 24px Manrope, sans-serif';
-49|            ctx.fillStyle = 'rgba(255,255,255,0.9)';
-50|            ctx.textAlign = 'left';
-51|            const maxTextWidth = width - padding * 2;
-52|            const maxLines = isPost ? 5 : 7;
-53|            const synLines = wrapText(ctx, selectedContent.overview, maxTextWidth).slice(0, maxLines);
-54|            currentY -= 10;
-55|            for (let i = synLines.length - 1; i >= 0; i--) {
-56|                ctx.fillText(synLines[i], padding, currentY);
-57|                currentY -= 32;
-58|            }
-59|
-60|            currentY -= 15;
-61|
-62|            ctx.font = '600 24px Manrope, sans-serif';
-63|            let metaX = padding;
-64|            const sep = '  •  ';
-65|
-66|            ctx.fillStyle = '#eab308';
-67|            const rt = `★ ${selectedContent.rating}`;
-68|            ctx.fillText(rt, metaX, currentY);
-69|            metaX += ctx.measureText(rt).width;
-70|
-71|            ctx.fillStyle = 'rgba(255,255,255,0.6)';
-72|            ctx.fillText(sep, metaX, currentY);
-73|            metaX += ctx.measureText(sep).width;
-74|
-75|            ctx.fillStyle = 'rgba(255,255,255,0.9)';
-76|            ctx.fillText(selectedContent.year, metaX, currentY);
-77|            metaX += ctx.measureText(selectedContent.year).width;
-78|
-79|            if (selectedContent.genres !== 'N/A') {
-80|                ctx.fillStyle = 'rgba(255,255,255,0.6)';
-81|                ctx.fillText(sep, metaX, currentY);
-82|                metaX += ctx.measureText(sep).width;
-83|                ctx.fillStyle = 'rgba(255,255,255,0.9)';
-84|                const g = selectedContent.genres.split(',')[0].trim();
-85|                ctx.fillText(g, metaX, currentY);
-86|                metaX += ctx.measureText(g).width;
-87|            }
-88|
-89|            if (selectedContent.runtime !== 'N/A') {
-90|                ctx.fillStyle = 'rgba(255,255,255,0.6)';
-91|                ctx.fillText(sep, metaX, currentY);
-92|                metaX += ctx.measureText(sep).width;
-93|                ctx.fillStyle = 'rgba(255,255,255,0.9)';
-94|                ctx.fillText(selectedContent.runtime, metaX, currentY);
-95|                metaX += ctx.measureText(selectedContent.runtime).width;
-96|            }
-97|
-98|            const plat = document.getElementById('moviePlatform')?.value;
-99|            if (plat) {
-100|                ctx.fillStyle = 'rgba(255,255,255,0.6)';
-101|                ctx.fillText(sep, metaX, currentY);
-102|                metaX += ctx.measureText(sep).width;
-103|                ctx.fillStyle = '#ef4444';
-104|                ctx.fillText(plat, metaX, currentY);
-105|            }
-106|
-107|            currentY -= 50;
-108|
-109|            ctx.font = '700 68px Oswald, sans-serif';
-110|            ctx.fillStyle = '#fff';
-111|            const titleLines = wrapText(ctx, selectedContent.title.toUpperCase(), maxTextWidth);
-112|            for (let i = titleLines.length - 1; i >= 0; i--) {
-113|                ctx.fillText(titleLines[i], padding, currentY);
-114|                currentY -= 75;
-115|            }
-116|        }
-117|
-118|        function updateMovieFormatButtons() {
-119|            const postBtn = document.getElementById('movieFormatPost');
-120|            const storyBtn = document.getElementById('movieFormatStory');
-121|            if (currentFormat === 'post') {
-122|                postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white';
-123|                storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600';
-124|            } else {
-125|                storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white';
-126|                postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600';
-127|            }
-128|        }
-129|
-130|        function downloadMovieBanner() {
-131|            if (!selectedContent) return;
-132|            const link = document.createElement('a');
-133|            link.download = `${selectedContent.title.replace(/[^a-zA-Z0-9]/g, '_')}_${currentFormat}.png`;
-134|            link.href = canvas.toDataURL('image/png');
-135|            document.body.appendChild(link);
-136|            link.click();
-137|            document.body.removeChild(link);
-138|            
-139|            // Fechar e limpar após download
-140|            setTimeout(() => {
-141|                canvas.style.display = 'none';
-142|                selectMode('main');
-143|            }, 500);
-144|        }
-145|
-146|        // ===== MODO VÍDEO =====
-147|        let selectedVideoMovie = null;
-148|        let videoTrailerUrl = null;
-149|
-150|        function loadVideoMode() {
-151|            controlPanel.innerHTML = `
-152|                <header class="border-b border-zinc-800 pb-5">
-153|                    <h2 class="font-oswald text-2xl font-bold text-purple-400">🎥 Banner de Vídeo</h2>
-154|                </header>
-155|
-156|                <section class="mt-5">
-157|                    <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Buscar Filme ou Série</label>
-158|                    <div class="relative">
-159|                        <input type="text" id="videoSearch" placeholder="Digite o nome..."
-160|                            class="bg-black border-2 border-zinc-800 p-4 pr-14 text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition-colors w-full rounded-lg">
-161|                        <button id="videoSearchBtn" class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors p-2">
-162|                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
-163|                                <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/>
-164|                            </svg>
-165|                        </button>
-166|                    </div>
-167|                    <div id="videoResults" class="mt-2 max-h-96 overflow-y-auto"></div>
-168|                </section>
-169|
-170|                <section id="videoControls" class="hidden flex flex-col gap-5 mt-5">
-171|                    <div id="videoSelectedInfo" class="border border-zinc-800 p-4 bg-black/30 rounded-lg"></div>
-172|                    
-173|                    <section class="flex flex-col gap-3">
-174|                        <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label>
-175|                        <div class="flex gap-2">
-176|                            <button id="videoFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white">Post</button>
-177|                            <button id="videoFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600">Story</button>
-178|                        </div>
-179|                    </section>
-180|
-181|                    <section class="flex flex-col gap-3">
-182|                        <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Plataforma</label>
-183|                        <select id="videoPlatform" class="bg-black border border-zinc-800 p-4 text-white focus:outline-none focus:border-purple-500 transition-colors w-full appearance-none cursor-pointer rounded pr-10">
-184|                            <option value="">Selecione</option>
-185|                            <option value="Netflix">Netflix</option>
-186|                            <option value="Amazon Prime Video">Amazon Prime Video</option>
-187|                            <option value="Disney+">Disney+</option>
-188|                            <option value="HBO Max">HBO Max</option>
-189|                            <option value="Max">Max</option>
-190|                            <option value="Apple TV+">Apple TV+</option>
-191|                            <option value="Paramount+">Paramount+</option>
-192|                            <option value="Globoplay">Globoplay</option>
-193|                            <option value="Star+">Star+</option>
-194|                        </select>
-195|                    </section>
-196|
-197|                    <div class="border-t border-zinc-800 pt-5">
-198|                        <h3 class="text-sm font-semibold text-zinc-300 mb-4">📹 Origem do Vídeo:</h3>
-199|                        
-200|                        <button id="autoVideoBtn" class="w-full mb-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-4 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
-201|                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
-202|                                <path d="M232,128a104,104,0,1,1-104-104A104.11,104.11,0,0,1,232,128Zm-74.34-10.78-52-36A12,12,0,0,0,88,92v72a12,12,0,0,0,17.66,10.78l52-36a12,12,0,0,0,0-21.56Z"/>
-203|                            </svg>
-204|                            🎬 Gerar Automaticamente (Trailer)
-205|                        </button>
-206|
-207|                        <div class="mb-3 p-4 border border-zinc-800 rounded-lg">
-208|                            <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-2">🔗 Ou cole link do YouTube:</label>
-209|                            <div class="flex gap-2">
-210|                                <input type="url" id="youtubeUrlInput" placeholder="https://youtube.com/watch?v=..."
-211|                                    class="flex-1 bg-black border border-zinc-800 p-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 rounded-lg">
-212|                                <button id="loadYoutubeBtn" class="bg-purple-600 hover:bg-purple-500 text-white px-6 rounded-lg transition-all whitespace-nowrap">
-213|                                    Carregar
-214|                                </button>
-215|                            </div>
-216|                        </div>
-217|
-218|                        <label class="border-2 border-dashed border-zinc-700 p-5 text-center cursor-pointer hover:border-purple-500 transition-colors flex flex-col items-center gap-2 rounded-lg">
-219|                            <svg class="w-8 h-8 text-zinc-500" fill="currentColor" viewBox="0 0 256 256">
-220|                                <path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-42.34-77.66a8,8,0,0,1,0,11.32l-24,24a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L120,148.69V104a8,8,0,0,1,16,0v44.69l10.34-10.35A8,8,0,0,1,157.66,138.34Z"/>
-221|                            </svg>
-222|                            <span id="videoLocalText" class="text-sm text-zinc-400">📁 Ou carregar vídeo local</span>
-223|                            <span class="text-xs text-zinc-600">MP4, WebM (Máx 100MB)</span>
-224|                            <input type="file" id="videoLocalUpload" accept="video/mp4,video/webm" class="hidden">
-225|                        </label>
-226|                    </div>
-227|
-228|                    <section id="videoPreviewSection" class="hidden border border-purple-500/30 rounded-lg p-5 bg-purple-900/10">
-229|                        <h3 class="text-sm font-semibold text-purple-300 mb-3">✅ Vídeo Carregado</h3>
-230|                        <div id="videoPreviewContainer" class="bg-black rounded-lg overflow-hidden mb-4"></div>
-231|                        
-232|                        <button id="downloadVideoBtn" class="w-full bg-gradient-to-r from-green-600 to-green-500 text-white font-bold uppercase tracking-widest py-4 hover:from-green-500 hover:to-green-400 transition-all rounded-lg shadow-lg flex items-center justify-center gap-2">
-233|                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
-234|                                <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,132.69V40a8,8,0,0,0-16,0v92.69L93.66,106.34a8,8,0,0,0-11.32,11.32Z"/>
-235|                            </svg>
-236|                            Baixar Vídeo
-237|                        </button>
-238|                    </section>
-239|
-240|                    <p id="videoStatus" class="text-sm text-center hidden"></p>
-241|                </section>
-242|            `;
-243|
-244|            const searchInput = document.getElementById('videoSearch');
-245|            const searchBtn = document.getElementById('videoSearchBtn');
-246|            
-247|            searchInput.addEventListener('keyup', (e) => {
-248|                if (e.key === 'Enter') searchVideoContent();
-249|            });
-250|            searchBtn.addEventListener('click', searchVideoContent);
-251|
-252|            showVideoPreview();
-253|        }
-254|
-255|        function showVideoPreview() {
-256|            canvas.width = 1080;
-257|            canvas.height = 1920;
-258|            canvas.style.maxWidth = '400px';
-259|            canvas.style.display = 'block';
-260|            
-261|            const gradient = ctx.createLinearGradient(0, 0, 0, 1920);
-262|            gradient.addColorStop(0, '#581c87');
-263|            gradient.addColorStop(1, '#18181b');
-264|            ctx.fillStyle = gradient;
-265|            ctx.fillRect(0, 0, 1080, 1920);
-266|
-267|            ctx.fillStyle = '#a855f7';
-268|            ctx.font = '700 64px Oswald, sans-serif';
-269|            ctx.textAlign = 'center';
-270|            ctx.fillText('BANNER', 540, 900);
-271|            ctx.fillText('EM VÍDEO', 540, 980);
-272|            
-273|            ctx.font = '400 28px Manrope, sans-serif';
-274|            ctx.fillStyle = '#71717a';
-275|            ctx.fillText('Busque um filme ou série', 540, 1060);
-276|        }
-277|
-278|        async function searchVideoContent() {
-279|            const query = document.getElementById('videoSearch').value.trim();
-280|            const resultsContainer = document.getElementById('videoResults');
-281|            
-282|            if (!query) {
-283|                resultsContainer.innerHTML = '';
-284|                return;
-285|            }
-286|
-287|            resultsContainer.innerHTML = '<p class="text-zinc-500 text-sm p-4">🔍 Buscando...</p>';
-288|
-289|            try {
-290|                const [moviesRes, seriesRes] = await Promise.all([
-291|                    fetch(`${TMDB_BASE_URL}/search/movie?language=pt-BR&query=${encodeURIComponent(query)}`),
-292|                    fetch(`${TMDB_BASE_URL}/search/tv?language=pt-BR&query=${encodeURIComponent(query)}`)
-293|                ]);
-294|
-295|                const moviesData = await moviesRes.json();
-296|                const seriesData = await seriesRes.json();
-297|
-298|                const allResults = [
-299|                    ...moviesData.results.map(m => ({ ...m, type: 'movie' })),
-300|                    ...seriesData.results.map(s => ({ ...s, type: 'tv' }))
-301|                ].sort((a, b) => (b.popularity || 0) - (a.popularity || 0)).slice(0, 10);
-302|
-303|                if (allResults.length === 0) {
-304|                    resultsContainer.innerHTML = '<p class="text-zinc-500 text-sm p-4">❌ Nenhum resultado encontrado</p>';
-305|                    return;
-306|                }
-307|
-308|                resultsContainer.innerHTML = allResults.map(item => {
-309|                    const title = item.title || item.name;
-310|                    const year = (item.release_date || item.first_air_date || '').split('-')[0];
-311|                    const poster = item.poster_path ? `${TMDB_IMG_BASE}/w200${item.poster_path}` : '';
-312|                    const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
-313|                    const type = item.type === 'movie' ? '🎬 Filme' : '📺 Série';
-314|                    
-315|                    return `
-316|                        <div class="search-result flex items-center gap-4 p-3 cursor-pointer border-b border-zinc-800 hover:bg-zinc-800/50 transition-colors" 
-317|                             onclick="selectVideoMovie(${item.id}, '${item.type}', '${title.replace(/'/g, "\\'")}', '${poster}', '${year}', '${rating}', '${(item.overview || '').replace(/'/g, "\\'")}')">
-318|                            ${poster ? `<img src="${poster}" class="w-16 h-24 object-cover rounded" />` : '<div class="w-16 h-24 bg-zinc-800 rounded flex items-center justify-center text-2xl">🎬</div>'}
-319|                            <div class="flex-1">
-320|                                <h4 class="font-semibold text-white">${title}</h4>
-321|                                <p class="text-sm text-zinc-400">${type} • ${year || 'N/A'} • ⭐ ${rating}</p>
-322|                            </div>
-323|                        </div>
-324|                    `;
-325|                }).join('');
-326|
-327|            } catch (error) {
-328|                console.error('Erro:', error);
-329|                resultsContainer.innerHTML = '<p class="text-red-500 text-sm p-4">❌ Erro ao buscar</p>';
-330|            }
-331|        }
-332|
-333|        function selectVideoMovie(id, type, title, poster, year, rating, overview) {
-334|            selectedVideoMovie = { id, type, title, poster, year, rating, overview };
-335|            
-336|            document.getElementById('videoResults').innerHTML = '';
-337|            document.getElementById('videoSearch').value = title;
-338|            document.getElementById('videoControls').classList.remove('hidden');
-339|            
-340|            document.getElementById('videoSelectedInfo').innerHTML = `
-341|                <div class="flex gap-3 mb-3">
-342|                    ${poster ? `<img src="${poster}" class="w-20 h-30 object-cover rounded">` : ''}
-343|                    <div class="flex-1">
-344|                        <h3 class="font-oswald text-lg font-bold">${title}</h3>
-345|                        <p class="text-zinc-500 text-sm">${year} • ${type === 'movie' ? 'Filme' : 'Série'} • ⭐ ${rating}</p>
-346|                        <p class="text-zinc-400 text-xs mt-2 line-clamp-3">${overview || 'Sem descrição'}</p>
-347|                    </div>
-348|                </div>
-349|                <button onclick="copyVideoInfo()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
-350|                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 256 256">
-351|                        <path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/>
-352|                    </svg>
-353|                    Copiar Informações
-354|                </button>
-355|            `;
-356|
-357|            // Formatação
-358|            document.getElementById('videoFormatPost').onclick = () => { currentFormat = 'post'; updateVideoFormatButtons(); };
-359|            document.getElementById('videoFormatStory').onclick = () => { currentFormat = 'story'; updateVideoFormatButtons(); };
-360|
-361|            // Vídeo
-362|            document.getElementById('autoVideoBtn').onclick = autoGenerateVideo;
-363|            document.getElementById('loadYoutubeBtn').onclick = loadYoutubeVideo;
-364|            document.getElementById('videoLocalUpload').onchange = loadLocalVideo;
-365|        }
-366|
-367|        function updateVideoFormatButtons() {
-368|            const postBtn = document.getElementById('videoFormatPost');
-369|            const storyBtn = document.getElementById('videoFormatStory');
-370|            
-371|            if (currentFormat === 'post') {
-372|                postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white';
-373|                storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600';
-374|            } else {
-375|                storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white';
-376|                postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600';
-377|            }
-378|        }
-379|
-380|        function copyVideoInfo() {
-381|            if (!selectedVideoMovie) return;
-382|            const info = `📽️ ${selectedVideoMovie.title}\n\n` +
-383|                `🎬 Tipo: ${selectedVideoMovie.type === 'movie' ? 'Filme' : 'Série'}\n` +
-384|                `📅 Ano: ${selectedVideoMovie.year}\n` +
-385|                `⭐ Avaliação: ${selectedVideoMovie.rating}/10\n\n` +
-386|                `📝 Sinopse:\n${selectedVideoMovie.overview || 'Sem descrição'}`;
-387|            navigator.clipboard.writeText(info).then(() => {
-388|                alert('✅ Informações copiadas!');
-389|            }).catch(() => {
-390|                alert('❌ Erro ao copiar');
-391|            });
-392|        }
-393|
-394|        async function autoGenerateVideo() {
-395|            const statusEl = document.getElementById('videoStatus');
-396|            statusEl.classList.remove('hidden');
-397|            statusEl.className = 'text-sm text-center text-yellow-500';
-398|            statusEl.textContent = '🎬 Buscando trailer...';
-399|
-400|            setTimeout(() => {
-401|                statusEl.className = 'text-sm text-center text-orange-500';
-402|                statusEl.textContent = '⚠️ Busca automática de trailer em desenvolvimento. Use uma das outras opções.';
-403|                setTimeout(() => statusEl.classList.add('hidden'), 5000);
-404|            }, 2000);
-405|        }
-406|
-407|        function loadYoutubeVideo() {
-408|            const url = document.getElementById('youtubeUrlInput').value.trim();
-409|            const statusEl = document.getElementById('videoStatus');
-410|            
-411|            if (!url) {
-412|                statusEl.classList.remove('hidden');
-413|                statusEl.className = 'text-sm text-center text-red-500';
-414|                statusEl.textContent = '❌ Cole um link do YouTube!';
-415|                setTimeout(() => statusEl.classList.add('hidden'), 3000);
-416|                return;
-417|            }
-418|
-419|            videoTrailerUrl = url;
-420|            displayVideoPreview(url, 'youtube');
-421|        }
-422|
-423|        function loadLocalVideo(e) {
-424|            const file = e.target.files[0];
-425|            if (!file) return;
-426|
-427|            if (file.size > 100 * 1024 * 1024) {
-428|                alert('⚠️ Arquivo muito grande! Máximo 100MB');
-429|                return;
-430|            }
-431|
-432|            document.getElementById('videoLocalText').textContent = `✅ ${file.name}`;
-433|            displayVideoPreview(file, 'file');
-434|        }
-435|
-436|        function displayVideoPreview(source, type) {
-437|            const previewSection = document.getElementById('videoPreviewSection');
-438|            const previewContainer = document.getElementById('videoPreviewContainer');
-439|            
-440|            previewSection.classList.remove('hidden');
-441|            
-442|            if (type === 'youtube') {
-443|                let videoId = '';
-444|                if (source.includes('youtube.com')) {
-445|                    videoId = source.split('v=')[1]?.split('&')[0];
-446|                } else if (source.includes('youtu.be')) {
-447|                    videoId = source.split('youtu.be/')[1]?.split('?')[0];
-448|                }
-449|
-450|                if (videoId) {
-451|                    previewContainer.innerHTML = `
-452|                        <iframe width="100%" height="300" src="https://www.youtube.com/embed/${videoId}" 
-453|                            frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-454|                            allowfullscreen class="rounded-lg"></iframe>
-455|                    `;
-456|                } else {
-457|                    previewContainer.innerHTML = '<p class="text-red-500 text-sm p-4">❌ Link inválido</p>';
-458|                }
-459|            } else {
-460|                const videoEl = document.createElement('video');
-461|                videoEl.controls = true;
-462|                videoEl.className = 'w-full max-h-96 object-contain rounded-lg';
-463|                videoEl.src = URL.createObjectURL(source);
-464|                
-465|                previewContainer.innerHTML = '';
-466|                previewContainer.appendChild(videoEl);
-467|            }
-468|
-469|            document.getElementById('downloadVideoBtn').onclick = downloadVideo;
-470|        }
-471|
-472|        function downloadVideo() {
-473|            const statusEl = document.getElementById('videoStatus');
-474|            statusEl.classList.remove('hidden');
-475|            statusEl.className = 'text-sm text-center text-yellow-500';
-476|            statusEl.textContent = '⚠️ Download/processamento de vídeo em desenvolvimento...';
-477|            
-478|            setTimeout(() => {
-479|                statusEl.className = 'text-sm text-center text-blue-500';
-480|                statusEl.textContent = '💡 Por enquanto, baixe o vídeo do YouTube e edite externamente';
-481|                setTimeout(() => statusEl.classList.add('hidden'), 5000);
-482|            }, 2000);
-483|        }
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banner Generator Pro - Futebol, Filmes e Vídeos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { scrollbar-width: thin; scrollbar-color: #27272a #0f0f11; }
+        *::-webkit-scrollbar { width: 6px; }
+        *::-webkit-scrollbar-track { background: #0f0f11; }
+        *::-webkit-scrollbar-thumb { background-color: #27272a; border-radius: 3px; }
+        body { font-family: 'Manrope', sans-serif; background: #050505; margin: 0; }
+        .font-oswald { font-family: 'Oswald', sans-serif; }
+        .search-result:hover { background: linear-gradient(90deg, rgba(239,68,68,0.1) 0%, transparent 100%); }
+        .canvas-glow { box-shadow: 0 0 80px rgba(239,68,68,0.15), 0 25px 50px -12px rgba(0,0,0,0.8); }
+        @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }
+        .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
+        select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; }
+        .box-selector { transition: all 0.3s ease; cursor: pointer; }
+        .box-selector:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        .sidebar-nav { transition: all 0.3s ease; }
+        .modal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .banner-item { transition: all 0.2s ease; }
+        .banner-item:hover { transform: scale(1.02); }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+
+    <!-- BOTÃO DE CONFIGURAÇÕES (FIXO) -->
+    <button onclick="openSettings()" class="fixed top-6 right-6 z-50 w-12 h-12 bg-zinc-800 hover:bg-zinc-700 rounded-full flex items-center justify-center transition-all shadow-lg" title="Configurações">
+        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 256 256">
+            <path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88-29.84q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.21,107.21,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.71,107.71,0,0,0-26.25-10.87,8,8,0,0,0-7.06,1.49L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.21,107.21,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06Zm-16.1-6.5a73.93,73.93,0,0,1,0,8.68,8,8,0,0,0,1.74,5.48l14.19,17.73a91.57,91.57,0,0,1-6.23,15L187,173.11a8,8,0,0,0-5.1,2.64,74.11,74.11,0,0,1-6.14,6.14,8,8,0,0,0-2.64,5.1l-2.51,22.58a91.32,91.32,0,0,1-15,6.23l-17.74-14.19a8,8,0,0,0-5-1.75h-.48a73.93,73.93,0,0,1-8.68,0,8,8,0,0,0-5.48,1.74L100.45,215.8a91.57,91.57,0,0,1-15-6.23L82.89,187a8,8,0,0,0-2.64-5.1,74.11,74.11,0,0,1-6.14-6.14,8,8,0,0,0-5.1-2.64L46.43,170.6a91.32,91.32,0,0,1-6.23-15l14.19-17.74a8,8,0,0,0,1.74-5.48,73.93,73.93,0,0,1,0-8.68,8,8,0,0,0-1.74-5.48L40.2,100.45a91.57,91.57,0,0,1,6.23-15L69,82.89a8,8,0,0,0,5.1-2.64,74.11,74.11,0,0,1,6.14-6.14A8,8,0,0,0,82.89,69L85.4,46.43a91.32,91.32,0,0,1,15-6.23l17.74,14.19a8,8,0,0,0,5.48,1.74,73.93,73.93,0,0,1,8.68,0,8,8,0,0,0,5.48-1.74L155.55,40.2a91.57,91.57,0,0,1,15,6.23L173.11,69a8,8,0,0,0,2.64,5.1,74.11,74.11,0,0,1,6.14,6.14,8,8,0,0,0,5.1,2.64l22.58,2.51a91.32,91.32,0,0,1,6.23,15l-14.19,17.74A8,8,0,0,0,199.87,123.66Z"/>
+        </svg>
+    </button>
+
+    <!-- MODAL DE CONFIGURAÇÕES -->
+    <div id="settingsModal" class="modal">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <header class="flex items-center justify-between mb-6">
+                <h2 class="font-oswald text-3xl font-bold">⚙️ Configurações Globais</h2>
+                <button onclick="closeSettings()" class="text-zinc-500 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 256 256">
+                        <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/>
+                    </svg>
+                </button>
+            </header>
+
+            <div class="flex flex-col gap-6">
+                <!-- Logo Padrão -->
+                <section class="border border-zinc-800 rounded-lg p-5">
+                    <label class="text-sm font-semibold text-zinc-300 mb-3 block">Logo / Marca d'água Padrão</label>
+                    <label class="border border-dashed border-zinc-700 p-5 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg">
+                        <svg class="w-8 h-8 text-zinc-500" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M248,128a87.34,87.34,0,0,1-17.6,52.81,8,8,0,1,1-12.8-9.62A71.34,71.34,0,0,0,232,128a72,72,0,0,0-144,0,8,8,0,0,1-16,0,88,88,0,0,1,176,0ZM128,24A104.11,104.11,0,0,0,24,128a8,8,0,0,0,16,0,88,88,0,0,1,88-88,8,8,0,0,0,0-16Zm40,104a8,8,0,0,0-8-8H136V96a8,8,0,0,0-16,0v24H96a8,8,0,0,0,0,16h24v24a8,8,0,0,0,16,0V136h24A8,8,0,0,0,168,128Z"/>
+                        </svg>
+                        <span id="settingsLogoText" class="text-sm text-zinc-400">Carregar logo padrão</span>
+                        <span class="text-xs text-zinc-600">PNG ou JPG</span>
+                        <input type="file" id="settingsLogoInput" accept="image/*" class="hidden">
+                    </label>
+                    <button id="settingsRemoveLogo" class="mt-2 text-xs text-red-500 hover:text-red-400 transition-colors hidden">✕ Remover logo</button>
+                </section>
+
+                <!-- Fundo Futebol -->
+                <section class="border border-zinc-800 rounded-lg p-5">
+                    <label class="text-sm font-semibold text-zinc-300 mb-1 block">Fundo para Banners de Futebol</label>
+                    <p class="text-xs text-zinc-500 mb-3">📐 Dimensões recomendadas: <strong>1080x1080px</strong> (Post) ou <strong>1080x1920px</strong> (Story)</p>
+                    <label class="border border-dashed border-zinc-700 p-5 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg">
+                        <svg class="w-8 h-8 text-zinc-500" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V158.75l-26.07-26.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L40,149.37V56ZM40,172l52-52,80,80H40Zm176,28H194.63l-36-36,20-20L216,181.38V200ZM144,100a12,12,0,1,1,12,12A12,12,0,0,1,144,100Z"/>
+                        </svg>
+                        <span id="settingsBgText" class="text-sm text-zinc-400">Carregar fundo personalizado</span>
+                        <span class="text-xs text-zinc-600">PNG ou JPG</span>
+                        <input type="file" id="settingsBgInput" accept="image/*" class="hidden">
+                    </label>
+                    <button id="settingsRemoveBg" class="mt-2 text-xs text-red-500 hover:text-red-400 transition-colors hidden">✕ Remover fundo</button>
+                </section>
+
+                <!-- Número WhatsApp -->
+                <section class="border border-zinc-800 rounded-lg p-5">
+                    <label class="text-sm font-semibold text-zinc-300 mb-3 block">Número do WhatsApp</label>
+                    <input type="tel" id="settingsWhatsappNumber" placeholder="(00) 00000-0000" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-green-500 transition-colors w-full rounded-lg">
+                    <p class="text-xs text-zinc-500 mt-2">Aparecerá no box do WhatsApp</p>
+                </section>
+
+                <!-- Texto Box WhatsApp -->
+                <section class="border border-zinc-800 rounded-lg p-5">
+                    <label class="text-sm font-semibold text-zinc-300 mb-3 block">Texto do Box WhatsApp</label>
+                    <input type="text" id="settingsWhatsappText" value="Grupo VIP" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-green-500 transition-colors w-full rounded-lg">
+                </section>
+
+                <!-- Texto CTA -->
+                <section class="border border-zinc-800 rounded-lg p-5">
+                    <label class="text-sm font-semibold text-zinc-300 mb-3 block">Texto do Botão CTA</label>
+                    <input type="text" id="settingsCtaText" value="ASSINA JÁ" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 transition-colors w-full rounded-lg">
+                </section>
+
+                <!-- Botões -->
+                <div class="flex gap-3 pt-4 border-t border-zinc-800">
+                    <button onclick="saveSettings()" class="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-4 rounded-lg transition-all">
+                        Salvar Configurações
+                    </button>
+                    <button onclick="closeSettings()" class="px-8 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 rounded-lg transition-all">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA INICIAL: SELEÇÃO DE TIPO -->
+    <div id="homeScreen" class="min-h-screen flex items-center justify-center p-6">
+        <div class="w-full max-w-6xl">
+            <header class="text-center mb-16">
+                <h1 class="font-oswald text-6xl font-bold tracking-tight flex items-center justify-center gap-4 mb-4">
+                    <svg class="w-16 h-16 text-red-500" fill="currentColor" viewBox="0 0 256 256">
+                        <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,160H40V56H216V200ZM184,96a8,8,0,0,1-8,8H136v40a8,8,0,0,1-16,0V104H80a8,8,0,0,1,0-16h96A8,8,0,0,1,184,96Z"/>
+                    </svg>
+                    Banner Generator Pro
+                </h1>
+                <p class="text-zinc-500 text-xl">Escolha o tipo de banner que deseja criar</p>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Box 1: Futebol -->
+                <div class="box-selector bg-gradient-to-br from-green-900/20 to-zinc-900 border-2 border-green-500/30 rounded-2xl p-8 hover:border-green-500" onclick="selectMode('football')">
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,16a88,88,0,0,1,73.72,40H158.31l-27-40.37A87.55,87.55,0,0,1,128,40ZM40,128a87.55,87.55,0,0,1,1.55-16H73.72L83.81,147,54,175.5A87.87,87.87,0,0,1,40,128Zm74.5,88L93.4,170.18,115.1,144h25.8l21.7,26.18L141.5,216A88.19,88.19,0,0,1,114.5,216Zm87.5-40.5L172.19,147l10.09-35H214.45a87.55,87.55,0,0,1-1.55,16A87.87,87.87,0,0,1,202,175.5Z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-oswald text-2xl font-bold mb-3">Futebol do Dia</h3>
+                        <p class="text-zinc-400 text-sm mb-6">Gere banners para jogos de futebol com times, horário e onde assistir</p>
+                        <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                            <p class="text-xs text-green-400 font-semibold">⚽ JOGOS DE HOJE</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 2: Filmes -->
+                <div class="box-selector bg-gradient-to-br from-red-900/20 to-zinc-900 border-2 border-red-500/30 rounded-2xl p-8 hover:border-red-500" onclick="selectMode('movies')">
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H56V72H40ZM40,88H56v16H40Zm0,32H56v16H40Zm176,80H40V152H216v48Zm0-64H72V120H216v16Zm0-32H72V88H216v16Zm0-32H72V56H216V72Z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-oswald text-2xl font-bold mb-3">Filmes e Séries</h3>
+                        <p class="text-zinc-400 text-sm mb-6">Crie banners incríveis para filmes e séries com informações completas</p>
+                        <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                            <p class="text-xs text-red-400 font-semibold">🎬 CATÁLOGO COMPLETO</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 3: Vídeo MP4 -->
+                <div class="box-selector bg-gradient-to-br from-purple-900/20 to-zinc-900 border-2 border-purple-500/30 rounded-2xl p-8 hover:border-purple-500" onclick="selectMode('video')">
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M232,128a104,104,0,1,1-104-104A104.11,104.11,0,0,1,232,128Zm-74.34-10.78-52-36A12,12,0,0,0,88,92v72a12,12,0,0,0,17.66,10.78l52-36a12,12,0,0,0,0-21.56Z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-oswald text-2xl font-bold mb-3">Banner em Vídeo</h3>
+                        <p class="text-zinc-400 text-sm mb-6">Crie banners animados em MP4 com upload ou link do YouTube</p>
+                        <div class="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
+                            <p class="text-xs text-purple-400 font-semibold">🎥 VÍDEO ANIMADO</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDITOR: FUTEBOL, FILMES OU VÍDEO -->
+    <div id="editorScreen" class="min-h-screen hidden">
+        <div class="flex flex-col lg:flex-row min-h-screen">
+            <!-- Sidebar de Navegação -->
+            <div class="sidebar-nav w-full lg:w-20 bg-zinc-950 border-r border-zinc-800 flex lg:flex-col items-center justify-start lg:justify-center gap-4 p-4">
+                <button onclick="goHome()" class="w-12 h-12 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors" title="Voltar ao início">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 256 256">
+                        <path d="M224,115.55V208a16,16,0,0,1-16,16H168a16,16,0,0,1-16-16V168a8,8,0,0,0-8-8H112a8,8,0,0,0-8,8v40a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V115.55a16,16,0,0,1,5.17-11.78l80-75.48.11-.11a16,16,0,0,1,21.53,0,1.14,1.14,0,0,0,.11.11l80,75.48A16,16,0,0,1,224,115.55Z"/>
+                    </svg>
+                </button>
+                <button id="navFootball" class="w-12 h-12 rounded-lg bg-zinc-800 hover:bg-green-500 flex items-center justify-center transition-colors hidden" onclick="selectMode('football')" title="Futebol">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 256 256">
+                        <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,16a88,88,0,0,1,73.72,40H158.31l-27-40.37A87.55,87.55,0,0,1,128,40Z"/>
+                    </svg>
+                </button>
+                <button id="navMovies" class="w-12 h-12 rounded-lg bg-zinc-800 hover:bg-red-500 flex items-center justify-center transition-colors hidden" onclick="selectMode('movies')" title="Filmes">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 256 256">
+                        <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Z"/>
+                    </svg>
+                </button>
+                <button id="navVideo" class="w-12 h-12 rounded-lg bg-zinc-800 hover:bg-purple-500 flex items-center justify-center transition-colors hidden" onclick="selectMode('video')" title="Vídeo">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 256 256">
+                        <path d="M232,128a104,104,0,1,1-104-104A104.11,104.11,0,0,1,232,128Zm-74.34-10.78-52-36A12,12,0,0,0,88,92v72a12,12,0,0,0,17.66,10.78l52-36a12,12,0,0,0,0-21.56Z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Painel de Controles -->
+            <aside id="controlPanel" class="w-full lg:w-[420px] border-r border-zinc-800 bg-zinc-900/50 p-6 lg:p-8 overflow-y-auto lg:h-screen flex flex-col gap-5">
+                <!-- Controles específicos serão inseridos aqui dinamicamente -->
+            </aside>
+
+            <!-- Preview -->
+            <main id="previewArea" class="flex-1 relative flex items-center justify-center p-6 lg:p-12 bg-[#050505] min-h-[600px] lg:min-h-screen overflow-y-auto">
+                <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_#18181b_0%,_#050505_70%)] opacity-50"></div>
+                <div class="relative z-10 w-full max-w-4xl" id="bannersContainer">
+                    <canvas id="bannerCanvas" class="canvas-glow max-w-full h-auto rounded-lg mx-auto"></canvas>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONFIGURAÇÃO =====
+        // APIs agora protegidas pelo backend (sem expor chaves no frontend)
+        const API_BASE_URL = window.location.origin;
+        const TMDB_BASE_URL = `${API_BASE_URL}/api/tmdb`;
+        const TMDB_IMG_BASE = 'https://image.tmdb.org/t/p';
+        const FOOTBALL_API_URL = `${API_BASE_URL}/api/football`;
+
+        // LIGAS PERMITIDAS
+        const ALLOWED_LEAGUES = [
+            'Serie A',
+            'Serie B',
+            'Copa do Brasil',
+            'Copa Libertadores',
+            'UEFA Champions League',
+            'Premier League',
+            'Bundesliga',
+            'Ligue 1'
+        ];
+
+        // ===== ESTADO GLOBAL =====
+        let currentMode = null;
+        let selectedContent = null;
+        let currentFormat = 'post';
+        let uploadedLogo = null;
+        let posterImage = null;
+        let footballBgImage = null;
+        let globalSettings = {
+            logo: null,
+            footballBg: null,
+            whatsappNumber: '',
+            whatsappText: 'Grupo VIP',
+            ctaText: 'ASSINA JÁ'
+        };
+
+        // ===== ELEMENTOS =====
+        const homeScreen = document.getElementById('homeScreen');
+        const editorScreen = document.getElementById('editorScreen');
+        const controlPanel = document.getElementById('controlPanel');
+        const canvas = document.getElementById('bannerCanvas');
+        const ctx = canvas.getContext('2d');
+        const bannersContainer = document.getElementById('bannersContainer');
+
+        // ===== CONFIGURAÇÕES =====
+        function loadGlobalSettings() {
+            try {
+                const saved = localStorage.getItem('bannerGeneratorSettings');
+                if (saved) {
+                    globalSettings = JSON.parse(saved);
+                    
+                    if (globalSettings.logo) {
+                        const img = new Image();
+                        img.onload = () => { uploadedLogo = img; };
+                        img.src = globalSettings.logo;
+                        document.getElementById('settingsLogoText').textContent = 'Logo carregada';
+                        document.getElementById('settingsRemoveLogo').classList.remove('hidden');
+                    }
+                    
+                    if (globalSettings.footballBg) {
+                        const img = new Image();
+                        img.onload = () => { footballBgImage = img; };
+                        img.src = globalSettings.footballBg;
+                        document.getElementById('settingsBgText').textContent = 'Fundo carregado';
+                        document.getElementById('settingsRemoveBg').classList.remove('hidden');
+                    }
+                    
+                    document.getElementById('settingsWhatsappNumber').value = globalSettings.whatsappNumber || '';
+                    document.getElementById('settingsWhatsappText').value = globalSettings.whatsappText || 'Grupo VIP';
+                    document.getElementById('settingsCtaText').value = globalSettings.ctaText || 'ASSINA JÁ';
+                }
+            } catch (e) {
+                console.error('Erro ao carregar configurações:', e);
+            }
+        }
+
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        function saveSettings() {
+            globalSettings.whatsappNumber = document.getElementById('settingsWhatsappNumber').value;
+            globalSettings.whatsappText = document.getElementById('settingsWhatsappText').value;
+            globalSettings.ctaText = document.getElementById('settingsCtaText').value;
+            
+            localStorage.setItem('bannerGeneratorSettings', JSON.stringify(globalSettings));
+            
+            alert('✅ Configurações salvas com sucesso!');
+            closeSettings();
+        }
+
+        // Event listeners para configurações
+        document.getElementById('settingsLogoInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    globalSettings.logo = ev.target.result;
+                    const img = new Image();
+                    img.onload = () => { uploadedLogo = img; };
+                    img.src = ev.target.result;
+                    document.getElementById('settingsLogoText').textContent = file.name;
+                    document.getElementById('settingsRemoveLogo').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('settingsRemoveLogo').addEventListener('click', () => {
+            globalSettings.logo = null;
+            uploadedLogo = null;
+            document.getElementById('settingsLogoInput').value = '';
+            document.getElementById('settingsLogoText').textContent = 'Carregar logo padrão';
+            document.getElementById('settingsRemoveLogo').classList.add('hidden');
+        });
+
+        document.getElementById('settingsBgInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    globalSettings.footballBg = ev.target.result;
+                    const img = new Image();
+                    img.onload = () => { footballBgImage = img; };
+                    img.src = ev.target.result;
+                    document.getElementById('settingsBgText').textContent = file.name;
+                    document.getElementById('settingsRemoveBg').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('settingsRemoveBg').addEventListener('click', () => {
+            globalSettings.footballBg = null;
+            footballBgImage = null;
+            document.getElementById('settingsBgInput').value = '';
+            document.getElementById('settingsBgText').textContent = 'Carregar fundo personalizado';
+            document.getElementById('settingsRemoveBg').classList.add('hidden');
+        });
+
+        // ===== NAVEGAÇÃO =====
+        function selectMode(mode) {
+            currentMode = mode;
+            homeScreen.classList.add('hidden');
+            editorScreen.classList.remove('hidden');
+            
+            document.getElementById('navFootball').classList.remove('hidden');
+            document.getElementById('navMovies').classList.remove('hidden');
+            document.getElementById('navVideo').classList.remove('hidden');
+            
+            document.querySelectorAll('.sidebar-nav button').forEach(btn => {
+                btn.classList.remove('bg-green-500', 'bg-red-500', 'bg-purple-500');
+            });
+            
+            if (mode === 'football') {
+                document.getElementById('navFootball').classList.add('bg-green-500');
+                loadFootballMode();
+            } else if (mode === 'movies') {
+                document.getElementById('navMovies').classList.add('bg-red-500');
+                loadMoviesMode();
+            } else if (mode === 'video') {
+                document.getElementById('navVideo').classList.add('bg-purple-500');
+                loadVideoMode();
+            }
+        }
+
+        function goHome() {
+            editorScreen.classList.add('hidden');
+            homeScreen.classList.remove('hidden');
+            currentMode = null;
+            selectedContent = null;
+            posterImage = null;
+        }
+
+        // ===== MODO FUTEBOL =====
+        let allMatches = [];
+        let generatedBanners = [];
+
+        async function loadFootballMode() {
+            controlPanel.innerHTML = `
+                <header class="border-b border-zinc-800 pb-5 mb-6">
+                    <h2 class="font-oswald text-2xl font-bold text-green-400">⚽ Gerador de Banners de Futebol</h2>
+                    <p class="text-zinc-500 text-sm mt-1">Banners com 5 jogos em ordem cronológica</p>
+                </header>
+
+                <div class="mb-6 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
+                    <h4 class="text-sm font-semibold text-zinc-300 mb-3">🏆 Ligas incluídas:</h4>
+                    <div class="text-xs text-zinc-400 space-y-1">
+                        <p>• Brasileirão Série A</p>
+                        <p>• Brasileirão Série B</p>
+                        <p>• Copa do Brasil</p>
+                        <p>• Libertadores</p>
+                        <p>• Champions League</p>
+                        <p>• Premier League</p>
+                        <p>• Bundesliga</p>
+                        <p>• Ligue 1</p>
+                    </div>
+                    <p class="text-xs text-zinc-500 mt-3">💡 Os jogos serão agrupados em banners de até 5 partidas cada, em ordem de horário.</p>
+                </div>
+
+                <button id="generateAllBtn" class="w-full bg-gradient-to-r from-green-600 to-green-500 text-white font-bold uppercase tracking-widest py-5 hover:from-green-500 hover:to-green-400 transition-all flex items-center justify-center gap-3 rounded-lg shadow-lg mb-4">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 256 256">
+                        <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,132.69V40a8,8,0,0,0-16,0v92.69L93.66,106.34a8,8,0,0,0-11.32,11.32Z"/>
+                    </svg>
+                    Gerar Banners dos Jogos
+                </button>
+                
+                <p id="generateAllStatus" class="text-sm text-zinc-500 text-center hidden mb-4"></p>
+
+                <div id="generatedBannersInfo" class="hidden mt-6 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+                    <p class="text-sm text-green-400 font-semibold mb-2">✅ Banners gerados!</p>
+                    <p class="text-xs text-zinc-400">Os banners aparecem na área de preview ao lado. Role para ver todos e clique em "Baixar" em cada um.</p>
+                </div>
+            `;
+
+            document.getElementById('generateAllBtn').addEventListener('click', generateAllFootballBanners);
+            showFootballPreview();
+        }
+
+        function showFootballPreview() {
+            canvas.width = 1080;
+            canvas.height = 1080;
+            canvas.style.maxWidth = '500px';
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 1080);
+            gradient.addColorStop(0, '#0a4d0a');
+            gradient.addColorStop(1, '#001a00');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1080, 1080);
+
+            ctx.font = '700 56px Oswald, sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.fillText('JOGOS DE HOJE', 540, 500);
+            
+            ctx.font = '400 24px Manrope, sans-serif';
+            ctx.fillStyle = '#10b981';
+            ctx.fillText('Clique em "Gerar Banners"', 540, 580);
+        }
+
+        async function generateAllFootballBanners() {
+            const statusEl = document.getElementById('generateAllStatus');
+            const btn = document.getElementById('generateAllBtn');
+            const infoBox = document.getElementById('generatedBannersInfo');
+            
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = 'Buscando jogos de hoje...';
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const response = await fetch(`${FOOTBALL_API_URL}/fixtures?date=${today}`, {
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+                
+                if (!data.response || data.response.length === 0) {
+                    statusEl.textContent = '❌ Nenhum jogo encontrado para hoje';
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+                    setTimeout(() => statusEl.classList.add('hidden'), 3000);
+                    return;
+                }
+
+                // FILTRAR APENAS LIGAS PERMITIDAS
+                const filteredMatches = data.response.filter(match => {
+                    return ALLOWED_LEAGUES.some(league => 
+                        match.league.name.includes(league) || league.includes(match.league.name)
+                    );
+                });
+
+                if (filteredMatches.length === 0) {
+                    statusEl.textContent = '❌ Nenhum jogo das ligas selecionadas encontrado para hoje';
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+                    setTimeout(() => statusEl.classList.add('hidden'), 3000);
+                    return;
+                }
+
+                allMatches = filteredMatches.map(match => ({
+                    id: match.fixture.id,
+                    homeTeam: match.teams.home.name,
+                    awayTeam: match.teams.away.name,
+                    homeLogo: match.teams.home.logo,
+                    awayLogo: match.teams.away.logo,
+                    league: match.league.name,
+                    country: match.league.country,
+                    date: new Date(match.fixture.date).toLocaleDateString('pt-BR'),
+                    time: new Date(match.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: new Date(match.fixture.date).getTime(),
+                    venue: match.fixture.venue.name || 'A definir',
+                    broadcast: 'A definir'
+                }));
+
+                // Ordenar por horário (timestamp)
+                allMatches.sort((a, b) => a.timestamp - b.timestamp);
+
+                statusEl.textContent = `Encontrados ${allMatches.length} jogos. Carregando imagens...`;
+
+                // Carregar logos
+                for (let match of allMatches) {
+                    if (match.homeLogo) {
+                        match.homeLogoImg = await loadImage(match.homeLogo);
+                    }
+                    if (match.awayLogo) {
+                        match.awayLogoImg = await loadImage(match.awayLogo);
+                    }
+                }
+
+                // Agrupar apenas para estatísticas (não usado mais)
+                statusEl.textContent = 'Gerando banners...';
+
+                // Gerar banners com 5 jogos cada
+                generatedBanners = [];
+                let bannerNum = 1;
+                const gamesPerBanner = 5;
+                
+                for (let i = 0; i < allMatches.length; i += gamesPerBanner) {
+                    const matchesChunk = allMatches.slice(i, i + gamesPerBanner);
+                    const bannerData = await generateFootballBanner(matchesChunk, bannerNum);
+                    generatedBanners.push(bannerData);
+                    bannerNum++;
+                }
+
+                // Exibir banners na lista
+                displayGeneratedBanners();
+
+                // Esconder o canvas de preview
+                canvas.style.display = 'none';
+
+                statusEl.textContent = `✅ ${generatedBanners.length} banner(s) gerado(s)!`;
+                infoBox.classList.remove('hidden');
+                setTimeout(() => statusEl.classList.add('hidden'), 3000);
+
+            } catch (error) {
+                console.error('Erro:', error);
+                statusEl.textContent = '❌ Erro ao buscar jogos. Tente novamente.';
+                setTimeout(() => statusEl.classList.add('hidden'), 3000);
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+            }
+        }
+
+        async function generateFootballBanner(matches, bannerNum) {
+            const width = 1080;
+            const height = 1920; // Story format
+            
+            canvas.width = width;
+            canvas.height = height;
+
+            // Fundo
+            if (footballBgImage) {
+                const imgRatio = footballBgImage.width / footballBgImage.height;
+                const canvasRatio = width / height;
+                let dw, dh, ox, oy;
+                if (imgRatio > canvasRatio) {
+                    dh = height; dw = height * imgRatio;
+                    ox = (width - dw) / 2; oy = 0;
+                } else {
+                    dw = width; dh = width / imgRatio;
+                    ox = 0; oy = (height - dh) / 2;
+                }
+                ctx.drawImage(footballBgImage, ox, oy, dw, dh);
+            } else {
+                const gradient = ctx.createLinearGradient(0, 0, 0, height);
+                gradient.addColorStop(0, '#1a1a1a');
+                gradient.addColorStop(1, '#000000');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, height);
+            }
+
+            // Overlay escuro
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Logo no topo
+            if (uploadedLogo) {
+                const logoH = 150;
+                const logoRatio = uploadedLogo.width / uploadedLogo.height;
+                const logoW = logoH * logoRatio;
+                ctx.drawImage(uploadedLogo, (width - logoW) / 2, 50, logoW, logoH);
+            }
+
+            // Título "JOGOS DO DIA"
+            const today = new Date();
+            const dayNames = ['DOMINGO', 'SEGUNDA', 'TERÇA', 'QUARTA', 'QUINTA', 'SEXTA', 'SÁBADO'];
+            const dateStr = `${dayNames[today.getDay()]} - ${today.getDate().toString().padStart(2, '0')}`;
+
+            ctx.font = '700 64px Oswald, sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.fillText('JOGOS', width/2, 280);
+            ctx.fillText('DO DIA', width/2, 350);
+            
+            ctx.font = '600 32px Oswald, sans-serif';
+            ctx.fillText(dateStr, width/2, 400);
+
+            // Barra lateral "DIA DE JOGO"
+            ctx.save();
+            ctx.translate(width - 60, height/2);
+            ctx.rotate(Math.PI / 2);
+            ctx.font = '700 24px Oswald, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.textAlign = 'center';
+            const sideText = 'DIA DE JOGO  —  DIA DE JOGO  —  DIA DE JOGO';
+            ctx.fillText(sideText, 0, 0);
+            ctx.restore();
+
+            // Lista de jogos (até 5)
+            let yPos = 500;
+            const cardHeight = 200;
+            const cardSpacing = 20;
+            
+            for (let match of matches) {
+                // Card do jogo
+                ctx.fillStyle = 'rgba(40,40,40,0.9)';
+                roundRect(ctx, 60, yPos, width - 120, cardHeight, 16);
+                ctx.fill();
+                
+                // Header do card: [Liga] [Horário] [Ícone Transmissão]
+                ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                roundRect(ctx, 80, yPos + 20, width - 160, 50, 12);
+                ctx.fill();
+                
+                // Liga
+                ctx.fillStyle = '#000';
+                ctx.font = '700 20px Oswald, sans-serif';
+                ctx.textAlign = 'left';
+                const leagueName = match.league.length > 25 ? match.league.substring(0, 22) + '...' : match.league;
+                ctx.fillText(leagueName, 100, yPos + 53);
+                
+                // Horário
+                ctx.font = '700 24px Oswald, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(match.time, width/2, yPos + 53);
+                
+                // Ícone Transmissão (📺)
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'right';
+                ctx.fillText('📺', width - 100, yPos + 53);
+
+                // Logos e times: [Time 1] x [Time 2]
+                const teamY = yPos + 105;
+                const logoSize = 60;
+                
+                // Time da casa
+                if (match.homeLogoImg) {
+                    ctx.drawImage(match.homeLogoImg, 100, teamY, logoSize, logoSize);
+                }
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '600 20px Manrope, sans-serif';
+                ctx.textAlign = 'left';
+                const homeTeam = match.homeTeam.length > 15 ? match.homeTeam.substring(0, 12) + '...' : match.homeTeam;
+                ctx.fillText(homeTeam, 170, teamY + 35);
+
+                // VS
+                ctx.font = '700 28px Oswald, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('X', width/2, teamY + 35);
+
+                // Time visitante
+                if (match.awayLogoImg) {
+                    ctx.drawImage(match.awayLogoImg, width - 160, teamY, logoSize, logoSize);
+                }
+                
+                ctx.textAlign = 'right';
+                ctx.font = '600 20px Manrope, sans-serif';
+                const awayTeam = match.awayTeam.length > 15 ? match.awayTeam.substring(0, 12) + '...' : match.awayTeam;
+                ctx.fillText(awayTeam, width - 230, teamY + 35);
+
+                yPos += cardHeight + cardSpacing;
+            }
+
+            // Rodapé com WhatsApp
+            const footerY = height - 100;
+            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            roundRect(ctx, 60, footerY, width - 120, 70, 16);
+            ctx.fill();
+            
+            ctx.fillStyle = '#25D366';
+            ctx.font = '700 28px Oswald, sans-serif';
+            ctx.textAlign = 'center';
+            const whatsappNum = globalSettings.whatsappNumber || '(XX) XXXXX-XXXX';
+            ctx.fillText(`📱 ${whatsappNum}`, width/2, footerY + 45);
+
+            return {
+                title: `Banner ${bannerNum}`,
+                dataUrl: canvas.toDataURL('image/png'),
+                num: bannerNum,
+                gamesCount: matches.length
+            };
+        }
+
+        function displayGeneratedBanners() {
+            bannersContainer.innerHTML = '<div class="space-y-8 w-full max-w-2xl mx-auto">';
+            
+            generatedBanners.forEach((banner, index) => {
+                const bannerHtml = `
+                    <div class="banner-item bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+                        <div class="p-4 bg-zinc-800 border-b border-zinc-700">
+                            <h3 class="font-oswald text-xl font-bold text-green-400">${banner.title}</h3>
+                            <p class="text-zinc-500 text-sm">${banner.gamesCount} jogo(s)</p>
+                        </div>
+                        <div class="p-4">
+                            <img src="${banner.dataUrl}" class="w-full rounded-lg shadow-lg" alt="${banner.title}">
+                        </div>
+                        <div class="p-4 bg-zinc-800/50">
+                            <button onclick="downloadBanner(${index})" class="w-full bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
+                                    <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,132.69V40a8,8,0,0,0-16,0v92.69L93.66,106.34a8,8,0,0,0-11.32,11.32Z"/>
+                                </svg>
+                                Baixar Banner
+                            </button>
+                        </div>
+                    </div>
+                `;
+                bannersContainer.innerHTML += bannerHtml;
+            });
+            
+            bannersContainer.innerHTML += '</div>';
+        }
+
+        function downloadBanner(index) {
+            const banner = generatedBanners[index];
+            const link = document.createElement('a');
+            link.download = `jogos_banner_${banner.num}.png`;
+            link.href = banner.dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Fechar e limpar após download
+            setTimeout(() => {
+                document.getElementById('bannersContainer').innerHTML = '';
+                canvas.style.display = 'none';
+                selectMode('main');
+            }, 500);
+        }
+
+        // ===== MODO FILMES =====
+        async function loadMoviesMode() {
+            controlPanel.innerHTML = `
+                <header class="border-b border-zinc-800 pb-5">
+                    <h2 class="font-oswald text-2xl font-bold text-red-400">🎬 Banner de Filmes e Séries</h2>
+                </header>
+
+                <section class="mt-5">
+                    <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Buscar Filme ou Série</label>
+                    <div class="relative">
+                        <input type="text" id="movieSearch" placeholder="Digite o nome..."
+                            class="bg-black border-2 border-zinc-800 p-4 pr-14 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 transition-colors w-full rounded-lg">
+                        <button id="movieSearchBtn" class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors p-2">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="movieResults" class="mt-2 max-h-96 overflow-y-auto"></div>
+                </section>
+
+                <section id="movieControls" class="hidden flex flex-col gap-5 mt-5">
+                    <div id="movieSelectedInfo" class="border border-zinc-800 p-4 bg-black/30 rounded-lg"></div>
+                    
+                    <section class="flex flex-col gap-3">
+                        <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label>
+                        <div class="flex gap-2">
+                            <button id="movieFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white">Post</button>
+                            <button id="movieFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600">Story</button>
+                        </div>
+                    </section>
+
+                    <section class="flex flex-col gap-3">
+                        <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Plataforma</label>
+                        <select id="moviePlatform" class="bg-black border border-zinc-800 p-4 text-white focus:outline-none focus:border-red-500 transition-colors w-full appearance-none cursor-pointer rounded pr-10">
+                            <option value="">Selecione</option>
+                            <option value="Netflix">Netflix</option>
+                            <option value="Amazon Prime Video">Amazon Prime Video</option>
+                            <option value="Disney+">Disney+</option>
+                            <option value="HBO Max">HBO Max</option>
+                            <option value="Max">Max</option>
+                            <option value="Apple TV+">Apple TV+</option>
+                            <option value="Paramount+">Paramount+</option>
+                            <option value="Globoplay">Globoplay</option>
+                            <option value="Star+">Star+</option>
+                            <option value="Crunchyroll">Crunchyroll</option>
+                            <option value="Cinema">Cinema</option>
+                        </select>
+                    </section>
+
+                    <button id="movieDownloadBtn" class="w-full bg-red-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-red-400 transition-all flex items-center justify-center gap-3 rounded-lg">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Z"/>
+                        </svg>
+                        Baixar Banner
+                    </button>
+                </section>
+            `;
+
+            let searchTimeout;
+            document.getElementById('movieSearch').addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => searchMovies(e.target.value), 500);
+            });
+
+            document.getElementById('movieFormatPost')?.addEventListener('click', () => {
+                currentFormat = 'post';
+                updateMovieFormatButtons();
+                generateMovieBanner();
+            });
+            document.getElementById('movieFormatStory')?.addEventListener('click', () => {
+                currentFormat = 'story';
+                updateMovieFormatButtons();
+                generateMovieBanner();
+            });
+            document.getElementById('moviePlatform')?.addEventListener('change', generateMovieBanner);
+            document.getElementById('movieDownloadBtn')?.addEventListener('click', downloadMovieBanner);
+        }
+
+        async function searchMovies(query) {
+            if (!query.trim()) {
+                document.getElementById('movieResults').innerHTML = '';
+                return;
+            }
+
+            try {
+                const [moviesRes, seriesRes] = await Promise.all([
+                    fetch(`${TMDB_BASE_URL}/search/movie?language=pt-BR&query=${encodeURIComponent(query)}`),
+                    fetch(`${TMDB_BASE_URL}/search/tv?language=pt-BR&query=${encodeURIComponent(query)}`)
+                ]);
+
+                const moviesData = await moviesRes.json();
+                const seriesData = await seriesRes.json();
+
+                const movies = (moviesData.results || []).slice(0, 5).map(m => ({
+                    id: m.id, type: 'movie', title: m.title,
+                    year: m.release_date ? m.release_date.split('-')[0] : 'N/A',
+                    rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A',
+                    overview: m.overview || 'Sinopse não disponível.',
+                    poster: m.poster_path ? `${TMDB_IMG_BASE}/w500${m.poster_path}` : null,
+                    backdrop: m.backdrop_path ? `${TMDB_IMG_BASE}/original${m.backdrop_path}` : null
+                }));
+
+                const series = (seriesData.results || []).slice(0, 5).map(s => ({
+                    id: s.id, type: 'tv', title: s.name,
+                    year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A',
+                    rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A',
+                    overview: s.overview || 'Sinopse não disponível.',
+                    poster: s.poster_path ? `${TMDB_IMG_BASE}/w500${s.poster_path}` : null,
+                    backdrop: s.backdrop_path ? `${TMDB_IMG_BASE}/original${s.backdrop_path}` : null
+                }));
+
+                displayMovieResults([...movies, ...series]);
+            } catch (error) {
+                console.error('Erro na busca:', error);
+            }
+        }
+
+        function displayMovieResults(results) {
+            const resultsDiv = document.getElementById('movieResults');
+
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<p class="text-zinc-500 text-sm p-3">Nenhum resultado</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = results.map(item => `
+                <div class="search-result flex items-center gap-3 p-3 cursor-pointer border-b border-zinc-800 last:border-b-0 hover:bg-zinc-800/50 transition-colors rounded" onclick='selectMovie(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
+                    ${item.poster ? `<img src="${item.poster}" class="w-12 h-16 object-cover rounded">` : 
+                    `<div class="w-12 h-16 bg-zinc-800 flex items-center justify-center rounded"><svg class="w-5 h-5 text-zinc-600" fill="currentColor" viewBox="0 0 256 256"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Z"/></svg></div>`}
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-sm truncate">${item.title}</p>
+                        <p class="text-zinc-500 text-xs">${item.year} • ${item.type === 'movie' ? 'Filme' : 'Série'} • ⭐ ${item.rating}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function selectMovie(movie) {
+            selectedContent = movie;
+            document.getElementById('movieResults').innerHTML = '';
+            document.getElementById('movieSearch').value = '';
+
+            const endpoint = movie.type === 'movie' ? 'movie' : 'tv';
+            try {
+                const detailsRes = await fetch(`${TMDB_BASE_URL}/${endpoint}/${movie.id}?language=pt-BR`);
+                const details = await detailsRes.json();
+
+                selectedContent.genres = details.genres?.map(g => g.name).join(', ') || 'N/A';
+                selectedContent.runtime = movie.type === 'movie' 
+                    ? (details.runtime ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}min` : 'N/A')
+                    : (details.episode_run_time?.[0] ? `${details.episode_run_time[0]}min/ep` : 'N/A');
+            } catch (e) {}
+
+            const posterUrl = movie.poster || movie.backdrop;
+            if (posterUrl) {
+                posterImage = await loadImage(posterUrl);
+            }
+
+            document.getElementById('movieControls').classList.remove('hidden');
+            document.getElementById('movieSelectedInfo').innerHTML = `
+                <div class="flex gap-3 mb-3">
+                    ${movie.poster ? `<img src="${movie.poster}" class="w-20 h-30 object-cover rounded">` : ''}
+                    <div class="flex-1">
+                        <h3 class="font-oswald text-lg font-bold">${movie.title}</h3>
+                        <p class="text-zinc-500 text-sm">${movie.year} • ${movie.type === 'movie' ? 'Filme' : 'Série'} • ⭐ ${movie.rating}</p>
+                        <p class="text-zinc-400 text-xs mt-2 line-clamp-3">${movie.overview || 'Sem descrição disponível'}</p>
+                    </div>
+                </div>
+                <button onclick="copyMovieInfo()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 256 256">
+                        <path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/>
+                    </svg>
+                    Copiar Informações
+                </button>
+            `;
+
+            generateMovieBanner();
+        }
+
+        function copyMovieInfo() {
+            if (!selectedContent) return;
+            const info = `📽️ ${selectedContent.title}\n\n` +
+                `🎬 Tipo: ${selectedContent.type === 'movie' ? 'Filme' : 'Série'}\n` +
+                `📅 Ano: ${selectedContent.year}\n` +
+                `⭐ Avaliação: ${selectedContent.rating}/10\n` +
+                `🎭 Gêneros: ${selectedContent.genres || 'N/A'}\n` +
+                `⏱️ Duração: ${selectedContent.runtime || 'N/A'}\n\n` +
+                `📝 Sinopse:\n${selectedContent.overview || 'Sem descrição'}`;
+            navigator.clipboard.writeText(info).then(() => {
+                alert('✅ Informações copiadas!');
+            }).catch(() => {
+                alert('❌ Erro ao copiar');
+            });
+        }
+
+        function generateMovieBanner() {
+            if (!selectedContent || currentMode !== 'movies') return;
+
+            const isPost = currentFormat === 'post';
+            const width = 1080;
+            const height = isPost ? 1080 : 1920;
+
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.maxWidth = isPost ? '400px' : '280px';
+
+            if (posterImage) {
+                const imgRatio = posterImage.width / posterImage.height;
+                const canvasRatio = width / height;
+                let dw, dh, ox, oy;
+                if (imgRatio > canvasRatio) {
+                    dh = height; dw = height * imgRatio;
+                    ox = (width - dw) / 2; oy = 0;
+                } else {
+                    dw = width; dh = width / imgRatio;
+                    ox = 0; oy = (height - dh) / 2;
+                }
+                ctx.drawImage(posterImage, ox, oy, dw, dh);
+            } else {
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, width, height);
+            }
+
+            const gradient = ctx.createLinearGradient(0, height * 0.15, 0, height);
+            gradient.addColorStop(0, 'rgba(0,0,0,0)');
+            gradient.addColorStop(0.35, 'rgba(0,0,0,0.5)');
+            gradient.addColorStop(0.6, 'rgba(0,0,0,0.8)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0.95)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+
+            if (uploadedLogo) {
+                ctx.save();
+                ctx.globalAlpha = 0.15;
+                const pSize = 80;
+                const logoRatio = uploadedLogo.width / uploadedLogo.height;
+                const pW = pSize * logoRatio, pH = pSize;
+                const spX = pW + 60, spY = pH + 60;
+                ctx.translate(width/2, height/2);
+                ctx.rotate(-30 * Math.PI / 180);
+                ctx.translate(-width/2, -height/2);
+                for (let y = -height; y < height*2; y += spY) {
+                    for (let x = -width; x < width*2; x += spX) {
+                        ctx.drawImage(uploadedLogo, x, y, pW, pH);
+                    }
+                }
+                ctx.restore();
+
+                const cornerH = 300;
+                const cornerW = cornerH * logoRatio;
+                ctx.globalAlpha = 1;
+                ctx.drawImage(uploadedLogo, width - cornerW, 0, cornerW, cornerH);
+            }
+
+            const padding = 50;
+            const footerY = height - padding;
+            const boxH = 50;
+
+            const waW = 180;
+            ctx.fillStyle = '#25D366';
+            roundRect(ctx, padding, footerY - boxH, waW, boxH, 8);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.font = '600 20px Manrope, sans-serif';
+            ctx.textAlign = 'center';
+            const whatsappNum = globalSettings.whatsappNumber || globalSettings.whatsappText;
+            ctx.fillText(whatsappNum, padding + waW/2, footerY - boxH/2 + 7);
+
+            const ctaW = 180;
+            const ctaX = padding + waW + 15;
+            ctx.fillStyle = '#ef4444';
+            roundRect(ctx, ctaX, footerY - boxH, ctaW, boxH, 8);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.font = '700 20px Manrope, sans-serif';
+            ctx.fillText(globalSettings.ctaText, ctaX + ctaW/2, footerY - boxH/2 + 7);
+
+            let currentY = footerY - boxH - 25;
+
+            ctx.font = '400 24px Manrope, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.textAlign = 'left';
+            const maxTextWidth = width - padding * 2;
+            const maxLines = isPost ? 5 : 7;
+            const synLines = wrapText(ctx, selectedContent.overview, maxTextWidth).slice(0, maxLines);
+            currentY -= 10;
+            for (let i = synLines.length - 1; i >= 0; i--) {
+                ctx.fillText(synLines[i], padding, currentY);
+                currentY -= 32;
+            }
+
+            currentY -= 15;
+
+            ctx.font = '600 24px Manrope, sans-serif';
+            let metaX = padding;
+            const sep = '  •  ';
+
+            ctx.fillStyle = '#eab308';
+            const rt = `★ ${selectedContent.rating}`;
+            ctx.fillText(rt, metaX, currentY);
+            metaX += ctx.measureText(rt).width;
+
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.fillText(sep, metaX, currentY);
+            metaX += ctx.measureText(sep).width;
+
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText(selectedContent.year, metaX, currentY);
+            metaX += ctx.measureText(selectedContent.year).width;
+
+            if (selectedContent.genres !== 'N/A') {
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fillText(sep, metaX, currentY);
+                metaX += ctx.measureText(sep).width;
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                const g = selectedContent.genres.split(',')[0].trim();
+                ctx.fillText(g, metaX, currentY);
+                metaX += ctx.measureText(g).width;
+            }
+
+            if (selectedContent.runtime !== 'N/A') {
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fillText(sep, metaX, currentY);
+                metaX += ctx.measureText(sep).width;
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                ctx.fillText(selectedContent.runtime, metaX, currentY);
+                metaX += ctx.measureText(selectedContent.runtime).width;
+            }
+
+            const plat = document.getElementById('moviePlatform')?.value;
+            if (plat) {
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fillText(sep, metaX, currentY);
+                metaX += ctx.measureText(sep).width;
+                ctx.fillStyle = '#ef4444';
+                ctx.fillText(plat, metaX, currentY);
+            }
+
+            currentY -= 50;
+
+            ctx.font = '700 68px Oswald, sans-serif';
+            ctx.fillStyle = '#fff';
+            const titleLines = wrapText(ctx, selectedContent.title.toUpperCase(), maxTextWidth);
+            for (let i = titleLines.length - 1; i >= 0; i--) {
+                ctx.fillText(titleLines[i], padding, currentY);
+                currentY -= 75;
+            }
+        }
+
+        function updateMovieFormatButtons() {
+            const postBtn = document.getElementById('movieFormatPost');
+            const storyBtn = document.getElementById('movieFormatStory');
+            if (currentFormat === 'post') {
+                postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white';
+                storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600';
+            } else {
+                storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white';
+                postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600';
+            }
+        }
+
+        function downloadMovieBanner() {
+            if (!selectedContent) return;
+            const link = document.createElement('a');
+            link.download = `${selectedContent.title.replace(/[^a-zA-Z0-9]/g, '_')}_${currentFormat}.png`;
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Fechar e limpar após download
+            setTimeout(() => {
+                canvas.style.display = 'none';
+                selectMode('main');
+            }, 500);
+        }
+
+        // ===== MODO VÍDEO =====
+        let selectedVideoMovie = null;
+        let videoTrailerUrl = null;
+
+        function loadVideoMode() {
+            controlPanel.innerHTML = `
+                <header class="border-b border-zinc-800 pb-5">
+                    <h2 class="font-oswald text-2xl font-bold text-purple-400">🎥 Banner de Vídeo</h2>
+                </header>
+
+                <section class="mt-5">
+                    <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Buscar Filme ou Série</label>
+                    <div class="relative">
+                        <input type="text" id="videoSearch" placeholder="Digite o nome..."
+                            class="bg-black border-2 border-zinc-800 p-4 pr-14 text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition-colors w-full rounded-lg">
+                        <button id="videoSearchBtn" class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors p-2">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="videoResults" class="mt-2 max-h-96 overflow-y-auto"></div>
+                </section>
+
+                <section id="videoControls" class="hidden flex flex-col gap-5 mt-5">
+                    <div id="videoSelectedInfo" class="border border-zinc-800 p-4 bg-black/30 rounded-lg"></div>
+                    
+                    <section class="flex flex-col gap-3">
+                        <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label>
+                        <div class="flex gap-2">
+                            <button id="videoFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white">Post</button>
+                            <button id="videoFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600">Story</button>
+                        </div>
+                    </section>
+
+                    <section class="flex flex-col gap-3">
+                        <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Plataforma</label>
+                        <select id="videoPlatform" class="bg-black border border-zinc-800 p-4 text-white focus:outline-none focus:border-purple-500 transition-colors w-full appearance-none cursor-pointer rounded pr-10">
+                            <option value="">Selecione</option>
+                            <option value="Netflix">Netflix</option>
+                            <option value="Amazon Prime Video">Amazon Prime Video</option>
+                            <option value="Disney+">Disney+</option>
+                            <option value="HBO Max">HBO Max</option>
+                            <option value="Max">Max</option>
+                            <option value="Apple TV+">Apple TV+</option>
+                            <option value="Paramount+">Paramount+</option>
+                            <option value="Globoplay">Globoplay</option>
+                            <option value="Star+">Star+</option>
+                        </select>
+                    </section>
+
+                    <div class="border-t border-zinc-800 pt-5">
+                        <h3 class="text-sm font-semibold text-zinc-300 mb-4">📹 Origem do Vídeo:</h3>
+                        
+                        <button id="autoVideoBtn" class="w-full mb-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-4 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M232,128a104,104,0,1,1-104-104A104.11,104.11,0,0,1,232,128Zm-74.34-10.78-52-36A12,12,0,0,0,88,92v72a12,12,0,0,0,17.66,10.78l52-36a12,12,0,0,0,0-21.56Z"/>
+                            </svg>
+                            🎬 Gerar Automaticamente (Trailer)
+                        </button>
+
+                        <div class="mb-3 p-4 border border-zinc-800 rounded-lg">
+                            <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-2">🔗 Ou cole link do YouTube:</label>
+                            <div class="flex gap-2">
+                                <input type="url" id="youtubeUrlInput" placeholder="https://youtube.com/watch?v=..."
+                                    class="flex-1 bg-black border border-zinc-800 p-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 rounded-lg">
+                                <button id="loadYoutubeBtn" class="bg-purple-600 hover:bg-purple-500 text-white px-6 rounded-lg transition-all whitespace-nowrap">
+                                    Carregar
+                                </button>
+                            </div>
+                        </div>
+
+                        <label class="border-2 border-dashed border-zinc-700 p-5 text-center cursor-pointer hover:border-purple-500 transition-colors flex flex-col items-center gap-2 rounded-lg">
+                            <svg class="w-8 h-8 text-zinc-500" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-42.34-77.66a8,8,0,0,1,0,11.32l-24,24a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L120,148.69V104a8,8,0,0,1,16,0v44.69l10.34-10.35A8,8,0,0,1,157.66,138.34Z"/>
+                            </svg>
+                            <span id="videoLocalText" class="text-sm text-zinc-400">📁 Ou carregar vídeo local</span>
+                            <span class="text-xs text-zinc-600">MP4, WebM (Máx 100MB)</span>
+                            <input type="file" id="videoLocalUpload" accept="video/mp4,video/webm" class="hidden">
+                        </label>
+                    </div>
+
+                    <section id="videoPreviewSection" class="hidden border border-purple-500/30 rounded-lg p-5 bg-purple-900/10">
+                        <h3 class="text-sm font-semibold text-purple-300 mb-3">✅ Vídeo Carregado</h3>
+                        <div id="videoPreviewContainer" class="bg-black rounded-lg overflow-hidden mb-4"></div>
+                        
+                        <button id="downloadVideoBtn" class="w-full bg-gradient-to-r from-green-600 to-green-500 text-white font-bold uppercase tracking-widest py-4 hover:from-green-500 hover:to-green-400 transition-all rounded-lg shadow-lg flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,132.69V40a8,8,0,0,0-16,0v92.69L93.66,106.34a8,8,0,0,0-11.32,11.32Z"/>
+                            </svg>
+                            Baixar Vídeo
+                        </button>
+                    </section>
+
+                    <p id="videoStatus" class="text-sm text-center hidden"></p>
+                </section>
+            `;
+
+            const searchInput = document.getElementById('videoSearch');
+            const searchBtn = document.getElementById('videoSearchBtn');
+            
+            searchInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') searchVideoContent();
+            });
+            searchBtn.addEventListener('click', searchVideoContent);
+
+            showVideoPreview();
+        }
+
+        function showVideoPreview() {
+            canvas.width = 1080;
+            canvas.height = 1920;
+            canvas.style.maxWidth = '400px';
+            canvas.style.display = 'block';
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, 1920);
+            gradient.addColorStop(0, '#581c87');
+            gradient.addColorStop(1, '#18181b');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1080, 1920);
+
+            ctx.fillStyle = '#a855f7';
+            ctx.font = '700 64px Oswald, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('BANNER', 540, 900);
+            ctx.fillText('EM VÍDEO', 540, 980);
+            
+            ctx.font = '400 28px Manrope, sans-serif';
+            ctx.fillStyle = '#71717a';
+            ctx.fillText('Busque um filme ou série', 540, 1060);
+        }
+
+        async function searchVideoContent() {
+            const query = document.getElementById('videoSearch').value.trim();
+            const resultsContainer = document.getElementById('videoResults');
+            
+            if (!query) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+
+            resultsContainer.innerHTML = '<p class="text-zinc-500 text-sm p-4">🔍 Buscando...</p>';
+
+            try {
+                const [moviesRes, seriesRes] = await Promise.all([
+                    fetch(`${TMDB_BASE_URL}/search/movie?language=pt-BR&query=${encodeURIComponent(query)}`),
+                    fetch(`${TMDB_BASE_URL}/search/tv?language=pt-BR&query=${encodeURIComponent(query)}`)
+                ]);
+
+                const moviesData = await moviesRes.json();
+                const seriesData = await seriesRes.json();
+
+                const allResults = [
+                    ...moviesData.results.map(m => ({ ...m, type: 'movie' })),
+                    ...seriesData.results.map(s => ({ ...s, type: 'tv' }))
+                ].sort((a, b) => (b.popularity || 0) - (a.popularity || 0)).slice(0, 10);
+
+                if (allResults.length === 0) {
+                    resultsContainer.innerHTML = '<p class="text-zinc-500 text-sm p-4">❌ Nenhum resultado encontrado</p>';
+                    return;
+                }
+
+                resultsContainer.innerHTML = allResults.map(item => {
+                    const title = item.title || item.name;
+                    const year = (item.release_date || item.first_air_date || '').split('-')[0];
+                    const poster = item.poster_path ? `${TMDB_IMG_BASE}/w200${item.poster_path}` : '';
+                    const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
+                    const type = item.type === 'movie' ? '🎬 Filme' : '📺 Série';
+                    
+                    return `
+                        <div class="search-result flex items-center gap-4 p-3 cursor-pointer border-b border-zinc-800 hover:bg-zinc-800/50 transition-colors" 
+                             onclick="selectVideoMovie(${item.id}, '${item.type}', '${title.replace(/'/g, "\\'")}', '${poster}', '${year}', '${rating}', '${(item.overview || '').replace(/'/g, "\\'")}')">
+                            ${poster ? `<img src="${poster}" class="w-16 h-24 object-cover rounded" />` : '<div class="w-16 h-24 bg-zinc-800 rounded flex items-center justify-center text-2xl">🎬</div>'}
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-white">${title}</h4>
+                                <p class="text-sm text-zinc-400">${type} • ${year || 'N/A'} • ⭐ ${rating}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Erro:', error);
+                resultsContainer.innerHTML = '<p class="text-red-500 text-sm p-4">❌ Erro ao buscar</p>';
+            }
+        }
+
+        function selectVideoMovie(id, type, title, poster, year, rating, overview) {
+            selectedVideoMovie = { id, type, title, poster, year, rating, overview };
+            
+            document.getElementById('videoResults').innerHTML = '';
+            document.getElementById('videoSearch').value = title;
+            document.getElementById('videoControls').classList.remove('hidden');
+            
+            document.getElementById('videoSelectedInfo').innerHTML = `
+                <div class="flex gap-3 mb-3">
+                    ${poster ? `<img src="${poster}" class="w-20 h-30 object-cover rounded">` : ''}
+                    <div class="flex-1">
+                        <h3 class="font-oswald text-lg font-bold">${title}</h3>
+                        <p class="text-zinc-500 text-sm">${year} • ${type === 'movie' ? 'Filme' : 'Série'} • ⭐ ${rating}</p>
+                        <p class="text-zinc-400 text-xs mt-2 line-clamp-3">${overview || 'Sem descrição'}</p>
+                    </div>
+                </div>
+                <button onclick="copyVideoInfo()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 256 256">
+                        <path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/>
+                    </svg>
+                    Copiar Informações
+                </button>
+            `;
+
+            // Formatação
+            document.getElementById('videoFormatPost').onclick = () => { currentFormat = 'post'; updateVideoFormatButtons(); };
+            document.getElementById('videoFormatStory').onclick = () => { currentFormat = 'story'; updateVideoFormatButtons(); };
+
+            // Vídeo
+            document.getElementById('autoVideoBtn').onclick = autoGenerateVideo;
+            document.getElementById('loadYoutubeBtn').onclick = loadYoutubeVideo;
+            document.getElementById('videoLocalUpload').onchange = loadLocalVideo;
+        }
+
+        function updateVideoFormatButtons() {
+            const postBtn = document.getElementById('videoFormatPost');
+            const storyBtn = document.getElementById('videoFormatStory');
+            
+            if (currentFormat === 'post') {
+                postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white';
+                storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600';
+            } else {
+                storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-white text-black border-white';
+                postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider transition-all rounded bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600';
+            }
+        }
+
+        function copyVideoInfo() {
+            if (!selectedVideoMovie) return;
+            const info = `📽️ ${selectedVideoMovie.title}\n\n` +
+                `🎬 Tipo: ${selectedVideoMovie.type === 'movie' ? 'Filme' : 'Série'}\n` +
+                `📅 Ano: ${selectedVideoMovie.year}\n` +
+                `⭐ Avaliação: ${selectedVideoMovie.rating}/10\n\n` +
+                `📝 Sinopse:\n${selectedVideoMovie.overview || 'Sem descrição'}`;
+            navigator.clipboard.writeText(info).then(() => {
+                alert('✅ Informações copiadas!');
+            }).catch(() => {
+                alert('❌ Erro ao copiar');
+            });
+        }
+
+        async function autoGenerateVideo() {
+            const statusEl = document.getElementById('videoStatus');
+            statusEl.classList.remove('hidden');
+            statusEl.className = 'text-sm text-center text-yellow-500';
+            statusEl.textContent = '🎬 Buscando trailer...';
+
+            setTimeout(() => {
+                statusEl.className = 'text-sm text-center text-orange-500';
+                statusEl.textContent = '⚠️ Busca automática de trailer em desenvolvimento. Use uma das outras opções.';
+                setTimeout(() => statusEl.classList.add('hidden'), 5000);
+            }, 2000);
+        }
+
+        function loadYoutubeVideo() {
+            const url = document.getElementById('youtubeUrlInput').value.trim();
+            const statusEl = document.getElementById('videoStatus');
+            
+            if (!url) {
+                statusEl.classList.remove('hidden');
+                statusEl.className = 'text-sm text-center text-red-500';
+                statusEl.textContent = '❌ Cole um link do YouTube!';
+                setTimeout(() => statusEl.classList.add('hidden'), 3000);
+                return;
+            }
+
+            videoTrailerUrl = url;
+            displayVideoPreview(url, 'youtube');
+        }
+
+        function loadLocalVideo(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 100 * 1024 * 1024) {
+                alert('⚠️ Arquivo muito grande! Máximo 100MB');
+                return;
+            }
+
+            document.getElementById('videoLocalText').textContent = `✅ ${file.name}`;
+            displayVideoPreview(file, 'file');
+        }
+
+        function displayVideoPreview(source, type) {
+            const previewSection = document.getElementById('videoPreviewSection');
+            const previewContainer = document.getElementById('videoPreviewContainer');
+            
+            previewSection.classList.remove('hidden');
+            
+            if (type === 'youtube') {
+                let videoId = '';
+                if (source.includes('youtube.com')) {
+                    videoId = source.split('v=')[1]?.split('&')[0];
+                } else if (source.includes('youtu.be')) {
+                    videoId = source.split('youtu.be/')[1]?.split('?')[0];
+                }
+
+                if (videoId) {
+                    previewContainer.innerHTML = `
+                        <iframe width="100%" height="300" src="https://www.youtube.com/embed/${videoId}" 
+                            frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen class="rounded-lg"></iframe>
+                    `;
+                } else {
+                    previewContainer.innerHTML = '<p class="text-red-500 text-sm p-4">❌ Link inválido</p>';
+                }
+            } else {
+                const videoEl = document.createElement('video');
+                videoEl.controls = true;
+                videoEl.className = 'w-full max-h-96 object-contain rounded-lg';
+                videoEl.src = URL.createObjectURL(source);
+                
+                previewContainer.innerHTML = '';
+                previewContainer.appendChild(videoEl);
+            }
+
+            document.getElementById('downloadVideoBtn').onclick = downloadVideo;
+        }
+
+        function downloadVideo() {
+            const statusEl = document.getElementById('videoStatus');
+            statusEl.classList.remove('hidden');
+            statusEl.className = 'text-sm text-center text-yellow-500';
+            statusEl.textContent = '⚠️ Download/processamento de vídeo em desenvolvimento...';
+            
+            setTimeout(() => {
+                statusEl.className = 'text-sm text-center text-blue-500';
+                statusEl.textContent = '💡 Por enquanto, baixe o vídeo do YouTube e edite externamente';
+                setTimeout(() => statusEl.classList.add('hidden'), 5000);
+            }, 2000);
+        }

@@ -953,11 +953,20 @@
                 selectedContent.runtime = movie.type === 'movie' 
                     ? (details.runtime ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}min` : 'N/A')
                     : (details.episode_run_time?.[0] ? `${details.episode_run_time[0]}min/ep` : 'N/A');
-            } catch (e) {}
+            } catch (e) {
+                console.error('Erro ao buscar detalhes:', e);
+            }
 
             const posterUrl = movie.poster || movie.backdrop;
             if (posterUrl) {
-                posterImage = await loadImage(posterUrl);
+                try {
+                    posterImage = await loadImage(posterUrl);
+                } catch (e) {
+                    console.error('Erro ao carregar poster:', e);
+                    posterImage = null;
+                }
+            } else {
+                posterImage = null;
             }
 
             document.getElementById('movieControls').classList.remove('hidden');
@@ -978,7 +987,11 @@
                 </button>
             `;
 
-            generateMovieBanner();
+            // Aguardar um pouco para garantir que o DOM foi atualizado
+            setTimeout(() => {
+                console.log('Gerando banner para:', selectedContent.title);
+                generateMovieBanner();
+            }, 200);
         }
 
         function copyMovieInfo() {
@@ -998,7 +1011,12 @@
         }
 
         function generateMovieBanner() {
-            if (!selectedContent || currentMode !== 'movies') return;
+            console.log('generateMovieBanner chamado - selectedContent:', selectedContent, 'currentMode:', currentMode);
+            
+            if (!selectedContent || currentMode !== 'movies') {
+                console.warn('Banner não gerado:', !selectedContent ? 'selectedContent vazio' : 'currentMode incorreto');
+                return;
+            }
 
             const isPost = currentFormat === 'post';
             const width = 1080;
@@ -1008,6 +1026,8 @@
             canvas.height = height;
             canvas.style.maxWidth = isPost ? '400px' : '280px';
             canvas.style.display = 'block';
+            
+            console.log('Canvas configurado:', width, 'x', height);
 
             if (posterImage) {
                 const imgRatio = posterImage.width / posterImage.height;

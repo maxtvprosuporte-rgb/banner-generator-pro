@@ -1,23 +1,23 @@
 {
-  \"name\": \"banner-generator-backend\",
-  \"version\": \"1.0.0\",
-  \"description\": \"Backend proxy para Banner Generator Pro - Protege API keys de Football e TMDB\",
-  \"main\": \"server.js\",
-  \"scripts\": {
-    \"start\": \"node server.js\"
+  "name": "banner-generator-backend",
+  "version": "1.0.0",
+  "description": "Backend proxy para Banner Generator Pro - Protege API keys de Football e TMDB",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
   },
-  \"engines\": {
-    \"node\": \">=18.0.0\"
+  "engines": {
+    "node": ">=18.0.0"
   },
-  \"dependencies\": {
-    \"express\": \"^4.18.2\",
-    \"cors\": \"^2.8.5\",
-    \"node-fetch\": \"^2.7.0\",
-    \"dotenv\": \"^16.3.1\",
-    \"fluent-ffmpeg\": \"^2.1.2\",
-    \"ytdl-core\": \"^4.11.5\"
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "node-fetch": "^2.7.0",
+    "dotenv": "^16.3.1",
+    "fluent-ffmpeg": "^2.1.2",
+    "ytdl-core": "^4.11.5"
   },
-  \"keywords\": [\"banner\", \"generator\", \"proxy\", \"api\", \"video\", \"trailer\"],
-  \"author\": \"\",
-  \"license\": \"MIT\"
+  "keywords": ["banner", "generator", "proxy", "api", "video", "trailer"],
+  "author": "",
+  "license": "MIT"
 }

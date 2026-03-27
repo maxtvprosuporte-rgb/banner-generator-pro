@@ -489,67 +489,95 @@
             }
 
             const btn = document.getElementById('videoGenerateBtn');
-            const progressDiv = document.getElementById('videoProgress');
-            const progressBar = document.getElementById('videoProgressBar');
-            const progressPercent = document.getElementById('videoProgressPercent');
-
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner mx-auto"></div>';
-            progressDiv.classList.remove('hidden');
-
-            // Simular progresso (já que não temos feedback real do servidor)
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                progress += Math.random() * 10;
-                if (progress > 95) progress = 95;
-                progressBar.style.width = progress + '%';
-                progressPercent.textContent = Math.floor(progress) + '%';
-            }, 500);
 
             try {
                 const format = currentFormat === 'story' ? 'story' : 'horizontal';
-                const downloadUrl = `${API_BASE_URL}/api/video/generate?youtubeUrl=${encodeURIComponent(currentTrailer.youtubeUrl)}&format=${format}`;
-
-                // Criar link de download
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.download = `${selectedContent.title.replace(/[^a-zA-Z0-9]/g, '_')}_trailer.mp4`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                clearInterval(progressInterval);
-                progressBar.style.width = '100%';
-                progressPercent.textContent = '100%';
-
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = '✅ DOWNLOAD INICIADO';
-                    setTimeout(() => {
-                        btn.innerHTML = '🎬 GERAR TRAILER MP4';
-                        progressDiv.classList.add('hidden');
-                        progressBar.style.width = '0%';
-                    }, 3000);
-                }, 500);
-
+                
+                // Abrir o vídeo do YouTube em nova aba
+                const youtubeUrl = currentTrailer.youtubeUrl;
+                
+                // Mostrar opções de download
                 videoContainer.innerHTML = `
-                    <div class="text-center p-8 bg-zinc-900/50 border border-purple-500/30 rounded-xl">
-                        <div class="text-6xl mb-4">✅</div>
-                        <h3 class="font-oswald text-2xl font-bold text-purple-400 mb-2">Download Iniciado!</h3>
-                        <p class="text-zinc-400 mb-4">O trailer está sendo processado e será baixado automaticamente.</p>
-                        <p class="text-sm text-zinc-500">⏱️ Tempo estimado: 2-5 minutos</p>
-                        <p class="text-xs text-zinc-600 mt-4">Formato: ${format === 'story' ? '1080x1920 (Vertical)' : '1920x1080 (Horizontal)'}</p>
+                    <div class="text-center p-8 bg-zinc-900/50 border border-purple-500/30 rounded-xl max-w-2xl mx-auto">
+                        <div class="text-6xl mb-4">🎬</div>
+                        <h3 class="font-oswald text-2xl font-bold text-purple-400 mb-4">Como Baixar o Trailer</h3>
+                        
+                        <div class="bg-black/50 border border-zinc-800 rounded-lg p-6 mb-4 text-left">
+                            <p class="text-white font-semibold mb-3">📋 Passo a passo:</p>
+                            <ol class="text-zinc-300 text-sm space-y-2 list-decimal list-inside">
+                                <li>Clique em um dos botões abaixo</li>
+                                <li>No site que abrir, cole a URL do trailer</li>
+                                <li>Escolha a qualidade desejada (720p ou 1080p)</li>
+                                <li>Clique em "Download" ou "Baixar"</li>
+                                <li>Aguarde o download concluir</li>
+                            </ol>
+                        </div>
+
+                        <div class="space-y-3 mb-6">
+                            <a href="https://www.y2mate.com/pt374" target="_blank" 
+                               class="block w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-bold uppercase tracking-widest py-4 px-6 rounded-lg hover:from-red-500 hover:to-red-400 transition-all">
+                                🔽 Baixar via Y2Mate
+                            </a>
+                            
+                            <a href="https://savefrom.net/pt1/" target="_blank"
+                               class="block w-full bg-gradient-to-r from-green-600 to-green-500 text-white font-bold uppercase tracking-widest py-4 px-6 rounded-lg hover:from-green-500 hover:to-green-400 transition-all">
+                                🔽 Baixar via SaveFrom
+                            </a>
+
+                            <a href="https://ytmp3.nu/9bQl/" target="_blank"
+                               class="block w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold uppercase tracking-widest py-4 px-6 rounded-lg hover:from-blue-500 hover:to-blue-400 transition-all">
+                                🔽 Baixar via YTMP3
+                            </a>
+                        </div>
+
+                        <div class="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 mb-4">
+                            <p class="text-purple-300 text-sm font-semibold mb-2">📎 URL do Trailer:</p>
+                            <div class="flex items-center gap-2">
+                                <input type="text" id="trailerUrlInput" value="${youtubeUrl}" readonly
+                                       class="flex-1 bg-black border border-zinc-700 text-white text-xs p-3 rounded">
+                                <button onclick="copyTrailerUrl()" 
+                                        class="bg-purple-500 hover:bg-purple-400 text-white px-4 py-3 rounded font-semibold text-sm">
+                                    📋 Copiar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <a href="${youtubeUrl}" target="_blank"
+                               class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-3 rounded-lg">
+                                ▶️ Ver no YouTube
+                            </a>
+                            <button onclick="window.open('${youtubeUrl}', '_blank')"
+                                    class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-semibold py-3 rounded-lg">
+                                🔗 Abrir Link
+                            </button>
+                        </div>
+
+                        <p class="text-xs text-zinc-500 mt-6">
+                            💡 Dica: Use Y2Mate para melhor qualidade • Formato recomendado: ${format === 'story' ? '1080x1920 (Vertical)' : '1920x1080 (Horizontal)'}
+                        </p>
                     </div>
                 `;
 
-            } catch (error) {
-                clearInterval(progressInterval);
-                console.error('Erro:', error);
-                alert('❌ Erro ao gerar vídeo: ' + error.message);
                 btn.disabled = false;
                 btn.innerHTML = '🎬 GERAR TRAILER MP4';
-                progressDiv.classList.add('hidden');
+
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('❌ Erro: ' + error.message);
+                btn.disabled = false;
+                btn.innerHTML = '🎬 GERAR TRAILER MP4';
             }
+        }
+
+        // Função para copiar URL do trailer
+        window.copyTrailerUrl = function() {
+            const input = document.getElementById('trailerUrlInput');
+            input.select();
+            document.execCommand('copy');
+            alert('✅ URL copiada para área de transferência!');
         }
 
         // ============================================

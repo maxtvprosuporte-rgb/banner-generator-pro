@@ -384,7 +384,12 @@
             }
 
             resultsDiv.innerHTML = cacheInfo + `
-                <p class="text-zinc-400 text-xs mb-3">📊 ${filteredGames.length} jogo${filteredGames.length > 1 ? 's' : ''} encontrado${filteredGames.length > 1 ? 's' : ''}</p>
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-zinc-400 text-xs">📊 ${filteredGames.length} jogo${filteredGames.length > 1 ? 's' : ''} encontrado${filteredGames.length > 1 ? 's' : ''}</p>
+                    <button onclick="copyAllGames()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold py-2 px-3 rounded flex items-center gap-1">
+                        📋 Copiar Todos
+                    </button>
+                </div>
                 ${filteredGames.slice(0, 10).map((game, index) => {
                     const homeTeam = game.teams.home.name;
                     const awayTeam = game.teams.away.name;
@@ -958,18 +963,55 @@
             alert('✅ URL copiada para área de transferência!');
         }
 
-        // Função para copiar informações do jogo de futebol
+        // Função para copiar informações de um jogo (com emojis)
         window.copyFootballInfo = function() {
             if (!selectedContent) return;
             
-            const info = `*${selectedContent.league}*
-*${selectedContent.homeTeam}* x *${selectedContent.awayTeam}*
-Transmissão
-${selectedContent.time}`;
+            const info = `⚽ *${selectedContent.league}*
+🏟️ *${selectedContent.homeTeam}* x *${selectedContent.awayTeam}*
+📺 Transmissão
+🕐 ${selectedContent.time}`;
             
             navigator.clipboard.writeText(info).then(() => {
                 alert('✅ Informações copiadas!');
             }).catch(() => { alert('❌ Erro ao copiar'); });
+        }
+
+        // Função para copiar TODOS os jogos do dia (com emojis)
+        window.copyAllGames = function() {
+            if (!window.footballGames || window.footballGames.length === 0) {
+                alert('❌ Nenhum jogo encontrado!');
+                return;
+            }
+
+            const date = document.getElementById('footballDate').value;
+            const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('pt-BR', { 
+                weekday: 'long', 
+                day: '2-digit', 
+                month: 'long' 
+            });
+
+            let allGamesText = `⚽ *JOGOS DE ${formattedDate.toUpperCase()}*\n\n`;
+
+            window.footballGames.forEach((game, index) => {
+                const league = game.league.name;
+                const homeTeam = game.teams.home.name;
+                const awayTeam = game.teams.away.name;
+                const time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                allGamesText += `${index + 1}. *${league}*\n`;
+                allGamesText += `🏟️ *${homeTeam}* x *${awayTeam}*\n`;
+                allGamesText += `📺 Transmissão\n`;
+                allGamesText += `🕐 ${time}\n\n`;
+            });
+
+            allGamesText += `📊 Total: ${window.footballGames.length} jogo${window.footballGames.length > 1 ? 's' : ''}`;
+
+            navigator.clipboard.writeText(allGamesText).then(() => {
+                alert(`✅ ${window.footballGames.length} jogo${window.footballGames.length > 1 ? 's' : ''} copiado${window.footballGames.length > 1 ? 's' : ''}!`);
+            }).catch(() => { 
+                alert('❌ Erro ao copiar'); 
+            });
         }
 
         // ============================================

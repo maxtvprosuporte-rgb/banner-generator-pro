@@ -1,11 +1,5 @@
 FROM node:18-slim
 
-# Instalar FFmpeg e dependências
-RUN apt-get update && \
-    apt-get install -y ffmpeg python3 make g++ && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
 # Definir diretório de trabalho
 WORKDIR /app
 

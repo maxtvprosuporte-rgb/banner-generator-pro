@@ -642,6 +642,7 @@
 
             // Marca d'água com logo se existir
             if (uploadedLogo) {
+                // Padrão de marca d'água rotacionado
                 ctx.save();
                 ctx.globalAlpha = 0.15;
                 const pSize = 80;
@@ -656,6 +657,15 @@
                         ctx.drawImage(uploadedLogo, x, y, pW, pH);
                     }
                 }
+                ctx.restore();
+                
+                // Logo no canto superior direito
+                ctx.save();
+                ctx.globalAlpha = 1;
+                const cornerSize = 120;
+                const cornerW = cornerSize * logoRatio;
+                const cornerH = cornerSize;
+                ctx.drawImage(uploadedLogo, width - cornerW - 30, 30, cornerW, cornerH);
                 ctx.restore();
             }
 
@@ -1078,14 +1088,42 @@
         window.copyFootballInfo = function() {
             if (!selectedContent) return;
             
-            const info = `⚽ *${selectedContent.league}*
-🏟️ *${selectedContent.homeTeam}* x *${selectedContent.awayTeam}*
-📺 Transmissão
-🕐 ${selectedContent.time}`;
+            const leagueEmoji = getLeagueEmoji(selectedContent.league);
+            
+            const info = `${leagueEmoji} *${selectedContent.league}*
+${selectedContent.homeTeam} x ${selectedContent.awayTeam}
+Canal que vai passar o jogo
+${selectedContent.time}`;
             
             navigator.clipboard.writeText(info).then(() => {
                 alert('✅ Informações copiadas!');
             }).catch(() => { alert('❌ Erro ao copiar'); });
+        }
+
+        // Função para mapear emojis por liga
+        function getLeagueEmoji(leagueName) {
+            const leagueMap = {
+                'Premier League': '👑',
+                'Copa Libertadores': '🏆',
+                'Brasileirão Série A': '🇧🇷',
+                'Serie A': '🇧🇷',
+                'Brasileirão Série B': '📈',
+                'Serie B': '📈',
+                'La Liga': '🇪🇸',
+                'Ligue 1': '🇫🇷',
+                'Bundesliga': '🇩🇪',
+                'UEFA Champions League': '⭐',
+                'FIFA World Cup': '🌍',
+                'World Cup': '🌍'
+            };
+            
+            for (const [key, emoji] of Object.entries(leagueMap)) {
+                if (leagueName.includes(key)) {
+                    return emoji;
+                }
+            }
+            
+            return '⚽'; // Emoji padrão
         }
 
         // Função para copiar TODOS os jogos do dia (com emojis)
@@ -1109,11 +1147,12 @@
                 const homeTeam = game.teams.home.name;
                 const awayTeam = game.teams.away.name;
                 const time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const leagueEmoji = getLeagueEmoji(league);
 
-                allGamesText += `${index + 1}. *${league}*\n`;
-                allGamesText += `🏟️ *${homeTeam}* x *${awayTeam}*\n`;
-                allGamesText += `📺 Transmissão\n`;
-                allGamesText += `🕐 ${time}\n\n`;
+                allGamesText += `${leagueEmoji} *${league}*\n`;
+                allGamesText += `${homeTeam} x ${awayTeam}\n`;
+                allGamesText += `Canal que vai passar o jogo\n`;
+                allGamesText += `${time}\n\n`;
             });
 
             allGamesText += `📊 Total: ${window.footballGames.length} jogo${window.footballGames.length > 1 ? 's' : ''}`;

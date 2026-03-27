@@ -22,16 +22,22 @@
         .box-selector:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
         .modal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal.active { display: flex; }
+        .spinner { border: 3px solid #27272a; border-top: 3px solid #a855f7; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .progress-bar { width: 0%; height: 4px; background: linear-gradient(90deg, #a855f7, #ec4899); transition: width 0.3s ease; }
+        .video-preview { max-width: 100%; max-height: 600px; border-radius: 8px; box-shadow: 0 0 40px rgba(168,85,247,0.3); }
     </style>
 </head>
 <body class="min-h-screen text-white">
 
+    <!-- Botão de Configurações -->
     <button onclick="openSettings()" class="fixed top-6 right-6 z-50 w-12 h-12 bg-zinc-800 hover:bg-zinc-700 rounded-full flex items-center justify-center transition-all shadow-lg" title="Configurações">
         <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 256 256">
             <path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88-29.84q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.21,107.21,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.71,107.71,0,0,0-26.25-10.87,8,8,0,0,0-7.06,1.49L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.21,107.21,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06Z"/>
         </svg>
     </button>
 
+    <!-- Modal de Configurações -->
     <div id="settingsModal" class="modal">
         <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <header class="flex items-center justify-between mb-6">
@@ -67,6 +73,7 @@
         </div>
     </div>
 
+    <!-- Tela Inicial -->
     <div id="homeScreen" class="min-h-screen flex items-center justify-center p-6">
         <div class="w-full max-w-6xl">
             <header class="text-center mb-16">
@@ -94,14 +101,15 @@
                 <div class="box-selector bg-gradient-to-br from-purple-900/20 to-zinc-900 border-2 border-purple-500/30 rounded-2xl p-8 hover:border-purple-500" onclick="selectMode('video')">
                     <div class="text-center">
                         <div class="w-20 h-20 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">🎥</div>
-                        <h3 class="font-oswald text-2xl font-bold mb-3">Banner em Vídeo</h3>
-                        <p class="text-zinc-400 text-sm mb-6">Crie banners animados em MP4</p>
+                        <h3 class="font-oswald text-2xl font-bold mb-3">Trailers em Vídeo</h3>
+                        <p class="text-zinc-400 text-sm mb-6">Gere trailers em MP4 (PT dublado)</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Tela do Editor -->
     <div id="editorScreen" class="min-h-screen hidden">
         <div class="flex flex-col lg:flex-row min-h-screen">
             <div class="w-full lg:w-20 bg-zinc-950 border-r border-zinc-800 flex lg:flex-col items-center justify-start lg:justify-center gap-4 p-4">
@@ -112,6 +120,7 @@
                 <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_#18181b_0%,_#050505_70%)] opacity-50"></div>
                 <div class="relative z-10 w-full max-w-4xl" id="bannersContainer">
                     <canvas id="bannerCanvas" class="canvas-glow max-w-full h-auto rounded-lg mx-auto"></canvas>
+                    <div id="videoContainer" class="hidden flex flex-col items-center gap-4"></div>
                 </div>
             </main>
         </div>
@@ -127,6 +136,7 @@
         let currentFormat = 'post';
         let uploadedLogo = null;
         let posterImage = null;
+        let currentTrailer = null;
         let globalSettings = {
             logo: null,
             whatsappNumber: '',
@@ -139,7 +149,11 @@
         const controlPanel = document.getElementById('controlPanel');
         const canvas = document.getElementById('bannerCanvas');
         const ctx = canvas.getContext('2d');
+        const videoContainer = document.getElementById('videoContainer');
 
+        // ============================================
+        // CONFIGURAÇÕES GLOBAIS
+        // ============================================
         function loadGlobalSettings() {
             try {
                 const saved = localStorage.getItem('bannerGeneratorSettings');
@@ -195,10 +209,16 @@
             document.getElementById('settingsRemoveLogo').classList.add('hidden');
         });
 
+        // ============================================
+        // NAVEGAÇÃO
+        // ============================================
         function selectMode(mode) {
             currentMode = mode;
             homeScreen.classList.add('hidden');
             editorScreen.classList.remove('hidden');
+            canvas.classList.remove('hidden');
+            videoContainer.classList.add('hidden');
+            
             if (mode === 'movies') loadMoviesMode();
             else if (mode === 'football') loadFootballMode();
             else if (mode === 'video') loadVideoMode();
@@ -210,40 +230,335 @@
             currentMode = null;
             selectedContent = null;
             posterImage = null;
+            currentTrailer = null;
         }
 
+        // ============================================
+        // MODO FUTEBOL
+        // ============================================
         function loadFootballMode() {
-            controlPanel.innerHTML = `<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-green-400">⚽ Futebol do Dia</h2><p class="text-zinc-500 text-sm mt-2">Em desenvolvimento - aguardando nova API key</p></header>`;
+            controlPanel.innerHTML = `
+                <header class="border-b border-zinc-800 pb-5">
+                    <h2 class="font-oswald text-2xl font-bold text-green-400">⚽ Futebol do Dia</h2>
+                    <p class="text-zinc-500 text-sm mt-2">Em desenvolvimento - aguardando nova API key</p>
+                </header>
+            `;
             showPlaceholder('⚽', 'FUTEBOL', 'Em desenvolvimento', '#0a4d0a', '#001a00');
         }
 
-        function loadVideoMode() {
-            controlPanel.innerHTML = `<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-purple-400">🎥 Banner em Vídeo</h2><p class="text-zinc-500 text-sm mt-2">Em desenvolvimento</p></header>`;
-            showPlaceholder('🎥', 'VÍDEO', 'Em desenvolvimento', '#581c87', '#18181b');
+        // ============================================
+        // MODO VÍDEO (NOVO!)
+        // ============================================
+        async function loadVideoMode() {
+            controlPanel.innerHTML = `
+                <header class="border-b border-zinc-800 pb-5">
+                    <h2 class="font-oswald text-2xl font-bold text-purple-400">🎥 Gerador de Trailers</h2>
+                    <p class="text-zinc-500 text-sm mt-2">Busque filmes/séries e gere trailers em MP4</p>
+                </header>
+                <section class="mt-5">
+                    <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Buscar Filme ou Série</label>
+                    <div class="relative">
+                        <input type="text" id="videoSearch" placeholder="Digite o nome..." class="bg-black border-2 border-zinc-800 p-4 pr-14 text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 w-full rounded-lg">
+                    </div>
+                    <div id="videoResults" class="mt-2 max-h-96 overflow-y-auto"></div>
+                </section>
+                <section id="videoControls" class="hidden flex flex-col gap-5 mt-5">
+                    <div id="videoSelectedInfo" class="border border-zinc-800 p-4 bg-black/30 rounded-lg"></div>
+                    
+                    <div id="trailerInfo" class="hidden border border-purple-500/30 bg-purple-900/10 p-4 rounded-lg">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-purple-400 text-sm font-semibold">🎬 Trailer Selecionado</span>
+                        </div>
+                        <p id="trailerName" class="text-white text-sm font-semibold"></p>
+                        <p id="trailerLang" class="text-zinc-400 text-xs mt-1"></p>
+                        <a id="trailerYoutubeLink" href="#" target="_blank" class="text-purple-400 hover:text-purple-300 text-xs mt-2 inline-block">Ver no YouTube →</a>
+                    </div>
+
+                    <section class="flex flex-col gap-3">
+                        <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato do Vídeo</label>
+                        <div class="flex gap-2">
+                            <button id="videoFormatHorizontal" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white">
+                                16:9 Horizontal
+                            </button>
+                            <button id="videoFormatVertical" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">
+                                9:16 Story
+                            </button>
+                        </div>
+                    </section>
+
+                    <div id="videoProgress" class="hidden">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm text-zinc-400">Processando vídeo...</span>
+                            <span id="videoProgressPercent" class="text-sm text-purple-400">0%</span>
+                        </div>
+                        <div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+                            <div id="videoProgressBar" class="progress-bar"></div>
+                        </div>
+                        <p class="text-xs text-zinc-500 mt-2">⏱️ Isso pode levar alguns minutos...</p>
+                    </div>
+
+                    <button id="videoGenerateBtn" class="w-full bg-purple-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-purple-400 transition-all flex items-center justify-center gap-3 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        🎬 GERAR TRAILER MP4
+                    </button>
+
+                    <p class="text-xs text-zinc-500 text-center">
+                        ℹ️ Prioridade: PT-BR Dublado > PT-BR > Original
+                    </p>
+                </section>
+            `;
+
+            setTimeout(() => {
+                let searchTimeout;
+                document.getElementById('videoSearch').addEventListener('input', (e) => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => searchVideos(e.target.value), 500);
+                });
+
+                document.getElementById('videoFormatHorizontal').addEventListener('click', () => {
+                    currentFormat = 'horizontal';
+                    updateVideoFormatButtons();
+                });
+
+                document.getElementById('videoFormatVertical').addEventListener('click', () => {
+                    currentFormat = 'story';
+                    updateVideoFormatButtons();
+                });
+
+                document.getElementById('videoGenerateBtn').addEventListener('click', generateTrailerVideo);
+            }, 100);
+
+            canvas.classList.add('hidden');
+            videoContainer.classList.remove('hidden');
+            videoContainer.innerHTML = `
+                <div class="text-center p-12">
+                    <div class="text-8xl mb-6">🎥</div>
+                    <h3 class="font-oswald text-3xl font-bold text-purple-400 mb-3">GERADOR DE TRAILERS</h3>
+                    <p class="text-zinc-400">Busque um filme ou série para começar</p>
+                </div>
+            `;
         }
 
-        function showPlaceholder(icon, title, subtitle, color1, color2) {
-            canvas.width = 1080;
-            canvas.height = 1080;
-            canvas.style.maxWidth = '400px';
-            canvas.style.display = 'block';
-            const gradient = ctx.createLinearGradient(0, 0, 0, 1080);
-            gradient.addColorStop(0, color1);
-            gradient.addColorStop(1, color2);
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 1080, 1080);
-            ctx.font = '200px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(icon, 540, 450);
-            ctx.font = '700 64px Oswald, sans-serif';
-            ctx.fillStyle = '#fff';
-            ctx.fillText(title, 540, 580);
-            ctx.font = '400 28px Manrope, sans-serif';
-            ctx.fillStyle = '#71717a';
-            ctx.fillText(subtitle, 540, 650);
+        async function searchVideos(query) {
+            if (!query.trim()) {
+                document.getElementById('videoResults').innerHTML = '';
+                return;
+            }
+            try {
+                const [moviesRes, seriesRes] = await Promise.all([
+                    fetch(`${TMDB_BASE_URL}/search/movie?language=pt-BR&query=${encodeURIComponent(query)}`),
+                    fetch(`${TMDB_BASE_URL}/search/tv?language=pt-BR&query=${encodeURIComponent(query)}`)
+                ]);
+                const moviesData = await moviesRes.json();
+                const seriesData = await seriesRes.json();
+
+                const movies = (moviesData.results || []).slice(0, 5).map(m => ({
+                    id: m.id, type: 'movie', title: m.title,
+                    year: m.release_date ? m.release_date.split('-')[0] : 'N/A',
+                    rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A',
+                    overview: m.overview || 'Sinopse não disponível.',
+                    poster: m.poster_path ? `${TMDB_IMG_BASE}/w500${m.poster_path}` : null
+                }));
+
+                const series = (seriesData.results || []).slice(0, 5).map(s => ({
+                    id: s.id, type: 'tv', title: s.name,
+                    year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A',
+                    rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A',
+                    overview: s.overview || 'Sinopse não disponível.',
+                    poster: s.poster_path ? `${TMDB_IMG_BASE}/w500${s.poster_path}` : null
+                }));
+
+                displayVideoResults([...movies, ...series]);
+            } catch (error) { console.error('Erro:', error); }
         }
 
+        function displayVideoResults(results) {
+            const resultsDiv = document.getElementById('videoResults');
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<p class="text-zinc-500 text-sm p-3">Nenhum resultado</p>';
+                return;
+            }
+            resultsDiv.innerHTML = results.map((item, index) => `
+                <div class="search-result flex items-center gap-3 p-3 cursor-pointer border-b border-zinc-800 hover:bg-zinc-800/50 rounded" data-index="${index}">
+                    ${item.poster ? `<img src="${item.poster}" class="w-12 h-16 object-cover rounded">` : '<div class="w-12 h-16 bg-zinc-800 rounded flex items-center justify-center">🎬</div>'}
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-sm truncate">${item.title}</p>
+                        <p class="text-zinc-500 text-xs">${item.year} • ${item.type === 'movie' ? 'Filme' : 'Série'} • ⭐ ${item.rating}</p>
+                    </div>
+                </div>
+            `).join('');
+            window.videoSearchResults = results;
+            setTimeout(() => {
+                document.querySelectorAll('#videoResults .search-result').forEach(el => {
+                    el.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        selectVideoContent(window.videoSearchResults[index]);
+                    });
+                });
+            }, 50);
+        }
+
+        async function selectVideoContent(content) {
+            selectedContent = content;
+            currentTrailer = null;
+            document.getElementById('videoResults').innerHTML = '';
+            document.getElementById('videoSearch').value = '';
+            document.getElementById('videoControls').classList.remove('hidden');
+            document.getElementById('trailerInfo').classList.add('hidden');
+
+            document.getElementById('videoSelectedInfo').innerHTML = `
+                <div class="flex gap-3 mb-3">
+                    ${content.poster ? `<img src="${content.poster}" class="w-20 h-30 object-cover rounded">` : ''}
+                    <div class="flex-1">
+                        <h3 class="font-oswald text-lg font-bold">${content.title}</h3>
+                        <p class="text-zinc-500 text-sm">${content.year} • ${content.type === 'movie' ? 'Filme' : 'Série'} • ⭐ ${content.rating}</p>
+                        <p class="text-zinc-400 text-xs mt-2 line-clamp-3">${content.overview}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 mt-3">
+                    <div class="spinner"></div>
+                    <span class="text-sm text-zinc-400">Buscando melhor trailer...</span>
+                </div>
+            `;
+
+            // Buscar melhor trailer
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/video/best-trailer/${content.type}/${content.id}`);
+                const data = await response.json();
+
+                if (response.ok && data.key) {
+                    currentTrailer = data;
+                    displayTrailerInfo(data);
+                } else {
+                    document.getElementById('videoSelectedInfo').innerHTML = `
+                        <div class="flex gap-3 mb-3">
+                            ${content.poster ? `<img src="${content.poster}" class="w-20 h-30 object-cover rounded">` : ''}
+                            <div class="flex-1">
+                                <h3 class="font-oswald text-lg font-bold">${content.title}</h3>
+                                <p class="text-zinc-500 text-sm">${content.year} • ${content.type === 'movie' ? 'Filme' : 'Série'}</p>
+                            </div>
+                        </div>
+                        <div class="bg-red-900/20 border border-red-500/30 p-3 rounded-lg">
+                            <p class="text-red-400 text-sm">❌ Nenhum trailer disponível para este conteúdo</p>
+                        </div>
+                    `;
+                    document.getElementById('videoGenerateBtn').disabled = true;
+                }
+            } catch (error) {
+                console.error('Erro ao buscar trailer:', error);
+                alert('❌ Erro ao buscar trailer');
+            }
+        }
+
+        function displayTrailerInfo(trailer) {
+            document.getElementById('videoSelectedInfo').innerHTML = `
+                <div class="flex gap-3">
+                    ${selectedContent.poster ? `<img src="${selectedContent.poster}" class="w-20 h-30 object-cover rounded">` : ''}
+                    <div class="flex-1">
+                        <h3 class="font-oswald text-lg font-bold">${selectedContent.title}</h3>
+                        <p class="text-zinc-500 text-sm">${selectedContent.year} • ${selectedContent.type === 'movie' ? 'Filme' : 'Série'}</p>
+                    </div>
+                </div>
+            `;
+
+            const priorityText = trailer.priority === 1 ? '🥇 PT-BR Dublado' : 
+                                 trailer.priority === 2 ? '🥈 PT-BR' : '🥉 Original';
+
+            document.getElementById('trailerInfo').classList.remove('hidden');
+            document.getElementById('trailerName').textContent = trailer.name;
+            document.getElementById('trailerLang').textContent = `Idioma: ${trailer.language?.toUpperCase()} • ${priorityText}`;
+            document.getElementById('trailerYoutubeLink').href = trailer.youtubeUrl;
+            document.getElementById('videoGenerateBtn').disabled = false;
+        }
+
+        function updateVideoFormatButtons() {
+            const horizontalBtn = document.getElementById('videoFormatHorizontal');
+            const verticalBtn = document.getElementById('videoFormatVertical');
+            if (currentFormat === 'story') {
+                verticalBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
+                horizontalBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
+            } else {
+                horizontalBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
+                verticalBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
+            }
+        }
+
+        async function generateTrailerVideo() {
+            if (!currentTrailer) {
+                alert('❌ Nenhum trailer selecionado');
+                return;
+            }
+
+            const btn = document.getElementById('videoGenerateBtn');
+            const progressDiv = document.getElementById('videoProgress');
+            const progressBar = document.getElementById('videoProgressBar');
+            const progressPercent = document.getElementById('videoProgressPercent');
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner mx-auto"></div>';
+            progressDiv.classList.remove('hidden');
+
+            // Simular progresso (já que não temos feedback real do servidor)
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 95) progress = 95;
+                progressBar.style.width = progress + '%';
+                progressPercent.textContent = Math.floor(progress) + '%';
+            }, 500);
+
+            try {
+                const format = currentFormat === 'story' ? 'story' : 'horizontal';
+                const downloadUrl = `${API_BASE_URL}/api/video/generate?youtubeUrl=${encodeURIComponent(currentTrailer.youtubeUrl)}&format=${format}`;
+
+                // Criar link de download
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = `${selectedContent.title.replace(/[^a-zA-Z0-9]/g, '_')}_trailer.mp4`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                progressPercent.textContent = '100%';
+
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = '✅ DOWNLOAD INICIADO';
+                    setTimeout(() => {
+                        btn.innerHTML = '🎬 GERAR TRAILER MP4';
+                        progressDiv.classList.add('hidden');
+                        progressBar.style.width = '0%';
+                    }, 3000);
+                }, 500);
+
+                videoContainer.innerHTML = `
+                    <div class="text-center p-8 bg-zinc-900/50 border border-purple-500/30 rounded-xl">
+                        <div class="text-6xl mb-4">✅</div>
+                        <h3 class="font-oswald text-2xl font-bold text-purple-400 mb-2">Download Iniciado!</h3>
+                        <p class="text-zinc-400 mb-4">O trailer está sendo processado e será baixado automaticamente.</p>
+                        <p class="text-sm text-zinc-500">⏱️ Tempo estimado: 2-5 minutos</p>
+                        <p class="text-xs text-zinc-600 mt-4">Formato: ${format === 'story' ? '1080x1920 (Vertical)' : '1920x1080 (Horizontal)'}</p>
+                    </div>
+                `;
+
+            } catch (error) {
+                clearInterval(progressInterval);
+                console.error('Erro:', error);
+                alert('❌ Erro ao gerar vídeo: ' + error.message);
+                btn.disabled = false;
+                btn.innerHTML = '🎬 GERAR TRAILER MP4';
+                progressDiv.classList.add('hidden');
+            }
+        }
+
+        // ============================================
+        // MODO FILMES (CÓDIGO ORIGINAL)
+        // ============================================
         async function loadMoviesMode() {
+            canvas.classList.remove('hidden');
+            videoContainer.classList.add('hidden');
+            
             controlPanel.innerHTML = `
                 <header class="border-b border-zinc-800 pb-5">
                     <h2 class="font-oswald text-2xl font-bold text-red-400">🎬 Banner de Filmes e Séries</h2>
@@ -360,7 +675,7 @@
             `).join('');
             window.movieSearchResults = results;
             setTimeout(() => {
-                document.querySelectorAll('.search-result').forEach(el => {
+                document.querySelectorAll('#movieResults .search-result').forEach(el => {
                     el.addEventListener('click', function() {
                         const index = parseInt(this.getAttribute('data-index'));
                         selectMovie(window.movieSearchResults[index]);
@@ -388,7 +703,6 @@
                     selectedContent.seasons = details.number_of_seasons ? `${details.number_of_seasons} temporada${details.number_of_seasons > 1 ? 's' : ''}` : null;
                 }
 
-                // Buscar plataforma automaticamente
                 const watchRes = await fetch(`${TMDB_BASE_URL}/${endpoint}/${movie.id}/watch`);
                 const watchData = await watchRes.json();
                 const brProviders = watchData.results?.BR?.flatrate || watchData.results?.BR?.ads || [];
@@ -641,6 +955,30 @@ ${selectedContent.overview || 'Sem sinopse'}`;
             document.body.removeChild(link);
         }
 
+        // ============================================
+        // UTILIDADES
+        // ============================================
+        function showPlaceholder(icon, title, subtitle, color1, color2) {
+            canvas.width = 1080;
+            canvas.height = 1080;
+            canvas.style.maxWidth = '400px';
+            canvas.style.display = 'block';
+            const gradient = ctx.createLinearGradient(0, 0, 0, 1080);
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1080, 1080);
+            ctx.font = '200px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(icon, 540, 450);
+            ctx.font = '700 64px Oswald, sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(title, 540, 580);
+            ctx.font = '400 28px Manrope, sans-serif';
+            ctx.fillStyle = '#71717a';
+            ctx.fillText(subtitle, 540, 650);
+        }
+
         function loadImage(url) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -676,6 +1014,9 @@ ${selectedContent.overview || 'Sem sinopse'}`;
             return lines;
         }
 
+        // ============================================
+        // INICIALIZAÇÃO
+        // ============================================
         loadGlobalSettings();
     </script>
 </body>

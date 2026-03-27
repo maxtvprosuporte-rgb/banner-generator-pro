@@ -1,4 +1,4 @@
-"{
+{
   \"name\": \"banner-generator-backend\",
   \"version\": \"1.0.0\",
   \"description\": \"Backend proxy para Banner Generator Pro - Protege API keys de Football e TMDB\",
@@ -21,4 +21,3 @@
   \"author\": \"\",
   \"license\": \"MIT\"
 }
-"

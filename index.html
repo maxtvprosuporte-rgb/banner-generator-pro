@@ -216,8 +216,10 @@
             currentMode = mode;
             homeScreen.classList.add('hidden');
             editorScreen.classList.remove('hidden');
-            canvas.classList.remove('hidden');
-            videoContainer.classList.add('hidden');
+            
+            // Limpar canvas anterior
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            selectedContent = null;
             
             if (mode === 'movies') loadMoviesMode();
             else if (mode === 'football') loadFootballMode();
@@ -333,13 +335,57 @@
         function displayFootballResults(games, fromCache) {
             const resultsDiv = document.getElementById('footballResults');
             
+            // Ligas permitidas (apenas masculino)
+            const allowedLeagues = [
+                'Premier League',
+                'UEFA Champions League',
+                'Copa Libertadores',
+                'Brasileirão Série A',
+                'Brasileirão Série B',
+                'Serie A', // Brasileirão
+                'Serie B', // Brasileirão
+                'La Liga',
+                'Ligue 1',
+                'Bundesliga',
+                'FIFA World Cup',
+                'World Cup'
+            ];
+
+            // Filtrar jogos
+            const filteredGames = games.filter(game => {
+                const leagueName = game.league.name;
+                
+                // Excluir feminino
+                if (leagueName.toLowerCase().includes('women') || 
+                    leagueName.toLowerCase().includes('feminino') ||
+                    leagueName.toLowerCase().includes('femenino')) {
+                    return false;
+                }
+                
+                // Verificar se está nas ligas permitidas
+                return allowedLeagues.some(allowed => 
+                    leagueName.includes(allowed) || 
+                    allowed.includes(leagueName)
+                );
+            });
+            
             const cacheInfo = fromCache ? 
                 '<div class="bg-green-900/20 border border-green-500/30 p-2 rounded mb-3"><p class="text-green-400 text-xs text-center">✅ Dados do cache (24h)</p></div>' : 
                 '<div class="bg-blue-900/20 border border-blue-500/30 p-2 rounded mb-3"><p class="text-blue-400 text-xs text-center">🆕 Dados atualizados da API</p></div>';
 
+            if (filteredGames.length === 0) {
+                resultsDiv.innerHTML = cacheInfo + `
+                    <div class="border border-zinc-800 p-4 rounded-lg text-center">
+                        <p class="text-zinc-400 text-sm">⚽ Nenhum jogo das ligas principais encontrado</p>
+                        <p class="text-zinc-600 text-xs mt-2">Ligas: Premier League, Champions League, Libertadores, Serie A/B, La Liga, Ligue 1, Bundesliga</p>
+                    </div>
+                `;
+                return;
+            }
+
             resultsDiv.innerHTML = cacheInfo + `
-                <p class="text-zinc-400 text-xs mb-3">📊 ${games.length} jogo${games.length > 1 ? 's' : ''} encontrado${games.length > 1 ? 's' : ''}</p>
-                ${games.slice(0, 10).map((game, index) => {
+                <p class="text-zinc-400 text-xs mb-3">📊 ${filteredGames.length} jogo${filteredGames.length > 1 ? 's' : ''} encontrado${filteredGames.length > 1 ? 's' : ''}</p>
+                ${filteredGames.slice(0, 10).map((game, index) => {
                     const homeTeam = game.teams.home.name;
                     const awayTeam = game.teams.away.name;
                     const homeLogo = game.teams.home.logo;
@@ -366,7 +412,7 @@
                 }).join('')}
             `;
 
-            window.footballGames = games;
+            window.footballGames = filteredGames;
             
             setTimeout(() => {
                 document.querySelectorAll('#footballResults .search-result').forEach(el => {
@@ -412,6 +458,9 @@
                         <p>📅 ${selectedContent.date} às ${selectedContent.time}</p>
                         <p>🏟️ ${selectedContent.stadium}</p>
                     </div>
+                    <button onclick="copyFootballInfo()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
+                        📋 Copiar Informações
+                    </button>
                 </div>
             `;
 
@@ -907,6 +956,20 @@
             input.select();
             document.execCommand('copy');
             alert('✅ URL copiada para área de transferência!');
+        }
+
+        // Função para copiar informações do jogo de futebol
+        window.copyFootballInfo = function() {
+            if (!selectedContent) return;
+            
+            const info = `*${selectedContent.league}*
+*${selectedContent.homeTeam}* x *${selectedContent.awayTeam}*
+Transmissão
+${selectedContent.time}`;
+            
+            navigator.clipboard.writeText(info).then(() => {
+                alert('✅ Informações copiadas!');
+            }).catch(() => { alert('❌ Erro ao copiar'); });
         }
 
         // ============================================

@@ -495,6 +495,10 @@
             try {
                 const format = currentFormat === 'story' ? 'story' : 'horizontal';
                 
+                // Esconder o canvas se estiver visível
+                canvas.classList.add('hidden');
+                videoContainer.classList.remove('hidden');
+                
                 // Abrir o vídeo do YouTube em nova aba
                 const youtubeUrl = currentTrailer.youtubeUrl;
                 
@@ -507,7 +511,7 @@
                         <div class="bg-black/50 border border-zinc-800 rounded-lg p-6 mb-4 text-left">
                             <p class="text-white font-semibold mb-3">📋 Passo a passo:</p>
                             <ol class="text-zinc-300 text-sm space-y-2 list-decimal list-inside">
-                                <li>Clique em um dos botões abaixo</li>
+                                <li>Clique no botão abaixo</li>
                                 <li>No site que abrir, cole a URL do trailer</li>
                                 <li>Escolha a qualidade desejada (720p ou 1080p)</li>
                                 <li>Clique em "Download" ou "Baixar"</li>
@@ -516,19 +520,14 @@
                         </div>
 
                         <div class="space-y-3 mb-6">
-                            <a href="https://www.y2mate.com/pt374" target="_blank" 
+                            <a href="https://y2meta.is/en107/" target="_blank" 
                                class="block w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-bold uppercase tracking-widest py-4 px-6 rounded-lg hover:from-red-500 hover:to-red-400 transition-all">
-                                🔽 Baixar via Y2Mate
+                                🔽 Baixar via Y2Meta
                             </a>
                             
                             <a href="https://savefrom.net/pt1/" target="_blank"
                                class="block w-full bg-gradient-to-r from-green-600 to-green-500 text-white font-bold uppercase tracking-widest py-4 px-6 rounded-lg hover:from-green-500 hover:to-green-400 transition-all">
                                 🔽 Baixar via SaveFrom
-                            </a>
-
-                            <a href="https://ytmp3.nu/9bQl/" target="_blank"
-                               class="block w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold uppercase tracking-widest py-4 px-6 rounded-lg hover:from-blue-500 hover:to-blue-400 transition-all">
-                                🔽 Baixar via YTMP3
                             </a>
                         </div>
 
@@ -556,7 +555,7 @@
                         </div>
 
                         <p class="text-xs text-zinc-500 mt-6">
-                            💡 Dica: Use Y2Mate para melhor qualidade • Formato recomendado: ${format === 'story' ? '1080x1920 (Vertical)' : '1920x1080 (Horizontal)'}
+                            💡 Dica: Use Y2Meta para melhor qualidade • Formato recomendado: ${format === 'story' ? '1080x1920 (Vertical)' : '1920x1080 (Horizontal)'}
                         </p>
                     </div>
                 `;

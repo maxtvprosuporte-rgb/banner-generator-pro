@@ -2,10 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const path = require('path');
-const ytdl = require('ytdl-core');
-const ffmpeg = require('fluent-ffmpeg');
-const { PassThrough } = require('stream');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const fs = require('fs');
 require('dotenv').config();
+
+const execAsync = promisify(exec);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -264,7 +266,7 @@ app.get('/api/video/best-trailer/:type/:id', async (req, res) => {
 });
 
 // ============================================
-// ENDPOINT: GERAR VÍDEO (DOWNLOAD + CONVERSÃO)
+// ENDPOINT: GERAR LINK DE DOWNLOAD
 // ============================================
 app.get('/api/video/generate', async (req, res) => {
     try {
@@ -274,73 +276,48 @@ app.get('/api/video/generate', async (req, res) => {
             return res.status(400).json({ error: 'youtubeUrl é obrigatório' });
         }
 
-        // Validar URL do YouTube
-        if (!ytdl.validateURL(youtubeUrl)) {
+        // Extrair ID do vídeo
+        const videoId = extractYouTubeID(youtubeUrl);
+        if (!videoId) {
             return res.status(400).json({ error: 'URL inválida do YouTube' });
         }
 
-        console.log('🎬 Gerando vídeo para:', youtubeUrl);
+        console.log('🎬 Gerando link para vídeo:', videoId);
 
-        // Configurar headers
-        res.setHeader('Content-Type', 'video/mp4');
-        res.setHeader('Content-Disposition', 'attachment; filename="trailer.mp4"');
-
-        // Obter informações do vídeo
-        const info = await ytdl.getInfo(youtubeUrl);
-        
-        // Baixar vídeo em qualidade adequada
-        const videoStream = ytdl(youtubeUrl, {
-            quality: 'highestvideo',
-            filter: 'videoandaudio'
-        });
-
-        // Configurar FFmpeg para conversão
-        const ffmpegCommand = ffmpeg(videoStream)
-            .outputFormat('mp4')
-            .videoCodec('libx264')
-            .audioCodec('aac')
-            .audioBitrate('128k')
-            .videoBitrate('2000k')
-            .size(format === 'story' ? '1080x1920' : '1920x1080') // Vertical ou horizontal
-            .autopad()
-            .outputOptions([
-                '-preset veryfast',
-                '-crf 23',
-                '-movflags frag_keyframe+empty_moov',
-                '-max_muxing_queue_size 1024'
-            ]);
-
-        // Stream direto para o cliente
-        ffmpegCommand.pipe(res, { end: true });
-
-        // Tratamento de erros
-        ffmpegCommand.on('error', (err) => {
-            console.error('❌ Erro FFmpeg:', err.message);
-            if (!res.headersSent) {
-                res.status(500).json({ error: 'Erro ao processar vídeo: ' + err.message });
+        // Retornar opções de download
+        const downloadOptions = {
+            youtubeUrl: youtubeUrl,
+            videoId: videoId,
+            format: format || 'horizontal',
+            // Usar serviços públicos de download
+            downloadLinks: {
+                // Opção 1: Y2Mate (popular)
+                y2mate: `https://www.y2mate.com/youtube/${videoId}`,
+                // Opção 2: SaveFrom
+                savefrom: `https://savefrom.net/#url=${encodeURIComponent(youtubeUrl)}`,
+                // Opção 3: Link direto do YouTube (abre no navegador)
+                youtube: youtubeUrl,
+                // Opção 4: Redirect para download
+                direct: `${API_BASE_URL}/api/video/redirect?url=${encodeURIComponent(youtubeUrl)}`
+            },
+            instructions: {
+                method1: '1. Abra o link Y2Mate abaixo',
+                method2: '2. Escolha a qualidade desejada',
+                method3: '3. Clique em Download',
+                alternative: 'Ou use SaveFrom.net como alternativa'
             }
-        });
+        };
 
-        ffmpegCommand.on('end', () => {
-            console.log('✅ Vídeo gerado com sucesso');
-        });
-
-        // Se o cliente desconectar, parar o processo
-        req.on('close', () => {
-            console.log('⚠️ Cliente desconectou, abortando...');
-            ffmpegCommand.kill('SIGKILL');
-        });
+        res.json(downloadOptions);
 
     } catch (error) {
-        console.error('❌ Erro geral:', error);
-        if (!res.headersSent) {
-            res.status(500).json({ error: error.message });
-        }
+        console.error('❌ Erro:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
 // ============================================
-// ENDPOINT: APENAS BAIXAR (SEM CONVERSÃO)
+// ENDPOINT: APENAS DOWNLOAD (SEM CONVERSÃO)
 // ============================================
 app.get('/api/video/download', async (req, res) => {
     try {
@@ -350,29 +327,41 @@ app.get('/api/video/download', async (req, res) => {
             return res.status(400).json({ error: 'youtubeUrl é obrigatório' });
         }
 
-        if (!ytdl.validateURL(youtubeUrl)) {
+        const videoId = extractYouTubeID(youtubeUrl);
+        if (!videoId) {
             return res.status(400).json({ error: 'URL inválida do YouTube' });
         }
 
-        console.log('📥 Baixando vídeo:', youtubeUrl);
+        console.log('📥 Redirecionando para download:', videoId);
 
-        const info = await ytdl.getInfo(youtubeUrl);
-        const title = info.videoDetails.title.replace(/[^a-zA-Z0-9]/g, '_');
-
-        res.setHeader('Content-Disposition', `attachment; filename="${title}.mp4"`);
-
-        ytdl(youtubeUrl, {
-            quality: 'highest',
-            filter: 'videoandaudio'
-        }).pipe(res);
+        // Redirecionar para serviço de download público
+        res.redirect(`https://www.y2mate.com/youtube/${videoId}`);
 
     } catch (error) {
         console.error('❌ Erro download:', error);
-        if (!res.headersSent) {
-            res.status(500).json({ error: error.message });
-        }
+        res.status(500).json({ error: error.message });
     }
 });
+
+// ============================================
+// ENDPOINT: REDIRECT PARA YOUTUBE
+// ============================================
+app.get('/api/video/redirect', async (req, res) => {
+    const { url } = req.query;
+    if (!url) {
+        return res.status(400).json({ error: 'URL é obrigatória' });
+    }
+    res.redirect(url);
+});
+
+// ============================================
+// FUNÇÃO AUXILIAR: EXTRAIR ID DO YOUTUBE
+// ============================================
+function extractYouTubeID(url) {
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[7].length === 11) ? match[7] : null;
+}
 
 // ============================================
 // ROTAS ESTÁTICAS

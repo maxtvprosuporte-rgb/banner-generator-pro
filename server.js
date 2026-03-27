@@ -16,10 +16,57 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY || '8a0cf7d6b04923d327c7c92f46aa75f7';
+const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY || '4370047ef24c2ea6f95a963dc2574194';
 const TMDB_API_KEY = process.env.TMDB_API_KEY || 'ed3d0c9bfea7f601924b810c07471202';
 const FOOTBALL_API_URL = 'https://v3.football.api-sports.io';
 const TMDB_API_URL = 'https://api.themoviedb.org/3';
+
+// ============================================
+// SISTEMA DE CACHE
+// ============================================
+const cache = new Map();
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 horas
+
+function getCacheKey(url) {
+    return url;
+}
+
+function getCache(key) {
+    const cached = cache.get(key);
+    if (!cached) return null;
+    
+    const now = Date.now();
+    if (now - cached.timestamp > CACHE_DURATION) {
+        cache.delete(key);
+        return null;
+    }
+    
+    console.log('✅ Cache HIT:', key);
+    return cached.data;
+}
+
+function setCache(key, data) {
+    cache.set(key, {
+        data: data,
+        timestamp: Date.now()
+    });
+    console.log('💾 Cache SET:', key);
+}
+
+// Limpar cache antigo a cada hora
+setInterval(() => {
+    const now = Date.now();
+    let deleted = 0;
+    for (const [key, value] of cache.entries()) {
+        if (now - value.timestamp > CACHE_DURATION) {
+            cache.delete(key);
+            deleted++;
+        }
+    }
+    if (deleted > 0) {
+        console.log(`🗑️ Cache limpo: ${deleted} items removidos`);
+    }
+}, 60 * 60 * 1000); // A cada 1 hora
 
 // ============================================
 // PROXY DE IMAGEM
@@ -43,18 +90,43 @@ app.get('/api/image-proxy', async (req, res) => {
 });
 
 // ============================================
-// FOOTBALL API
+// FOOTBALL API COM CACHE
 // ============================================
 app.get('/api/football/fixtures', async (req, res) => {
     try {
         const { date } = req.query;
         if (!date) return res.status(400).json({ error: 'Parametro date obrigatorio' });
+        
+        // Verificar cache primeiro
+        const cacheKey = `football_fixtures_${date}`;
+        const cachedData = getCache(cacheKey);
+        
+        if (cachedData) {
+            return res.json({
+                ...cachedData,
+                fromCache: true,
+                cacheInfo: '✅ Dados do cache (evita chamada à API)'
+            });
+        }
+        
+        // Se não tem cache, faz chamada à API
+        console.log('🌐 API Call:', cacheKey);
         const response = await fetch(FOOTBALL_API_URL + '/fixtures?date=' + date, { 
             headers: { 'x-apisports-key': FOOTBALL_API_KEY } 
         });
+        
         const data = await response.json();
-        res.json(data);
+        
+        // Salvar no cache
+        setCache(cacheKey, data);
+        
+        res.json({
+            ...data,
+            fromCache: false,
+            cacheInfo: '🆕 Dados da API (salvos no cache por 24h)'
+        });
     } catch (error) { 
+        console.error('❌ Erro Football API:', error);
         res.status(500).json({ error: error.message }); 
     }
 });

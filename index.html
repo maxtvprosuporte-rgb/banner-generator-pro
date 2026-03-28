@@ -241,15 +241,36 @@
         
         let footballBgPost = null;
         let footballBgStory = null;
+        let allFootballGames = [];
+        let selectedDate = '';
+        
+        // Mapeamento de transmissões por liga
+        const leagueBroadcasters = {
+            'Brasileirão Série A': '📺 Globo / SporTV / Premiere / Prime Video / CazéTV',
+            'Serie A': '📺 Globo / SporTV / Premiere / Prime Video / CazéTV',
+            'Brasileirão Série B': '📺 ESPN / Disney+ / SporTV',
+            'Serie B': '📺 ESPN / Disney+ / SporTV',
+            'Copa do Brasil': '📺 Globo / SporTV / Premiere / Prime Video',
+            'Copa Libertadores': '📺 Globo / ESPN / Disney+ / Paramount+',
+            'Copa Sul-Americana': '📺 ESPN / Disney+ / Paramount+',
+            'Premier League': '📺 ESPN / Star+',
+            'La Liga': '📺 ESPN / Star+',
+            'Ligue 1': '📺 CazéTV / Prime Video',
+            'Bundesliga': '📺 OneFootball / YouTube',
+            'UEFA Champions League': '📺 SBT / TNT Sports / HBO Max',
+            'FIFA World Cup': '📺 Globo / SporTV / CazéTV',
+            'World Cup': '📺 Globo / SporTV / CazéTV'
+        };
         
         function loadFootballMode() {
-            canvas.classList.remove('hidden');
+            canvas.classList.add('hidden');
             videoContainer.classList.add('hidden');
+            document.getElementById('bannersContainer').innerHTML = '<canvas id="bannerCanvas" class="canvas-glow max-w-full h-auto rounded-lg mx-auto hidden"></canvas>';
             
             controlPanel.innerHTML = `
                 <header class="border-b border-zinc-800 pb-5">
                     <h2 class="font-oswald text-2xl font-bold text-green-400">⚽ Futebol do Dia</h2>
-                    <p class="text-zinc-500 text-sm mt-2">Banners para jogos de hoje</p>
+                    <p class="text-zinc-500 text-sm mt-2">Banners com lista de jogos</p>
                 </header>
                 
                 <section class="mt-5 border border-zinc-800 rounded-lg p-4">
@@ -286,7 +307,6 @@
                     <div id="footballResults" class="mt-4"></div>
                 </section>
                 <section id="footballControls" class="hidden flex flex-col gap-5 mt-5">
-                    <div id="footballSelectedInfo" class="border border-zinc-800 p-4 bg-black/30 rounded-lg"></div>
                     <section class="flex flex-col gap-3">
                         <label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label>
                         <div class="flex gap-2">
@@ -294,9 +314,14 @@
                             <button id="footballFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story</button>
                         </div>
                     </section>
-                    <button id="footballDownloadBtn" class="w-full bg-green-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-green-400 transition-all flex items-center justify-center gap-3 rounded-lg cursor-pointer">
-                        ⬇️ BAIXAR BANNER
-                    </button>
+                    <div class="flex gap-2">
+                        <button id="footballGenerateBtn" class="flex-1 bg-green-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-green-400 transition-all rounded-lg">
+                            🎨 GERAR BANNERS
+                        </button>
+                        <button id="footballCopyBtn" class="flex-1 bg-purple-600 text-white font-bold uppercase tracking-widest py-4 hover:bg-purple-500 transition-all rounded-lg">
+                            📋 COPIAR INFO
+                        </button>
+                    </div>
                 </section>
             `;
 
@@ -312,7 +337,6 @@
                                 footballBgPost = img;
                                 document.getElementById('footballBgPostText').textContent = file.name;
                                 document.getElementById('footballRemoveBgPost').classList.remove('hidden');
-                                if (selectedContent && currentFormat === 'post') generateFootballBanner();
                             };
                             img.src = ev.target.result;
                         };
@@ -325,7 +349,6 @@
                     document.getElementById('footballBgPostInput').value = '';
                     document.getElementById('footballBgPostText').textContent = 'Carregar fundo Post';
                     document.getElementById('footballRemoveBgPost').classList.add('hidden');
-                    if (selectedContent && currentFormat === 'post') generateFootballBanner();
                 });
                 
                 // Background Story
@@ -339,7 +362,6 @@
                                 footballBgStory = img;
                                 document.getElementById('footballBgStoryText').textContent = file.name;
                                 document.getElementById('footballRemoveBgStory').classList.remove('hidden');
-                                if (selectedContent && currentFormat === 'story') generateFootballBanner();
                             };
                             img.src = ev.target.result;
                         };
@@ -352,7 +374,6 @@
                     document.getElementById('footballBgStoryInput').value = '';
                     document.getElementById('footballBgStoryText').textContent = 'Carregar fundo Story';
                     document.getElementById('footballRemoveBgStory').classList.add('hidden');
-                    if (selectedContent && currentFormat === 'story') generateFootballBanner();
                 });
                 
                 document.getElementById('footballSearchBtn').addEventListener('click', searchFootballGames);
@@ -418,18 +439,20 @@
         function displayFootballResults(games, fromCache) {
             const resultsDiv = document.getElementById('footballResults');
             
-            // Ligas permitidas (apenas masculino)
+            // Ligas permitidas (atualizadas)
             const allowedLeagues = [
-                'Premier League',
-                'UEFA Champions League',
-                'Copa Libertadores',
                 'Brasileirão Série A',
+                'Serie A',
                 'Brasileirão Série B',
-                'Serie A', // Brasileirão
-                'Serie B', // Brasileirão
+                'Serie B',
+                'Copa do Brasil',
+                'Copa Libertadores',
+                'Copa Sul-Americana',
+                'Premier League',
                 'La Liga',
                 'Ligue 1',
                 'Bundesliga',
+                'UEFA Champions League',
                 'FIFA World Cup',
                 'World Cup'
             ];
@@ -459,125 +482,45 @@
             if (filteredGames.length === 0) {
                 resultsDiv.innerHTML = cacheInfo + `
                     <div class="border border-zinc-800 p-4 rounded-lg text-center">
-                        <p class="text-zinc-400 text-sm">⚽ Nenhum jogo das ligas principais encontrado</p>
-                        <p class="text-zinc-600 text-xs mt-2">Ligas: Premier League, Champions League, Libertadores, Serie A/B, La Liga, Ligue 1, Bundesliga</p>
+                        <p class="text-zinc-400 text-sm">⚽ Nenhum jogo encontrado</p>
+                        <p class="text-zinc-600 text-xs mt-2">Ligas: Brasileirão A/B, Libertadores, Sul-Americana, Champions, Premier, La Liga, Ligue 1, Bundesliga</p>
                     </div>
                 `;
                 return;
             }
 
+            // Salvar jogos e data
+            allFootballGames = filteredGames;
+            selectedDate = document.getElementById('footballDate').value;
+
             resultsDiv.innerHTML = cacheInfo + `
-                <div class="flex items-center justify-between mb-3">
-                    <p class="text-zinc-400 text-xs">📊 ${filteredGames.length} jogo${filteredGames.length > 1 ? 's' : ''} encontrado${filteredGames.length > 1 ? 's' : ''}</p>
-                    <button onclick="copyAllGames()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold py-2 px-3 rounded flex items-center gap-1">
-                        📋 Copiar Todos
-                    </button>
+                <div class="border border-green-500/30 bg-green-900/10 p-4 rounded-lg">
+                    <p class="text-green-400 text-sm font-semibold mb-2">✅ ${filteredGames.length} jogo${filteredGames.length > 1 ? 's' : ''} encontrado${filteredGames.length > 1 ? 's' : ''}!</p>
+                    <ul class="text-zinc-300 text-xs space-y-1">
+                        ${filteredGames.slice(0, 5).map(game => {
+                            const time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                            return `<li>• ${game.teams.home.name} × ${game.teams.away.name} - ${time}</li>`;
+                        }).join('')}
+                        ${filteredGames.length > 5 ? `<li class="text-zinc-500">... e mais ${filteredGames.length - 5} jogo${filteredGames.length - 5 > 1 ? 's' : ''}</li>` : ''}
+                    </ul>
                 </div>
-                ${filteredGames.slice(0, 10).map((game, index) => {
-                    const homeTeam = game.teams.home.name;
-                    const awayTeam = game.teams.away.name;
-                    const homeLogo = game.teams.home.logo;
-                    const awayLogo = game.teams.away.logo;
-                    const league = game.league.name;
-                    const time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                    
-                    return `
-                        <div class="search-result border border-zinc-800 hover:bg-zinc-800/50 p-3 rounded cursor-pointer mb-2" data-index="${index}">
-                            <div class="flex items-center gap-3 mb-2">
-                                <img src="${homeLogo}" class="w-8 h-8 object-contain" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22><text y=%2220%22 font-size=%2220%22>⚽</text></svg>'">
-                                <span class="flex-1 font-semibold text-sm text-white">${homeTeam}</span>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <img src="${awayLogo}" class="w-8 h-8 object-contain" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22><text y=%2220%22 font-size=%2220%22>⚽</text></svg>'">
-                                <span class="flex-1 font-semibold text-sm text-white">${awayTeam}</span>
-                            </div>
-                            <div class="mt-2 pt-2 border-t border-zinc-800">
-                                <p class="text-zinc-500 text-xs">🏆 ${league}</p>
-                                <p class="text-zinc-500 text-xs">🕐 ${time}</p>
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
             `;
 
-            window.footballGames = filteredGames;
-            
-            setTimeout(() => {
-                document.querySelectorAll('#footballResults .search-result').forEach(el => {
-                    el.addEventListener('click', function() {
-                        const index = parseInt(this.getAttribute('data-index'));
-                        selectFootballGame(window.footballGames[index]);
-                    });
-                });
-            }, 50);
-        }
-
-        async function selectFootballGame(game) {
-            selectedContent = {
-                homeTeam: game.teams.home.name,
-                awayTeam: game.teams.away.name,
-                homeLogo: game.teams.home.logo,
-                awayLogo: game.teams.away.logo,
-                league: game.league.name,
-                leagueLogo: game.league.logo,
-                date: new Date(game.fixture.date).toLocaleDateString('pt-BR'),
-                time: new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                stadium: game.fixture.venue.name || 'Estádio não informado'
-            };
-
-            document.getElementById('footballResults').innerHTML = '';
+            // Mostrar controles
             document.getElementById('footballControls').classList.remove('hidden');
-
-            document.getElementById('footballSelectedInfo').innerHTML = `
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <img src="${selectedContent.homeLogo}" class="w-10 h-10 object-contain" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><text y=%2228%22 font-size=%2228%22>⚽</text></svg>'">
-                            <span class="font-bold text-white">${selectedContent.homeTeam}</span>
-                        </div>
-                        <span class="text-zinc-500 font-bold">VS</span>
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-white">${selectedContent.awayTeam}</span>
-                            <img src="${selectedContent.awayLogo}" class="w-10 h-10 object-contain" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><text y=%2228%22 font-size=%2228%22>⚽</text></svg>'">
-                        </div>
-                    </div>
-                    <div class="text-zinc-400 text-xs space-y-1">
-                        <p>🏆 ${selectedContent.league}</p>
-                        <p>📅 ${selectedContent.date} às ${selectedContent.time}</p>
-                        <p>🏟️ ${selectedContent.stadium}</p>
-                    </div>
-                    <button onclick="copyFootballInfo()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
-                        📋 Copiar Informações
-                    </button>
-                </div>
-            `;
-
-            // Carregar logos
-            try {
-                const [homeLogoImg, awayLogoImg] = await Promise.all([
-                    loadImage(selectedContent.homeLogo),
-                    loadImage(selectedContent.awayLogo)
-                ]);
-                selectedContent.homeLogoImg = homeLogoImg;
-                selectedContent.awayLogoImg = awayLogoImg;
-            } catch (e) {
-                console.error('Erro ao carregar logos:', e);
-            }
-
+            
+            // Adicionar event listeners nos botões
             setTimeout(() => {
                 document.getElementById('footballFormatPost').addEventListener('click', () => {
                     currentFormat = 'post';
                     updateFootballFormatButtons();
-                    generateFootballBanner();
                 });
                 document.getElementById('footballFormatStory').addEventListener('click', () => {
                     currentFormat = 'story';
                     updateFootballFormatButtons();
-                    generateFootballBanner();
                 });
-                document.getElementById('footballDownloadBtn').addEventListener('click', downloadFootballBanner);
-                
-                generateFootballBanner();
+                document.getElementById('footballGenerateBtn').addEventListener('click', generateAllFootballBanners);
+                document.getElementById('footballCopyBtn').addEventListener('click', copyAllFootballGames);
             }, 100);
         }
 
@@ -593,23 +536,94 @@
             }
         }
 
-        function generateFootballBanner() {
-            if (!selectedContent || currentMode !== 'football') return;
+        // Gerar todos os banners com 5 jogos cada
+        async function generateAllFootballBanners() {
+            if (!allFootballGames || allFootballGames.length === 0) {
+                alert('❌ Nenhum jogo encontrado!');
+                return;
+            }
 
+            const btn = document.getElementById('footballGenerateBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner mx-auto"></div>';
+
+            try {
+                // Dividir jogos em grupos de 5
+                const gamesPerBanner = 5;
+                const totalBanners = Math.ceil(allFootballGames.length / gamesPerBanner);
+                
+                // Preparar container
+                const container = document.getElementById('bannersContainer');
+                container.innerHTML = '';
+
+                // Carregar todas as logos primeiro
+                const gamesWithLogos = await Promise.all(allFootballGames.map(async (game) => {
+                    try {
+                        const [homeLogo, awayLogo] = await Promise.all([
+                            loadImage(game.teams.home.logo),
+                            loadImage(game.teams.away.logo)
+                        ]);
+                        return {
+                            ...game,
+                            homeLogoImg: homeLogo,
+                            awayLogoImg: awayLogo
+                        };
+                    } catch (e) {
+                        console.error('Erro ao carregar logos:', e);
+                        return game;
+                    }
+                }));
+
+                // Gerar cada banner
+                for (let i = 0; i < totalBanners; i++) {
+                    const startIdx = i * gamesPerBanner;
+                    const endIdx = Math.min(startIdx + gamesPerBanner, gamesWithLogos.length);
+                    const bannerGames = gamesWithLogos.slice(startIdx, endIdx);
+
+                    // Criar canvas para este banner
+                    const canvasEl = document.createElement('canvas');
+                    canvasEl.className = 'canvas-glow max-w-full h-auto rounded-lg mx-auto mb-4';
+                    canvasEl.id = `footballBanner${i + 1}`;
+                    
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.className = 'w-full max-w-md mx-auto bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-6 rounded-lg mb-8 flex items-center justify-center gap-2';
+                    downloadBtn.innerHTML = `⬇️ BAIXAR BANNER ${i + 1} de ${totalBanners}`;
+                    downloadBtn.onclick = () => downloadBanner(canvasEl, i + 1);
+
+                    container.appendChild(canvasEl);
+                    container.appendChild(downloadBtn);
+
+                    // Gerar o banner
+                    await generateFootballListBanner(canvasEl, bannerGames, i + 1, totalBanners);
+                }
+
+                btn.disabled = false;
+                btn.innerHTML = '🎨 GERAR BANNERS';
+                alert(`✅ ${totalBanners} banner${totalBanners > 1 ? 's' : ''} gerado${totalBanners > 1 ? 's' : ''} com sucesso!`);
+
+            } catch (error) {
+                console.error('Erro ao gerar banners:', error);
+                alert('❌ Erro ao gerar banners: ' + error.message);
+                btn.disabled = false;
+                btn.innerHTML = '🎨 GERAR BANNERS';
+            }
+        }
+
+        // Gerar banner com lista de jogos
+        async function generateFootballListBanner(canvasEl, games, bannerNum, totalBanners) {
+            const ctx = canvasEl.getContext('2d');
             const isPost = currentFormat === 'post';
             const width = 1080;
             const height = isPost ? 1080 : 1920;
 
-            canvas.width = width;
-            canvas.height = height;
-            canvas.style.maxWidth = isPost ? '400px' : '280px';
-            canvas.style.display = 'block';
+            canvasEl.width = width;
+            canvasEl.height = height;
+            canvasEl.style.maxWidth = isPost ? '500px' : '300px';
 
-            // Verificar se há imagem de fundo personalizada
+            // Fundo personalizado ou gradiente
             const bgImage = isPost ? footballBgPost : footballBgStory;
             
             if (bgImage) {
-                // Usar imagem de fundo personalizada
                 const imgRatio = bgImage.width / bgImage.height;
                 const canvasRatio = width / height;
                 let dw, dh, ox, oy;
@@ -627,12 +641,9 @@
                 }
                 
                 ctx.drawImage(bgImage, ox, oy, dw, dh);
-                
-                // Overlay escuro para melhorar legibilidade
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
                 ctx.fillRect(0, 0, width, height);
             } else {
-                // Fundo gradiente verde padrão
                 const gradient = ctx.createLinearGradient(0, 0, 0, height);
                 gradient.addColorStop(0, '#0a4d0a');
                 gradient.addColorStop(1, '#001a00');
@@ -640,115 +651,190 @@
                 ctx.fillRect(0, 0, width, height);
             }
 
-            // Marca d'água com logo se existir
+            // Logo global no canto superior direito (maior)
             if (uploadedLogo) {
-                // Padrão de marca d'água rotacionado
-                ctx.save();
-                ctx.globalAlpha = 0.15;
-                const pSize = 80;
-                const logoRatio = uploadedLogo.width / uploadedLogo.height;
-                const pW = pSize * logoRatio, pH = pSize;
-                const spX = pW + 60, spY = pH + 60;
-                ctx.translate(width/2, height/2);
-                ctx.rotate(-30 * Math.PI / 180);
-                ctx.translate(-width/2, -height/2);
-                for (let y = -height; y < height*2; y += spY) {
-                    for (let x = -width; x < width*2; x += spX) {
-                        ctx.drawImage(uploadedLogo, x, y, pW, pH);
-                    }
-                }
-                ctx.restore();
-                
-                // Logo no canto superior direito
                 ctx.save();
                 ctx.globalAlpha = 1;
-                const cornerSize = 120;
-                const cornerW = cornerSize * logoRatio;
-                const cornerH = cornerSize;
-                ctx.drawImage(uploadedLogo, width - cornerW - 30, 30, cornerW, cornerH);
+                const logoSize = 180; // Aumentado de 120
+                const logoRatio = uploadedLogo.width / uploadedLogo.height;
+                const logoW = logoSize * logoRatio;
+                const logoH = logoSize;
+                ctx.drawImage(uploadedLogo, width - logoW - 30, 30, logoW, logoH);
                 ctx.restore();
             }
 
-            const padding = 50;
-            const centerY = height / 2;
+            let currentY = 80;
 
-            // Logos dos times
-            const logoSize = 250;
-            if (selectedContent.homeLogoImg) {
-                ctx.drawImage(selectedContent.homeLogoImg, padding + 100, centerY - logoSize/2 - 150, logoSize, logoSize);
-            }
-            if (selectedContent.awayLogoImg) {
-                ctx.drawImage(selectedContent.awayLogoImg, width - padding - logoSize - 100, centerY - logoSize/2 - 150, logoSize, logoSize);
-            }
-
-            // VS no centro
-            ctx.font = '700 80px Oswald, sans-serif';
+            // Título "JOGOS DO DIA" + Data
+            ctx.font = '700 56px Oswald, sans-serif';
             ctx.fillStyle = '#fff';
             ctx.textAlign = 'center';
-            ctx.fillText('VS', width/2, centerY - 100);
-
-            // Nomes dos times
-            ctx.font = '700 48px Oswald, sans-serif';
-            ctx.fillStyle = '#fff';
-            ctx.textAlign = 'center';
+            ctx.fillText('JOGOS DO DIA', width / 2, currentY);
             
-            const homeLines = wrapText(ctx, selectedContent.homeTeam.toUpperCase(), 400);
-            let homeY = centerY + 150;
-            homeLines.forEach(line => {
-                ctx.fillText(line, padding + 100 + logoSize/2, homeY);
-                homeY += 55;
+            currentY += 50;
+            const dateFormatted = new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR', { 
+                day: '2-digit', 
+                month: 'long',
+                year: 'numeric'
             });
+            ctx.font = '600 32px Manrope, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText(dateFormatted.toUpperCase(), width / 2, currentY);
 
-            const awayLines = wrapText(ctx, selectedContent.awayTeam.toUpperCase(), 400);
-            let awayY = centerY + 150;
-            awayLines.forEach(line => {
-                ctx.fillText(line, width - padding - logoSize/2 - 100, awayY);
-                awayY += 55;
-            });
+            currentY += 70;
 
-            // Informações do jogo
-            ctx.font = '600 28px Manrope, sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            // Desenhar cada jogo
+            const gameHeight = isPost ? 150 : 180;
+            const padding = 40;
+
+            for (const game of games) {
+                const league = game.league.name;
+                const time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const broadcaster = getBroadcaster(league);
+
+                // Liga e Horário
+                ctx.textAlign = 'left';
+                ctx.font = '600 24px Manrope, sans-serif';
+                ctx.fillStyle = '#22c55e';
+                ctx.fillText(league, padding, currentY);
+
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#fff';
+                ctx.fillText(time, width - padding, currentY);
+
+                currentY += 40;
+
+                // Logos e nomes dos times
+                const logoSize = 80;
+                const teamSpacing = width / 2;
+
+                // Time Casa (esquerda)
+                if (game.homeLogoImg) {
+                    const homeX = teamSpacing / 2 - logoSize / 2;
+                    ctx.drawImage(game.homeLogoImg, homeX, currentY, logoSize, logoSize);
+                }
+                ctx.textAlign = 'center';
+                ctx.font = '600 18px Manrope, sans-serif';
+                ctx.fillStyle = '#fff';
+                const homeTeamWrapped = wrapText(ctx, game.teams.home.name.toUpperCase(), 180);
+                homeTeamWrapped.forEach((line, idx) => {
+                    ctx.fillText(line, teamSpacing / 2, currentY + logoSize + 25 + (idx * 22));
+                });
+
+                // VS (símbolo ×)
+                ctx.font = '700 48px Oswald, sans-serif';
+                ctx.fillStyle = '#fff';
+                ctx.fillText('×', width / 2, currentY + logoSize / 2 + 15);
+
+                // Time Visitante (direita)
+                if (game.awayLogoImg) {
+                    const awayX = teamSpacing + teamSpacing / 2 - logoSize / 2;
+                    ctx.drawImage(game.awayLogoImg, awayX, currentY, logoSize, logoSize);
+                }
+                ctx.textAlign = 'center';
+                ctx.font = '600 18px Manrope, sans-serif';
+                ctx.fillStyle = '#fff';
+                const awayTeamWrapped = wrapText(ctx, game.teams.away.name.toUpperCase(), 180);
+                awayTeamWrapped.forEach((line, idx) => {
+                    ctx.fillText(line, teamSpacing + teamSpacing / 2, currentY + logoSize + 25 + (idx * 22));
+                });
+
+                currentY += logoSize + 50;
+
+                // Transmissão
+                ctx.textAlign = 'center';
+                ctx.font = '500 20px Manrope, sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.fillText(broadcaster, width / 2, currentY);
+
+                currentY += 60;
+            }
+
+            // Aviso de última hora
+            const footerY = height - 100;
             ctx.textAlign = 'center';
-            
-            const infoY = height - 250;
-            ctx.fillText(`🏆 ${selectedContent.league}`, width/2, infoY);
-            ctx.fillText(`📅 ${selectedContent.date} • ${selectedContent.time}`, width/2, infoY + 40);
-            ctx.fillText(`🏟️ ${selectedContent.stadium}`, width/2, infoY + 80);
+            ctx.font = '500 18px Manrope, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.fillText('⚠️ Os canais podem sofrer alteração de última hora', width / 2, footerY);
 
             // Footer com WhatsApp e CTA
-            const footerY = height - padding;
-            const boxH = 50;
+            const boxY = height - 50;
+            const boxH = 45;
 
             ctx.fillStyle = '#25D366';
-            roundRect(ctx, padding, footerY - boxH, 180, boxH, 8);
+            roundRect(ctx, padding, boxY - boxH, 180, boxH, 8);
             ctx.fill();
             ctx.fillStyle = '#fff';
-            ctx.font = '600 20px Manrope, sans-serif';
+            ctx.font = '600 18px Manrope, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, padding + 90, footerY - boxH/2 + 7);
+            ctx.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, padding + 90, boxY - boxH / 2 + 6);
 
             ctx.fillStyle = '#22c55e';
-            roundRect(ctx, padding + 195, footerY - boxH, 180, boxH, 8);
+            roundRect(ctx, padding + 195, boxY - boxH, 180, boxH, 8);
             ctx.fill();
             ctx.fillStyle = '#fff';
-            ctx.font = '700 20px Manrope, sans-serif';
-            ctx.fillText(globalSettings.ctaText, padding + 285, footerY - boxH/2 + 7);
+            ctx.font = '700 18px Manrope, sans-serif';
+            ctx.fillText(globalSettings.ctaText, padding + 285, boxY - boxH / 2 + 6);
         }
 
-        function downloadFootballBanner() {
-            if (!selectedContent) {
-                alert('❌ Selecione um jogo primeiro!');
-                return;
+        // Obter transmissão por liga
+        function getBroadcaster(leagueName) {
+            for (const [key, value] of Object.entries(leagueBroadcasters)) {
+                if (leagueName.includes(key)) {
+                    return value;
+                }
             }
-            const dataUrl = canvas.toDataURL('image/png');
+            return '📺 Verifique a programação';
+        }
+
+        // Download individual de banner
+        function downloadBanner(canvasEl, num) {
+            const dataUrl = canvasEl.toDataURL('image/png');
             const link = document.createElement('a');
-            const filename = `${selectedContent.homeTeam}_vs_${selectedContent.awayTeam}_${currentFormat}`.replace(/[^a-zA-Z0-9_]/g, '_');
-            link.download = `${filename}.png`;
+            const dateStr = new Date(selectedDate).toLocaleDateString('pt-BR').replace(/\//g, '-');
+            link.download = `jogos_${dateStr}_banner_${num}.png`;
             link.href = dataUrl;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        // Copiar informações de todos os jogos
+        function copyAllFootballGames() {
+            if (!allFootballGames || allFootballGames.length === 0) {
+                alert('❌ Nenhum jogo encontrado!');
+                return;
+            }
+
+            const dateFormatted = new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR', { 
+                weekday: 'long', 
+                day: '2-digit', 
+                month: 'long' 
+            });
+
+            let text = `⚽ *JOGOS DE ${dateFormatted.toUpperCase()}*\n\n`;
+
+            allFootballGames.forEach((game, index) => {
+                const league = game.league.name;
+                const leagueEmoji = getLeagueEmoji(league);
+                const homeTeam = game.teams.home.name;
+                const awayTeam = game.teams.away.name;
+                const time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const broadcaster = getBroadcaster(league);
+
+                text += `${leagueEmoji} *${league}* - ${time}\n`;
+                text += `${homeTeam} × ${awayTeam}\n`;
+                text += `${broadcaster}\n\n`;
+            });
+
+            text += `📊 Total: ${allFootballGames.length} jogo${allFootballGames.length > 1 ? 's' : ''}\n`;
+            text += `⚠️ Os canais podem sofrer alteração de última hora`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert(`✅ ${allFootballGames.length} jogo${allFootballGames.length > 1 ? 's' : ''} copiado${allFootballGames.length > 1 ? 's' : ''}!`);
+            }).catch(() => { 
+                alert('❌ Erro ao copiar'); 
+            });
         }
 
         // ============================================
@@ -1084,27 +1170,13 @@
             alert('✅ URL copiada para área de transferência!');
         }
 
-        // Função para copiar informações de um jogo (com emojis)
-        window.copyFootballInfo = function() {
-            if (!selectedContent) return;
-            
-            const leagueEmoji = getLeagueEmoji(selectedContent.league);
-            
-            const info = `${leagueEmoji} *${selectedContent.league}*
-${selectedContent.homeTeam} x ${selectedContent.awayTeam}
-Canal que vai passar o jogo
-${selectedContent.time}`;
-            
-            navigator.clipboard.writeText(info).then(() => {
-                alert('✅ Informações copiadas!');
-            }).catch(() => { alert('❌ Erro ao copiar'); });
-        }
-
         // Função para mapear emojis por liga
         function getLeagueEmoji(leagueName) {
             const leagueMap = {
                 'Premier League': '👑',
                 'Copa Libertadores': '🏆',
+                'Copa Sul-Americana': '🥉',
+                'Copa do Brasil': '🏅',
                 'Brasileirão Série A': '🇧🇷',
                 'Serie A': '🇧🇷',
                 'Brasileirão Série B': '📈',
@@ -1124,44 +1196,6 @@ ${selectedContent.time}`;
             }
             
             return '⚽'; // Emoji padrão
-        }
-
-        // Função para copiar TODOS os jogos do dia (com emojis)
-        window.copyAllGames = function() {
-            if (!window.footballGames || window.footballGames.length === 0) {
-                alert('❌ Nenhum jogo encontrado!');
-                return;
-            }
-
-            const date = document.getElementById('footballDate').value;
-            const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('pt-BR', { 
-                weekday: 'long', 
-                day: '2-digit', 
-                month: 'long' 
-            });
-
-            let allGamesText = `⚽ *JOGOS DE ${formattedDate.toUpperCase()}*\n\n`;
-
-            window.footballGames.forEach((game, index) => {
-                const league = game.league.name;
-                const homeTeam = game.teams.home.name;
-                const awayTeam = game.teams.away.name;
-                const time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                const leagueEmoji = getLeagueEmoji(league);
-
-                allGamesText += `${leagueEmoji} *${league}*\n`;
-                allGamesText += `${homeTeam} x ${awayTeam}\n`;
-                allGamesText += `Canal que vai passar o jogo\n`;
-                allGamesText += `${time}\n\n`;
-            });
-
-            allGamesText += `📊 Total: ${window.footballGames.length} jogo${window.footballGames.length > 1 ? 's' : ''}`;
-
-            navigator.clipboard.writeText(allGamesText).then(() => {
-                alert(`✅ ${window.footballGames.length} jogo${window.footballGames.length > 1 ? 's' : ''} copiado${window.footballGames.length > 1 ? 's' : ''}!`);
-            }).catch(() => { 
-                alert('❌ Erro ao copiar'); 
-            });
         }
 
         // ============================================

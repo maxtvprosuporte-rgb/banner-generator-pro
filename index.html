@@ -536,7 +536,7 @@
             }
         }
 
-        // Gerar todos os banners com 5 jogos cada
+        // Gerar todos os banners com jogos por formato
         async function generateAllFootballBanners() {
             if (!allFootballGames || allFootballGames.length === 0) {
                 alert('❌ Nenhum jogo encontrado!');
@@ -548,8 +548,9 @@
             btn.innerHTML = '<div class="spinner mx-auto"></div>';
 
             try {
-                // Dividir jogos em grupos de 5
-                const gamesPerBanner = 5;
+                // Dividir jogos em grupos: 5 para Post, 7 para Story
+                const isPost = currentFormat === 'post';
+                const gamesPerBanner = isPost ? 5 : 7;
                 const totalBanners = Math.ceil(allFootballGames.length / gamesPerBanner);
                 
                 // Preparar container
@@ -684,8 +685,9 @@
             currentY += 70;
 
             // Desenhar cada jogo
-            const gameHeight = isPost ? 150 : 180;
             const padding = 40;
+            const logoSize = 80;
+            const teamSpacing = width / 2;
 
             for (const game of games) {
                 const league = game.league.name;
@@ -705,9 +707,6 @@
                 currentY += 40;
 
                 // Logos e nomes dos times
-                const logoSize = 80;
-                const teamSpacing = width / 2;
-
                 // Time Casa (esquerda)
                 if (game.homeLogoImg) {
                     const homeX = teamSpacing / 2 - logoSize / 2;
@@ -747,19 +746,20 @@
                 ctx.fillStyle = 'rgba(255,255,255,0.7)';
                 ctx.fillText(broadcaster, width / 2, currentY);
 
-                currentY += 60;
+                currentY += 55;
             }
 
-            // Aviso de última hora
-            const footerY = height - 100;
+            // Aviso de última hora (com espaçamento do último jogo)
+            currentY += 30;
             ctx.textAlign = 'center';
             ctx.font = '500 18px Manrope, sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.6)';
-            ctx.fillText('⚠️ Os canais podem sofrer alteração de última hora', width / 2, footerY);
+            ctx.fillText('⚠️ Os canais podem sofrer alteração de última hora', width / 2, currentY);
 
-            // Footer com WhatsApp e CTA
-            const boxY = height - 50;
+            // Footer com WhatsApp e CTA (garantir que não sobreponha)
+            currentY += 50;
             const boxH = 45;
+            const boxY = Math.max(currentY, height - 60); // Garante no mínimo 60px da base
 
             ctx.fillStyle = '#25D366';
             roundRect(ctx, padding, boxY - boxH, 180, boxH, 8);

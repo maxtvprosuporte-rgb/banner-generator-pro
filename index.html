@@ -246,20 +246,20 @@
         
         // Mapeamento de transmissões por liga
         const leagueBroadcasters = {
-            'Brasileirão Série A': 'SporTV / Premiere / Prime Video / CazéTV',
-            'Serie A': 'SporTV / Premiere / Prime Video / CazéTV',
-            'Brasileirão Série B': 'ESPN / Disney+ / SporTV',
-            'Serie B': 'ESPN / Disney+ / SporTV',
-            'Copa do Brasil': 'SporTV / Premiere / Prime Video',
-            'Copa Libertadores': 'ESPN / Disney+ / Paramount+',
-            'Copa Sul-Americana': 'ESPN / Disney+ / Paramount+',
-            'Premier League': 'ESPN / Star+',
-            'La Liga': 'ESPN / Star+',
-            'Ligue 1': 'CazéTV / Prime Video',
-            'Bundesliga': 'OneFootball / YouTube',
-            'UEFA Champions League': 'SBT / TNT Sports / HBO Max',
-            'FIFA World Cup': 'Globo / SporTV / CazéTV',
-            'World Cup': 'Globo / SporTV / CazéTV'
+            'Brasileirão Série A': '📺 Globo / SporTV / Premiere / Prime Video / CazéTV',
+            'Serie A': '📺 Globo / SporTV / Premiere / Prime Video / CazéTV',
+            'Brasileirão Série B': '📺 ESPN / Disney+ / SporTV',
+            'Serie B': '📺 ESPN / Disney+ / SporTV',
+            'Copa do Brasil': '📺 Globo / SporTV / Premiere / Prime Video',
+            'Copa Libertadores': '📺 Globo / ESPN / Disney+ / Paramount+',
+            'Copa Sul-Americana': '📺 ESPN / Disney+ / Paramount+',
+            'Premier League': '📺 ESPN / Star+',
+            'La Liga': '📺 ESPN / Star+',
+            'Ligue 1': '📺 CazéTV / Prime Video',
+            'Bundesliga': '📺 OneFootball / YouTube',
+            'UEFA Champions League': '📺 SBT / TNT Sports / HBO Max',
+            'FIFA World Cup': '📺 Globo / SporTV / CazéTV',
+            'World Cup': '📺 Globo / SporTV / CazéTV'
         };
         
         function loadFootballMode() {
@@ -656,7 +656,7 @@
             if (uploadedLogo) {
                 ctx.save();
                 ctx.globalAlpha = 1;
-                const logoSize = 130; // Aumentado de 120
+                const logoSize = 180; // Aumentado de 120
                 const logoRatio = uploadedLogo.width / uploadedLogo.height;
                 const logoW = logoSize * logoRatio;
                 const logoH = logoSize;
@@ -686,7 +686,7 @@
 
             // Desenhar cada jogo
             const padding = 40;
-            const logoSize = 80;
+            const logoSize = 90;
             const teamSpacing = width / 2;
 
             for (const game of games) {
@@ -694,59 +694,189 @@
                 const time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                 const broadcaster = getBroadcaster(league);
 
-                // Liga e Horário
+                // ===== ÁREA DE DESTAQUE: LIGA + HORÁRIO =====
+                const headerY = currentY - 8;
+                const headerHeight = 40;
+                
+                // Fundo semi-transparente para Liga + Horário
+                ctx.save();
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                roundRect(ctx, padding - 10, headerY, width - (padding * 2) + 20, headerHeight, 10);
+                ctx.fill();
+                
+                // Borda sutil esverdeada
+                ctx.strokeStyle = 'rgba(34, 197, 94, 0.3)';
+                ctx.lineWidth = 2;
+                roundRect(ctx, padding - 10, headerY, width - (padding * 2) + 20, headerHeight, 10);
+                ctx.stroke();
+                ctx.restore();
+
+                // Liga (com destaque verde)
                 ctx.textAlign = 'left';
-                ctx.font = '600 24px Manrope, sans-serif';
+                ctx.font = '700 22px Manrope, sans-serif';
                 ctx.fillStyle = '#22c55e';
-                ctx.fillText(league, padding, currentY);
+                ctx.fillText('🏆 ' + league, padding, currentY + 18);
 
+                // Horário (com destaque branco)
                 ctx.textAlign = 'right';
+                ctx.font = '700 24px Manrope, sans-serif';
                 ctx.fillStyle = '#fff';
-                ctx.fillText(time, width - padding, currentY);
-
-                currentY += 40;
-
-                // Logos e nomes dos times
-                // Time Casa (esquerda)
-                if (game.homeLogoImg) {
-                    const homeX = teamSpacing / 2 - logoSize / 2;
-                    ctx.drawImage(game.homeLogoImg, homeX, currentY, logoSize, logoSize);
-                }
-                ctx.textAlign = 'center';
-                ctx.font = '600 18px Manrope, sans-serif';
-                ctx.fillStyle = '#fff';
-                const homeTeamWrapped = wrapText(ctx, game.teams.home.name.toUpperCase(), 180);
-                homeTeamWrapped.forEach((line, idx) => {
-                    ctx.fillText(line, teamSpacing / 2, currentY + logoSize + 25 + (idx * 22));
-                });
-
-                // VS (símbolo ×)
-                ctx.font = '700 48px Oswald, sans-serif';
-                ctx.fillStyle = '#fff';
-                ctx.fillText('×', width / 2, currentY + logoSize / 2 + 15);
-
-                // Time Visitante (direita)
-                if (game.awayLogoImg) {
-                    const awayX = teamSpacing + teamSpacing / 2 - logoSize / 2;
-                    ctx.drawImage(game.awayLogoImg, awayX, currentY, logoSize, logoSize);
-                }
-                ctx.textAlign = 'center';
-                ctx.font = '600 18px Manrope, sans-serif';
-                ctx.fillStyle = '#fff';
-                const awayTeamWrapped = wrapText(ctx, game.teams.away.name.toUpperCase(), 180);
-                awayTeamWrapped.forEach((line, idx) => {
-                    ctx.fillText(line, teamSpacing + teamSpacing / 2, currentY + logoSize + 25 + (idx * 22));
-                });
-
-                currentY += logoSize + 50;
-
-                // Transmissão
-                ctx.textAlign = 'center';
-                ctx.font = '500 20px Manrope, sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                ctx.fillText(broadcaster, width / 2, currentY);
+                ctx.fillText('🕐 ' + time, width - padding, currentY + 18);
 
                 currentY += 55;
+
+                // ===== ÁREA DE DESTAQUE: ESCUDOS DOS TIMES =====
+                const teamsAreaY = currentY;
+                
+                // Time Casa (esquerda) - Círculo de fundo
+                const homeX = teamSpacing / 2 - logoSize / 2;
+                
+                // Círculo de fundo com brilho para o escudo
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(homeX + logoSize/2, teamsAreaY + logoSize/2, logoSize/2 + 12, 0, Math.PI * 2);
+                
+                // Gradiente radial para brilho sutil
+                const homeGradient = ctx.createRadialGradient(
+                    homeX + logoSize/2, teamsAreaY + logoSize/2, 0,
+                    homeX + logoSize/2, teamsAreaY + logoSize/2, logoSize/2 + 12
+                );
+                homeGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+                homeGradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.08)');
+                homeGradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+                ctx.fillStyle = homeGradient;
+                ctx.fill();
+                
+                // Borda sutil
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+                
+                // Logo do time casa
+                if (game.homeLogoImg) {
+                    ctx.drawImage(game.homeLogoImg, homeX, teamsAreaY, logoSize, logoSize);
+                }
+                
+                // Nome do time casa
+                ctx.textAlign = 'center';
+                ctx.font = '700 19px Manrope, sans-serif';
+                
+                // Sombra no texto para melhor legibilidade
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 2;
+                
+                ctx.fillStyle = '#fff';
+                const homeTeamWrapped = wrapText(ctx, game.teams.home.name.toUpperCase(), 200);
+                homeTeamWrapped.forEach((line, idx) => {
+                    ctx.fillText(line, teamSpacing / 2, teamsAreaY + logoSize + 30 + (idx * 24));
+                });
+                
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetY = 0;
+
+                // VS (símbolo × com destaque)
+                ctx.save();
+                ctx.font = '700 56px Oswald, sans-serif';
+                
+                // Círculo de fundo para o VS
+                ctx.beginPath();
+                ctx.arc(width / 2, teamsAreaY + logoSize / 2, 35, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Texto VS
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(239, 68, 68, 0.8)';
+                ctx.shadowBlur = 15;
+                ctx.fillText('×', width / 2, teamsAreaY + logoSize / 2 + 18);
+                ctx.restore();
+
+                // Time Visitante (direita) - Círculo de fundo
+                const awayX = teamSpacing + teamSpacing / 2 - logoSize / 2;
+                
+                // Círculo de fundo com brilho para o escudo
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(awayX + logoSize/2, teamsAreaY + logoSize/2, logoSize/2 + 12, 0, Math.PI * 2);
+                
+                const awayGradient = ctx.createRadialGradient(
+                    awayX + logoSize/2, teamsAreaY + logoSize/2, 0,
+                    awayX + logoSize/2, teamsAreaY + logoSize/2, logoSize/2 + 12
+                );
+                awayGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+                awayGradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.08)');
+                awayGradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+                ctx.fillStyle = awayGradient;
+                ctx.fill();
+                
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+                
+                // Logo do time visitante
+                if (game.awayLogoImg) {
+                    ctx.drawImage(game.awayLogoImg, awayX, teamsAreaY, logoSize, logoSize);
+                }
+                
+                // Nome do time visitante
+                ctx.textAlign = 'center';
+                ctx.font = '700 19px Manrope, sans-serif';
+                
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetY = 2;
+                
+                ctx.fillStyle = '#fff';
+                const awayTeamWrapped = wrapText(ctx, game.teams.away.name.toUpperCase(), 200);
+                awayTeamWrapped.forEach((line, idx) => {
+                    ctx.fillText(line, teamSpacing + teamSpacing / 2, teamsAreaY + logoSize + 30 + (idx * 24));
+                });
+                
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetY = 0;
+
+                currentY = teamsAreaY + logoSize + 65;
+
+                // ===== ÁREA DE DESTAQUE: TRANSMISSÃO =====
+                const broadcastY = currentY;
+                const broadcastHeight = 36;
+                const broadcastWidth = Math.min(broadcaster.length * 10 + 60, width - padding * 2);
+                const broadcastX = (width - broadcastWidth) / 2;
+                
+                // Fundo semi-transparente para transmissão
+                ctx.save();
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                roundRect(ctx, broadcastX, broadcastY - 24, broadcastWidth, broadcastHeight, 8);
+                ctx.fill();
+                
+                // Borda com cor de destaque (azul/roxo)
+                ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
+                ctx.lineWidth = 2;
+                roundRect(ctx, broadcastX, broadcastY - 24, broadcastWidth, broadcastHeight, 8);
+                ctx.stroke();
+                ctx.restore();
+                
+                // Texto da transmissão
+                ctx.textAlign = 'center';
+                ctx.font = '600 18px Manrope, sans-serif';
+                
+                ctx.shadowColor = 'rgba(168, 85, 247, 0.5)';
+                ctx.shadowBlur = 10;
+                
+                ctx.fillStyle = '#fff';
+                ctx.fillText(broadcaster, width / 2, broadcastY - 4);
+                
+                ctx.shadowBlur = 0;
+
+                currentY += 50;
             }
 
             // Aviso de última hora (com espaçamento do último jogo)

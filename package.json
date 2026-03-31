@@ -1,13 +1,13 @@
 {
-  "name": "banner-generator-backend",
+  "name": "banner-generator-pro",
   "version": "1.0.0",
-  "description": "Backend para Banner Generator Pro com Football API e TMDB",
+  "description": "Gerador de Banners para Futebol, Filmes e Vídeos",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["banner", "football", "movies", "api"],
+  "keywords": ["banner", "football", "movies", "api", "render"],
   "author": "",
   "license": "ISC",
   "dependencies": {

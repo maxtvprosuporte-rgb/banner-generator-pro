@@ -545,6 +545,11 @@
                     return false;
                 }
                 
+                // Excluir categorias de base (Sub-20, U18, U21, etc.)
+                if (leagueName.match(/u(\d+)|sub[\s-]?(\d+)|under[\s-]?(\d+)|youth/i)) {
+                    return false;
+                }
+                
                 // Verificar se está nas ligas permitidas
                 return allowedLeagues.some(allowed => 
                     leagueName.includes(allowed) || 
@@ -823,7 +828,7 @@
                 const centerX = width / 2;
                 
                 // ESQUERDA: Time Casa (escudo + nome) - SEM CÍRCULO - MAIS CENTRALIZADO
-                const leftX = padding + cardPadding + logoSize / 2 + 35; // +35 para mover para o centro
+                const leftX = padding + cardPadding + logoSize / 2 + 60; // +60 para mover mais para o centro
                 const logoY = currentY + cardHeight / 2 - 5;
                 
                 if (game.homeLogoImg) {
@@ -896,7 +901,7 @@
                 ctx.shadowBlur = 0;
 
                 // DIREITA: Time Visitante (escudo + nome) - SEM CÍRCULO - MAIS CENTRALIZADO
-                const rightX = width - padding - cardPadding - logoSize / 2 - 35; // -35 para mover para o centro
+                const rightX = width - padding - cardPadding - logoSize / 2 - 60; // -60 para mover mais para o centro
                 
                 if (game.awayLogoImg) {
                     // Logo sem círculo de fundo

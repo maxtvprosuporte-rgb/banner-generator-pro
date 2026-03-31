@@ -426,6 +426,9 @@
             return today.toISOString().split('T')[0];
         }
 
+        // ============================================
+        // FUNÇÃO COM CACHE NO NAVEGADOR (localStorage)
+        // ============================================
         async function searchFootballGames() {
             const date = document.getElementById('footballDate').value;
             const btn = document.getElementById('footballSearchBtn');
@@ -436,11 +439,39 @@
                 return;
             }
 
+            // VERIFICAR CACHE DO NAVEGADOR PRIMEIRO
+            const cacheKey = `football_cache_${date}`;
+            const cached = localStorage.getItem(cacheKey);
+            
+            if (cached) {
+                try {
+                    const cachedData = JSON.parse(cached);
+                    const cacheAge = Date.now() - cachedData.timestamp;
+                    const cacheHours = Math.floor(cacheAge / (1000 * 60 * 60));
+                    
+                    // Cache válido por 24 horas
+                    if (cacheAge < 24 * 60 * 60 * 1000) {
+                        console.log(`✅ Usando cache do navegador (${cacheHours}h atrás)`);
+                        resultsDiv.innerHTML = '<p class="text-green-400 text-sm p-3">✅ Dados do cache local (salvo há ' + cacheHours + 'h)</p>';
+                        displayFootballResults(cachedData.data, true);
+                        return;
+                    } else {
+                        // Cache expirado, remover
+                        localStorage.removeItem(cacheKey);
+                        console.log('⏰ Cache expirado, buscando dados novos...');
+                    }
+                } catch (e) {
+                    console.error('❌ Erro ao ler cache:', e);
+                    localStorage.removeItem(cacheKey);
+                }
+            }
+
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner mx-auto"></div>';
-            resultsDiv.innerHTML = '<p class="text-zinc-500 text-sm p-3">🔍 Buscando jogos...</p>';
+            resultsDiv.innerHTML = '<p class="text-zinc-500 text-sm p-3">🔍 Buscando jogos na API...</p>';
 
             try {
+                console.log('🌐 Chamando API para:', date);
                 const response = await fetch(`${API_BASE_URL}/api/football/fixtures?date=${date}`);
                 const data = await response.json();
 
@@ -452,13 +483,22 @@
                     resultsDiv.innerHTML = `
                         <div class="border border-zinc-800 p-4 rounded-lg text-center">
                             <p class="text-zinc-400 text-sm">⚽ Nenhum jogo encontrado para esta data</p>
-                            ${data.fromCache ? '<p class="text-green-400 text-xs mt-2">✅ Dados do cache</p>' : ''}
+                            ${data.fromCache ? '<p class="text-green-400 text-xs mt-2">✅ Dados do cache do servidor</p>' : ''}
                             <p class="text-zinc-500 text-xs mt-2">Tente outra data ou verifique a API</p>
                         </div>
                     `;
                     document.getElementById('footballControls').classList.add('hidden');
                     return;
                 }
+
+                // SALVAR NO CACHE DO NAVEGADOR
+                const cacheData = {
+                    data: data.response,
+                    timestamp: Date.now(),
+                    date: date
+                };
+                localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+                console.log('💾 Dados salvos no cache do navegador para:', date);
 
                 displayFootballResults(data.response, data.fromCache);
             } catch (error) {

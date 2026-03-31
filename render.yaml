@@ -2,9 +2,12 @@ services:
   - type: web
     name: banner-generator-pro
     env: node
-    plan: free
     buildCommand: npm install
     startCommand: node server.js
     envVars:
-      - key: NODE_VERSION
-        value: 18.20.2
+      - key: NODE_ENV
+        value: production
+      - key: FOOTBALL_API_KEY
+        sync: false
+      - key: TMDB_API_KEY
+        sync: false

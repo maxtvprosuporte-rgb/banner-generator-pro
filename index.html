@@ -156,8 +156,8 @@
         const homeScreen = document.getElementById('homeScreen');
         const editorScreen = document.getElementById('editorScreen');
         const controlPanel = document.getElementById('controlPanel');
-        const canvas = document.getElementById('bannerCanvas');
-        const ctx = canvas.getContext('2d');
+        let canvas = document.getElementById('bannerCanvas');
+        let ctx = canvas.getContext('2d');
         const videoContainer = document.getElementById('videoContainer');
 
         // ============================================
@@ -262,12 +262,9 @@
         function clearPreviousBanners() {
             const container = document.getElementById('bannersContainer');
             container.innerHTML = '<canvas id="bannerCanvas" class="canvas-glow max-w-full h-auto rounded-lg mx-auto"></canvas><div id="videoContainer" class="hidden flex flex-col items-center gap-4"></div>';
-            // Reassign references
-            const newCanvas = document.getElementById('bannerCanvas');
-            if (newCanvas && newCanvas !== canvas) {
-                canvas.width = newCanvas.width;
-                canvas.height = newCanvas.height;
-            }
+            // Reassign references to new canvas
+            canvas = document.getElementById('bannerCanvas');
+            ctx = canvas.getContext('2d');
         }
 
         // ============================================
@@ -635,9 +632,9 @@
             btn.innerHTML = '<div class="spinner mx-auto"></div>';
 
             try {
-                // Dividir jogos em grupos: 5 para Post, 7 para Story
+                // Dividir jogos em grupos: 5 para Post, 8 para Story
                 const isPost = currentFormat === 'post';
-                const gamesPerBanner = isPost ? 5 : 7; // Post = 5, Story = 7
+                const gamesPerBanner = isPost ? 5 : 8; // Post = 5, Story = 8
                 const totalBanners = Math.ceil(allFootballGames.length / gamesPerBanner);
                 
                 // Preparar container - limpar banners anteriores

@@ -447,101 +447,33 @@
                 btn.disabled = false;
                 btn.innerHTML = '🔍 BUSCAR JOGOS';
 
-                // Se a API não retornar jogos ou der erro, usar dados de exemplo
+                // Verificar se a API retornou dados
                 if (!data.response || data.response.length === 0) {
-                    console.log('⚠️ API sem dados, usando jogos de exemplo');
-                    const mockGames = getMockFootballGames(date);
-                    displayFootballResults(mockGames, false);
+                    resultsDiv.innerHTML = `
+                        <div class="border border-zinc-800 p-4 rounded-lg text-center">
+                            <p class="text-zinc-400 text-sm">⚽ Nenhum jogo encontrado para esta data</p>
+                            ${data.fromCache ? '<p class="text-green-400 text-xs mt-2">✅ Dados do cache</p>' : ''}
+                            <p class="text-zinc-500 text-xs mt-2">Tente outra data ou verifique a API</p>
+                        </div>
+                    `;
+                    document.getElementById('footballControls').classList.add('hidden');
                     return;
                 }
 
                 displayFootballResults(data.response, data.fromCache);
             } catch (error) {
-                console.error('❌ Erro na API, usando jogos de exemplo:', error);
-                // Em caso de erro, usar dados de exemplo
+                console.error('❌ Erro na API:', error);
                 btn.disabled = false;
                 btn.innerHTML = '🔍 BUSCAR JOGOS';
-                
-                // DADOS DE EXEMPLO para visualização
-                const mockGames = getMockFootballGames(date);
-                displayFootballResults(mockGames, false);
+                resultsDiv.innerHTML = `
+                    <div class="border border-red-500/30 bg-red-900/20 p-4 rounded-lg">
+                        <p class="text-red-400 text-sm">❌ Erro ao buscar jogos</p>
+                        <p class="text-xs text-zinc-500 mt-2">${error.message}</p>
+                        <p class="text-xs text-zinc-400 mt-2">Verifique se a API está rodando</p>
+                    </div>
+                `;
+                document.getElementById('footballControls').classList.add('hidden');
             }
-        }
-
-        // Função para gerar jogos de exemplo
-        function getMockFootballGames(date) {
-            return [
-                {
-                    fixture: { date: `${date}T14:00:00-03:00` },
-                    league: { name: 'Brasileirão Série A' },
-                    teams: {
-                        home: { 
-                            name: 'Flamengo', 
-                            logo: 'https://media.api-sports.io/football/teams/127.png' 
-                        },
-                        away: { 
-                            name: 'Palmeiras', 
-                            logo: 'https://media.api-sports.io/football/teams/128.png' 
-                        }
-                    }
-                },
-                {
-                    fixture: { date: `${date}T16:30:00-03:00` },
-                    league: { name: 'Brasileirão Série A' },
-                    teams: {
-                        home: { 
-                            name: 'Corinthians', 
-                            logo: 'https://media.api-sports.io/football/teams/131.png' 
-                        },
-                        away: { 
-                            name: 'São Paulo', 
-                            logo: 'https://media.api-sports.io/football/teams/126.png' 
-                        }
-                    }
-                },
-                {
-                    fixture: { date: `${date}T19:00:00-03:00` },
-                    league: { name: 'Copa Libertadores' },
-                    teams: {
-                        home: { 
-                            name: 'Fluminense', 
-                            logo: 'https://media.api-sports.io/football/teams/124.png' 
-                        },
-                        away: { 
-                            name: 'Boca Juniors', 
-                            logo: 'https://media.api-sports.io/football/teams/451.png' 
-                        }
-                    }
-                },
-                {
-                    fixture: { date: `${date}T21:30:00-03:00` },
-                    league: { name: 'Premier League' },
-                    teams: {
-                        home: { 
-                            name: 'Manchester United', 
-                            logo: 'https://media.api-sports.io/football/teams/33.png' 
-                        },
-                        away: { 
-                            name: 'Liverpool', 
-                            logo: 'https://media.api-sports.io/football/teams/40.png' 
-                        }
-                    }
-                },
-                {
-                    fixture: { date: `${date}T22:00:00-03:00` },
-                    league: { name: 'La Liga' },
-                    teams: {
-                        home: { 
-                            name: 'Real Madrid', 
-                            logo: 'https://media.api-sports.io/football/teams/541.png' 
-                        },
-                        away: { 
-                            name: 'Barcelona', 
-                            logo: 'https://media.api-sports.io/football/teams/529.png' 
-                        }
-                    }
-                }
-            ];
         }
 
         function displayFootballResults(games, fromCache) {

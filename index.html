@@ -823,12 +823,12 @@
                 ctx.restore();
 
                 // LAYOUT INTERNO DO CARD: Esquerda | Centro | Direita
-                const cardPadding = 15; // REDUZIDO de 25 para 15 - times mais centralizados
+                const cardPadding = 15;
                 const logoSize = Math.min(75, cardHeight - 50);
                 const centerX = width / 2;
                 
-                // ESQUERDA: Time Casa (escudo + nome) - SEM CÍRCULO - MAIS CENTRALIZADO
-                const leftX = padding + cardPadding + logoSize / 2 + 60; // +60 para mover mais para o centro
+                // ESQUERDA: Time Casa (escudo + nome) - POSIÇÃO ESTRELA VERMELHA
+                const leftX = padding + cardPadding + logoSize / 2 + 120; // +120 para centralizar conforme estrela
                 const logoY = currentY + cardHeight / 2 - 5;
                 
                 if (game.homeLogoImg) {
@@ -900,8 +900,8 @@
                 ctx.fillText(broadcastClean, centerX, centerTextY + 40); // AUMENTADO de +34 para +40
                 ctx.shadowBlur = 0;
 
-                // DIREITA: Time Visitante (escudo + nome) - SEM CÍRCULO - MAIS CENTRALIZADO
-                const rightX = width - padding - cardPadding - logoSize / 2 - 60; // -60 para mover mais para o centro
+                // DIREITA: Time Visitante (escudo + nome) - POSIÇÃO ESTRELA VERMELHA
+                const rightX = width - padding - cardPadding - logoSize / 2 - 120; // -120 para centralizar conforme estrela
                 
                 if (game.awayLogoImg) {
                     // Logo sem círculo de fundo

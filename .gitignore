@@ -1,24 +1,149 @@
-# Dependências
+# ============================================
+# DEPENDÊNCIAS
+# ============================================
 node_modules/
 yarn.lock
 package-lock.json
+.pnp
+.pnp.js
+.yarn/install-state.gz
 
-# Variáveis de ambiente (NUNCA commitar)
+# ============================================
+# VARIÁVEIS DE AMBIENTE (SEGURANÇA CRÍTICA!)
+# ============================================
 .env
+.env.local
+.env.development
+.env.production
+.env.test
+.env*.local
 
-# Logs
+# Backups de .env (NUNCA commitar!)
+.env.backup
+.env.old
+*.env.backup
+
+# Credenciais e tokens
+*credentials.json*
+*token.json*
+*secret*.json
+*private*.json
+
+# ============================================
+# LOGS
+# ============================================
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
-# Sistema operacional
+# ============================================
+# BUILD E PRODUÇÃO
+# ============================================
+/build
+/dist
+/out
+.next/
+.nuxt/
+.cache/
+*.tsbuildinfo
+next-env.d.ts
+
+# ============================================
+# TESTES E COVERAGE
+# ============================================
+/coverage
+/.nyc_output
+.jest-cache
+*.lcov
+
+# ============================================
+# SISTEMA OPERACIONAL
+# ============================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
-# Editor
+# ============================================
+# EDITORES E IDEs
+# ============================================
 .vscode/
 .idea/
 *.swp
 *.swo
+*.swn
 *~
+.project
+.classpath
+.settings/
+.metadata
+*.sublime-workspace
+*.sublime-project
+
+# ============================================
+# PYTHON (se usar backend Python)
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ============================================
+# TEMPORÁRIOS E CACHE
+# ============================================
+*.tmp
+*.temp
+*.bak
+*.cache
+.sass-cache/
+*.pid
+*.seed
+*.pid.lock
+
+# ============================================
+# DEPLOY E VERCEL
+# ============================================
+.vercel
+.netlify
+
+# ============================================
+# DADOS SENSÍVEIS
+# ============================================
+# Banco de dados local
+*.db
+*.sqlite
+*.sqlite3
+dump.rdb
+
+# Arquivos grandes e compactados
+*.zip
+*.tar.gz
+*.tar
+*.tgz
+*.rar
+*.7z
+
+# ============================================
+# ESPECÍFICOS DO PROJETO
+# ============================================
+# Adicione aqui arquivos específicos do seu projeto
+# Exemplo:
+# /uploads
+# /temp
+# /data

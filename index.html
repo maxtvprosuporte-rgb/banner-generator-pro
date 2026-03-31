@@ -635,9 +635,9 @@
             btn.innerHTML = '<div class="spinner mx-auto"></div>';
 
             try {
-                // Dividir jogos em grupos: 6 para Post, 12 para Story
+                // Dividir jogos em grupos: 5 para Post, 7 para Story
                 const isPost = currentFormat === 'post';
-                const gamesPerBanner = isPost ? 6 : 12; // Post = 6, Story = 12
+                const gamesPerBanner = isPost ? 5 : 7; // Post = 5, Story = 7
                 const totalBanners = Math.ceil(allFootballGames.length / gamesPerBanner);
                 
                 // Preparar container - limpar banners anteriores

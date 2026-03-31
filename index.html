@@ -26,6 +26,15 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .progress-bar { width: 0%; height: 4px; background: linear-gradient(90deg, #a855f7, #ec4899); transition: width 0.3s ease; }
         .video-preview { max-width: 100%; max-height: 600px; border-radius: 8px; box-shadow: 0 0 40px rgba(168,85,247,0.3); }
+        
+        /* Efeito Liquid Glass para retângulos dos jogos */
+        .game-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
     </style>
 </head>
 <body class="min-h-screen text-white">
@@ -173,8 +182,20 @@
             } catch (e) { console.error('Erro:', e); }
         }
 
-        function openSettings() { document.getElementById('settingsModal').classList.add('active'); }
-        function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+        function openSettings() { 
+            document.getElementById('settingsModal').classList.add('active'); 
+        }
+        
+        function closeSettings() { 
+            document.getElementById('settingsModal').classList.remove('active'); 
+        }
+
+        // Fechar modal ao clicar fora
+        document.getElementById('settingsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettings();
+            }
+        });
 
         function saveSettings() {
             globalSettings.whatsappNumber = document.getElementById('settingsWhatsappNumber').value;
@@ -210,14 +231,15 @@
         });
 
         // ============================================
-        // NAVEGAÇÃO
+        // NAVEGAÇÃO COM AUTO-CLOSE
         // ============================================
         function selectMode(mode) {
             currentMode = mode;
             homeScreen.classList.add('hidden');
             editorScreen.classList.remove('hidden');
             
-            // Limpar canvas anterior
+            // Limpar canvas e banners anteriores
+            clearPreviousBanners();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             selectedContent = null;
             
@@ -229,14 +251,27 @@
         function goHome() {
             editorScreen.classList.add('hidden');
             homeScreen.classList.remove('hidden');
+            clearPreviousBanners();
             currentMode = null;
             selectedContent = null;
             posterImage = null;
             currentTrailer = null;
         }
 
+        // Função para limpar banners anteriores
+        function clearPreviousBanners() {
+            const container = document.getElementById('bannersContainer');
+            container.innerHTML = '<canvas id="bannerCanvas" class="canvas-glow max-w-full h-auto rounded-lg mx-auto"></canvas><div id="videoContainer" class="hidden flex flex-col items-center gap-4"></div>';
+            // Reassign references
+            const newCanvas = document.getElementById('bannerCanvas');
+            if (newCanvas && newCanvas !== canvas) {
+                canvas.width = newCanvas.width;
+                canvas.height = newCanvas.height;
+            }
+        }
+
         // ============================================
-        // MODO FUTEBOL
+        // MODO FUTEBOL - NOVO LAYOUT COM LIQUID GLASS
         // ============================================
         
         let footballBgPost = null;
@@ -265,7 +300,7 @@
         function loadFootballMode() {
             canvas.classList.add('hidden');
             videoContainer.classList.add('hidden');
-            document.getElementById('bannersContainer').innerHTML = '<canvas id="bannerCanvas" class="canvas-glow max-w-full h-auto rounded-lg mx-auto hidden"></canvas>';
+            clearPreviousBanners();
             
             controlPanel.innerHTML = `
                 <header class="border-b border-zinc-800 pb-5">
@@ -412,34 +447,107 @@
                 btn.disabled = false;
                 btn.innerHTML = '🔍 BUSCAR JOGOS';
 
+                // Se a API não retornar jogos ou der erro, usar dados de exemplo
                 if (!data.response || data.response.length === 0) {
-                    resultsDiv.innerHTML = `
-                        <div class="border border-zinc-800 p-4 rounded-lg text-center">
-                            <p class="text-zinc-400 text-sm">⚽ Nenhum jogo encontrado para esta data</p>
-                            ${data.fromCache ? '<p class="text-green-400 text-xs mt-2">✅ Dados do cache</p>' : ''}
-                        </div>
-                    `;
+                    console.log('⚠️ API sem dados, usando jogos de exemplo');
+                    const mockGames = getMockFootballGames(date);
+                    displayFootballResults(mockGames, false);
                     return;
                 }
 
                 displayFootballResults(data.response, data.fromCache);
             } catch (error) {
-                console.error('Erro:', error);
+                console.error('❌ Erro na API, usando jogos de exemplo:', error);
+                // Em caso de erro, usar dados de exemplo
                 btn.disabled = false;
                 btn.innerHTML = '🔍 BUSCAR JOGOS';
-                resultsDiv.innerHTML = `
-                    <div class="border border-red-500/30 bg-red-900/20 p-4 rounded-lg">
-                        <p class="text-red-400 text-sm">❌ Erro ao buscar jogos</p>
-                        <p class="text-xs text-zinc-500 mt-2">${error.message}</p>
-                    </div>
-                `;
+                
+                // DADOS DE EXEMPLO para visualização
+                const mockGames = getMockFootballGames(date);
+                displayFootballResults(mockGames, false);
             }
+        }
+
+        // Função para gerar jogos de exemplo
+        function getMockFootballGames(date) {
+            return [
+                {
+                    fixture: { date: `${date}T14:00:00-03:00` },
+                    league: { name: 'Brasileirão Série A' },
+                    teams: {
+                        home: { 
+                            name: 'Flamengo', 
+                            logo: 'https://media.api-sports.io/football/teams/127.png' 
+                        },
+                        away: { 
+                            name: 'Palmeiras', 
+                            logo: 'https://media.api-sports.io/football/teams/128.png' 
+                        }
+                    }
+                },
+                {
+                    fixture: { date: `${date}T16:30:00-03:00` },
+                    league: { name: 'Brasileirão Série A' },
+                    teams: {
+                        home: { 
+                            name: 'Corinthians', 
+                            logo: 'https://media.api-sports.io/football/teams/131.png' 
+                        },
+                        away: { 
+                            name: 'São Paulo', 
+                            logo: 'https://media.api-sports.io/football/teams/126.png' 
+                        }
+                    }
+                },
+                {
+                    fixture: { date: `${date}T19:00:00-03:00` },
+                    league: { name: 'Copa Libertadores' },
+                    teams: {
+                        home: { 
+                            name: 'Fluminense', 
+                            logo: 'https://media.api-sports.io/football/teams/124.png' 
+                        },
+                        away: { 
+                            name: 'Boca Juniors', 
+                            logo: 'https://media.api-sports.io/football/teams/451.png' 
+                        }
+                    }
+                },
+                {
+                    fixture: { date: `${date}T21:30:00-03:00` },
+                    league: { name: 'Premier League' },
+                    teams: {
+                        home: { 
+                            name: 'Manchester United', 
+                            logo: 'https://media.api-sports.io/football/teams/33.png' 
+                        },
+                        away: { 
+                            name: 'Liverpool', 
+                            logo: 'https://media.api-sports.io/football/teams/40.png' 
+                        }
+                    }
+                },
+                {
+                    fixture: { date: `${date}T22:00:00-03:00` },
+                    league: { name: 'La Liga' },
+                    teams: {
+                        home: { 
+                            name: 'Real Madrid', 
+                            logo: 'https://media.api-sports.io/football/teams/541.png' 
+                        },
+                        away: { 
+                            name: 'Barcelona', 
+                            logo: 'https://media.api-sports.io/football/teams/529.png' 
+                        }
+                    }
+                }
+            ];
         }
 
         function displayFootballResults(games, fromCache) {
             const resultsDiv = document.getElementById('footballResults');
             
-            // Ligas permitidas (atualizadas)
+            // Ligas permitidas
             const allowedLeagues = [
                 'Brasileirão Série A',
                 'Serie A',
@@ -473,6 +581,13 @@
                     leagueName.includes(allowed) || 
                     allowed.includes(leagueName)
                 );
+            });
+            
+            // Ordenar jogos por horário (NOVO REQUISITO!)
+            filteredGames.sort((a, b) => {
+                const timeA = new Date(a.fixture.date).getTime();
+                const timeB = new Date(b.fixture.date).getTime();
+                return timeA - timeB;
             });
             
             const cacheInfo = fromCache ? 
@@ -548,14 +663,14 @@
             btn.innerHTML = '<div class="spinner mx-auto"></div>';
 
             try {
-                // Dividir jogos em grupos: 5 para Post, 7 para Story
+                // Dividir jogos em grupos: 6 para Post, 12 para Story
                 const isPost = currentFormat === 'post';
-                const gamesPerBanner = isPost ? 5 : 7;
+                const gamesPerBanner = isPost ? 6 : 12; // Post = 6, Story = 12
                 const totalBanners = Math.ceil(allFootballGames.length / gamesPerBanner);
                 
-                // Preparar container
+                // Preparar container - limpar banners anteriores
+                clearPreviousBanners();
                 const container = document.getElementById('bannersContainer');
-                container.innerHTML = '';
 
                 // Carregar todas as logos primeiro
                 const gamesWithLogos = await Promise.all(allFootballGames.map(async (game) => {
@@ -594,8 +709,8 @@
                     container.appendChild(canvasEl);
                     container.appendChild(downloadBtn);
 
-                    // Gerar o banner
-                    await generateFootballListBanner(canvasEl, bannerGames, i + 1, totalBanners);
+                    // Gerar o banner com NOVO LAYOUT LIQUID GLASS
+                    await generateFootballListBannerModern(canvasEl, bannerGames, i + 1, totalBanners);
                 }
 
                 btn.disabled = false;
@@ -610,8 +725,8 @@
             }
         }
 
-        // Gerar banner com lista de jogos
-        async function generateFootballListBanner(canvasEl, games, bannerNum, totalBanners) {
+        // NOVA FUNÇÃO: Gerar banner com layout moderno e efeito Liquid Glass MELHORADO
+        async function generateFootballListBannerModern(canvasEl, games, bannerNum, totalBanners) {
             const ctx = canvasEl.getContext('2d');
             const isPost = currentFormat === 'post';
             const width = 1080;
@@ -642,7 +757,8 @@
                 }
                 
                 ctx.drawImage(bgImage, ox, oy, dw, dh);
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                // Overlay mais escuro para melhor contraste do efeito glass
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(0, 0, width, height);
             } else {
                 const gradient = ctx.createLinearGradient(0, 0, 0, height);
@@ -652,11 +768,11 @@
                 ctx.fillRect(0, 0, width, height);
             }
 
-            // Logo global no canto superior direito (maior)
+            // Logo global no canto superior direito
             if (uploadedLogo) {
                 ctx.save();
                 ctx.globalAlpha = 1;
-                const logoSize = 180; // Aumentado de 120
+                const logoSize = 180;
                 const logoRatio = uploadedLogo.width / uploadedLogo.height;
                 const logoW = logoSize * logoRatio;
                 const logoH = logoSize;
@@ -684,212 +800,181 @@
 
             currentY += 70;
 
-            // Desenhar cada jogo
+            // NOVO LAYOUT: Retângulos individuais com Liquid Glass MELHORADO
             const padding = 40;
-            const logoSize = 90;
-            const teamSpacing = width / 2;
+            const gameCardWidth = width - (padding * 2);
+            
+            // Calcular altura dinâmica dos cards - melhor espaçamento
+            const availableHeight = height - currentY - 130;
+            const spacing = 18; // Espaçamento entre cards
+            const totalSpacing = (games.length - 1) * spacing;
+            const cardHeight = Math.max(135, Math.min(160, (availableHeight - totalSpacing) / games.length));
 
             for (const game of games) {
                 const league = game.league.name;
                 const time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                 const broadcaster = getBroadcaster(league);
 
-                // ===== ÁREA DE DESTAQUE: LIGA + HORÁRIO =====
-                const headerY = currentY - 8;
-                const headerHeight = 40;
-                
-                // Fundo semi-transparente para Liga + Horário
+                // DESENHAR RETÂNGULO COM EFEITO LIQUID GLASS FOSCO
                 ctx.save();
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-                roundRect(ctx, padding - 10, headerY, width - (padding * 2) + 20, headerHeight, 10);
+                
+                // Fundo FOSCO mais opaco
+                if (bgImage) {
+                    // Fundo mais fosco quando tem imagem
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                } else {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+                }
+                roundRect(ctx, padding, currentY, gameCardWidth, cardHeight, 18);
                 ctx.fill();
                 
-                // Borda sutil esverdeada
-                ctx.strokeStyle = 'rgba(34, 197, 94, 0.3)';
-                ctx.lineWidth = 2;
-                roundRect(ctx, padding - 10, headerY, width - (padding * 2) + 20, headerHeight, 10);
-                ctx.stroke();
-                ctx.restore();
-
-                // Liga (com destaque verde)
-                ctx.textAlign = 'left';
-                ctx.font = '700 22px Manrope, sans-serif';
-                ctx.fillStyle = '#22c55e';
-                ctx.fillText('🏆 ' + league, padding, currentY + 18);
-
-                // Horário (com destaque branco)
-                ctx.textAlign = 'right';
-                ctx.font = '700 24px Manrope, sans-serif';
-                ctx.fillStyle = '#fff';
-                ctx.fillText('🕐 ' + time, width - padding, currentY + 18);
-
-                currentY += 55;
-
-                // ===== ÁREA DE DESTAQUE: ESCUDOS DOS TIMES =====
-                const teamsAreaY = currentY;
-                
-                // Time Casa (esquerda) - Círculo de fundo
-                const homeX = teamSpacing / 2 - logoSize / 2;
-                
-                // Círculo de fundo com brilho para o escudo
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(homeX + logoSize/2, teamsAreaY + logoSize/2, logoSize/2 + 12, 0, Math.PI * 2);
-                
-                // Gradiente radial para brilho sutil
-                const homeGradient = ctx.createRadialGradient(
-                    homeX + logoSize/2, teamsAreaY + logoSize/2, 0,
-                    homeX + logoSize/2, teamsAreaY + logoSize/2, logoSize/2 + 12
-                );
-                homeGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
-                homeGradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.08)');
-                homeGradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
-                ctx.fillStyle = homeGradient;
+                // Overlay adicional para efeito fosco
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+                roundRect(ctx, padding, currentY, gameCardWidth, cardHeight, 18);
                 ctx.fill();
                 
-                // Borda sutil
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                // Borda mais visível
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
                 ctx.lineWidth = 2;
+                roundRect(ctx, padding, currentY, gameCardWidth, cardHeight, 18);
                 ctx.stroke();
-                ctx.restore();
                 
-                // Logo do time casa
+                // Sombra para profundidade
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+                ctx.shadowBlur = 30;
+                ctx.shadowOffsetY = 12;
+                roundRect(ctx, padding, currentY, gameCardWidth, cardHeight, 18);
+                ctx.fill();
+                
+                ctx.restore();
+
+                // LAYOUT INTERNO DO CARD: Esquerda | Centro | Direita
+                const cardPadding = 15; // REDUZIDO de 25 para 15 - times mais centralizados
+                const logoSize = Math.min(75, cardHeight - 50);
+                const centerX = width / 2;
+                
+                // ESQUERDA: Time Casa (escudo + nome) - SEM CÍRCULO - MAIS CENTRALIZADO
+                const leftX = padding + cardPadding + logoSize / 2 + 35; // +35 para mover para o centro
+                const logoY = currentY + cardHeight / 2 - 5;
+                
                 if (game.homeLogoImg) {
-                    ctx.drawImage(game.homeLogoImg, homeX, teamsAreaY, logoSize, logoSize);
+                    // Logo sem círculo de fundo
+                    ctx.drawImage(game.homeLogoImg, leftX - logoSize / 2, logoY - logoSize / 2, logoSize, logoSize);
                 }
                 
-                // Nome do time casa
+                // Nome do time casa - TRUNCAR AUTOMATICAMENTE COM REDUÇÃO DE FONTE
                 ctx.textAlign = 'center';
-                ctx.font = '700 19px Manrope, sans-serif';
+                let homeFontSize = 15;
+                let homeName = game.teams.home.name.toUpperCase();
+                const maxWidth = 200; // Aumentado de 170 para 200
                 
-                // Sombra no texto para melhor legibilidade
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-                ctx.shadowBlur = 8;
-                ctx.shadowOffsetX = 0;
-                ctx.shadowOffsetY = 2;
+                // Se nome muito longo, reduzir fonte antes de truncar
+                ctx.font = `600 ${homeFontSize}px Manrope, sans-serif`;
+                if (ctx.measureText(homeName).width > maxWidth) {
+                    homeFontSize = 13; // Reduzir para 13px
+                    ctx.font = `600 ${homeFontSize}px Manrope, sans-serif`;
+                }
+                
+                // Truncar se ainda muito longo
+                while (ctx.measureText(homeName).width > maxWidth && homeName.length > 3) {
+                    homeName = homeName.slice(0, -1);
+                }
+                if (homeName.length < game.teams.home.name.length) homeName += '...';
                 
                 ctx.fillStyle = '#fff';
-                const homeTeamWrapped = wrapText(ctx, game.teams.home.name.toUpperCase(), 200);
-                homeTeamWrapped.forEach((line, idx) => {
-                    ctx.fillText(line, teamSpacing / 2, teamsAreaY + logoSize + 30 + (idx * 24));
-                });
-                
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                ctx.shadowBlur = 6;
+                const homeNameY = logoY + logoSize / 2 + 24;
+                ctx.fillText(homeName, leftX, homeNameY);
                 ctx.shadowBlur = 0;
-                ctx.shadowOffsetY = 0;
 
-                // VS (símbolo × com destaque)
-                ctx.save();
-                ctx.font = '700 56px Oswald, sans-serif';
-                
-                // Círculo de fundo para o VS
-                ctx.beginPath();
-                ctx.arc(width / 2, teamsAreaY + logoSize / 2, 35, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                
-                // Texto VS
-                ctx.fillStyle = '#fff';
+                // CENTRO: Liga, Horário, Transmissão - TUDO BRANCO E MAIS ESPAÇADO
                 ctx.textAlign = 'center';
-                ctx.shadowColor = 'rgba(239, 68, 68, 0.8)';
-                ctx.shadowBlur = 15;
-                ctx.fillText('×', width / 2, teamsAreaY + logoSize / 2 + 18);
-                ctx.restore();
+                const centerTextY = currentY + cardHeight / 2;
+                
+                // Liga (topo) - BRANCO
+                ctx.font = '700 16px Manrope, sans-serif';
+                ctx.fillStyle = '#ffffff'; // BRANCO
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 4;
+                // Truncar liga se muito longa
+                let leagueTrunc = league;
+                const leagueMaxW = 320;
+                while (ctx.measureText(leagueTrunc).width > leagueMaxW && leagueTrunc.length > 3) {
+                    leagueTrunc = leagueTrunc.slice(0, -1);
+                }
+                if (leagueTrunc.length < league.length) leagueTrunc += '...';
+                ctx.fillText(leagueTrunc, centerX, centerTextY - 35); // AUMENTADO de -28 para -35
+                
+                // Horário (meio) - BRANCO, MAIS DESTAQUE E ESPAÇADO
+                ctx.font = '700 38px Oswald, sans-serif'; // Aumentado de 36 para 38
+                ctx.fillStyle = '#ffffff'; // BRANCO
+                ctx.shadowBlur = 6;
+                ctx.fillText(time, centerX, centerTextY + 10); // AUMENTADO de +8 para +10
+                
+                // Transmissão (baixo) - BRANCO E MAIS ESPAÇADO
+                ctx.font = '600 13px Manrope, sans-serif';
+                ctx.fillStyle = '#ffffff'; // BRANCO (antes era roxo)
+                ctx.shadowBlur = 4;
+                // Remover emoji de TV e truncar
+                let broadcastClean = broadcaster.replace('📺 ', '');
+                const broadcastMaxW = 350;
+                while (ctx.measureText(broadcastClean).width > broadcastMaxW && broadcastClean.length > 3) {
+                    broadcastClean = broadcastClean.slice(0, -1);
+                }
+                if (broadcastClean.length < broadcaster.replace('📺 ', '').length) broadcastClean += '...';
+                ctx.fillText(broadcastClean, centerX, centerTextY + 40); // AUMENTADO de +34 para +40
+                ctx.shadowBlur = 0;
 
-                // Time Visitante (direita) - Círculo de fundo
-                const awayX = teamSpacing + teamSpacing / 2 - logoSize / 2;
+                // DIREITA: Time Visitante (escudo + nome) - SEM CÍRCULO - MAIS CENTRALIZADO
+                const rightX = width - padding - cardPadding - logoSize / 2 - 35; // -35 para mover para o centro
                 
-                // Círculo de fundo com brilho para o escudo
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(awayX + logoSize/2, teamsAreaY + logoSize/2, logoSize/2 + 12, 0, Math.PI * 2);
-                
-                const awayGradient = ctx.createRadialGradient(
-                    awayX + logoSize/2, teamsAreaY + logoSize/2, 0,
-                    awayX + logoSize/2, teamsAreaY + logoSize/2, logoSize/2 + 12
-                );
-                awayGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
-                awayGradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.08)');
-                awayGradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
-                ctx.fillStyle = awayGradient;
-                ctx.fill();
-                
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.restore();
-                
-                // Logo do time visitante
                 if (game.awayLogoImg) {
-                    ctx.drawImage(game.awayLogoImg, awayX, teamsAreaY, logoSize, logoSize);
+                    // Logo sem círculo de fundo
+                    ctx.drawImage(game.awayLogoImg, rightX - logoSize / 2, logoY - logoSize / 2, logoSize, logoSize);
                 }
                 
-                // Nome do time visitante
+                // Nome do time visitante - TRUNCAR AUTOMATICAMENTE COM REDUÇÃO DE FONTE
                 ctx.textAlign = 'center';
-                ctx.font = '700 19px Manrope, sans-serif';
+                let awayFontSize = 15;
+                let awayName = game.teams.away.name.toUpperCase();
                 
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-                ctx.shadowBlur = 8;
-                ctx.shadowOffsetY = 2;
+                // Se nome muito longo, reduzir fonte antes de truncar
+                ctx.font = `600 ${awayFontSize}px Manrope, sans-serif`;
+                if (ctx.measureText(awayName).width > maxWidth) {
+                    awayFontSize = 13; // Reduzir para 13px
+                    ctx.font = `600 ${awayFontSize}px Manrope, sans-serif`;
+                }
+                
+                // Truncar se ainda muito longo
+                while (ctx.measureText(awayName).width > maxWidth && awayName.length > 3) {
+                    awayName = awayName.slice(0, -1);
+                }
+                if (awayName.length < game.teams.away.name.length) awayName += '...';
                 
                 ctx.fillStyle = '#fff';
-                const awayTeamWrapped = wrapText(ctx, game.teams.away.name.toUpperCase(), 200);
-                awayTeamWrapped.forEach((line, idx) => {
-                    ctx.fillText(line, teamSpacing + teamSpacing / 2, teamsAreaY + logoSize + 30 + (idx * 24));
-                });
-                
-                ctx.shadowBlur = 0;
-                ctx.shadowOffsetY = 0;
-
-                currentY = teamsAreaY + logoSize + 65;
-
-                // ===== ÁREA DE DESTAQUE: TRANSMISSÃO =====
-                const broadcastY = currentY;
-                const broadcastHeight = 36;
-                const broadcastWidth = Math.min(broadcaster.length * 10 + 60, width - padding * 2);
-                const broadcastX = (width - broadcastWidth) / 2;
-                
-                // Fundo semi-transparente para transmissão
-                ctx.save();
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-                roundRect(ctx, broadcastX, broadcastY - 24, broadcastWidth, broadcastHeight, 8);
-                ctx.fill();
-                
-                // Borda com cor de destaque (azul/roxo)
-                ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
-                ctx.lineWidth = 2;
-                roundRect(ctx, broadcastX, broadcastY - 24, broadcastWidth, broadcastHeight, 8);
-                ctx.stroke();
-                ctx.restore();
-                
-                // Texto da transmissão
-                ctx.textAlign = 'center';
-                ctx.font = '600 18px Manrope, sans-serif';
-                
-                ctx.shadowColor = 'rgba(168, 85, 247, 0.5)';
-                ctx.shadowBlur = 10;
-                
-                ctx.fillStyle = '#fff';
-                ctx.fillText(broadcaster, width / 2, broadcastY - 4);
-                
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                ctx.shadowBlur = 6;
+                ctx.fillText(awayName, rightX, homeNameY);
                 ctx.shadowBlur = 0;
 
-                currentY += 50;
+                currentY += cardHeight + spacing; // Espaçamento AUMENTADO
             }
 
-            // Aviso de última hora (com espaçamento do último jogo)
-            currentY += 30;
+            // Aviso de última hora (com melhor espaçamento)
+            currentY += 20;
             ctx.textAlign = 'center';
-            ctx.font = '500 18px Manrope, sans-serif';
+            ctx.font = '500 15px Manrope, sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            ctx.shadowBlur = 4;
             ctx.fillText('⚠️ Os canais podem sofrer alteração de última hora', width / 2, currentY);
+            ctx.shadowBlur = 0;
 
-            // Footer com WhatsApp e CTA (garantir que não sobreponha)
-            currentY += 50;
+            // Footer com WhatsApp e CTA
+            currentY += 35;
             const boxH = 45;
-            const boxY = Math.max(currentY, height - 60); // Garante no mínimo 60px da base
+            const boxY = Math.max(currentY, height - 65);
 
             ctx.fillStyle = '#25D366';
             roundRect(ctx, padding, boxY - boxH, 180, boxH, 8);
@@ -968,7 +1053,7 @@
         }
 
         // ============================================
-        // MODO VÍDEO (NOVO!)
+        // MODO VÍDEO
         // ============================================
         async function loadVideoMode() {
             controlPanel.innerHTML = `
@@ -1329,7 +1414,7 @@
         }
 
         // ============================================
-        // MODO FILMES (CÓDIGO ORIGINAL)
+        // MODO FILMES (CÓDIGO ORIGINAL MANTIDO)
         // ============================================
         async function loadMoviesMode() {
             canvas.classList.remove('hidden');

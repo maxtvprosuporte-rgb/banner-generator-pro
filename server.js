@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY || 'bdca744e306acd9e2619b564f9df7a2a';
+const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY || 'se_live_m7wRJcTUEw0EbIRz8SccXO1xj6O1orDjBdmQcgDue4s';
 const TMDB_API_KEY = process.env.TMDB_API_KEY || 'ed3d0c9bfea7f601924b810c07471202';
 const FOOTBALL_API_URL = 'https://v3.football.api-sports.io';
 const TMDB_API_URL = 'https://api.themoviedb.org/3';

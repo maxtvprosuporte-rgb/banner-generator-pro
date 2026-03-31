@@ -16,7 +16,7 @@ const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
 if (!FOOTBALL_API_KEY || !TMDB_API_KEY) {
     console.error('❌ ERRO CRÍTICO: Chaves de API não definidas!');
-    console.error('📝 Configure as variáveis de ambiente no arquivo .env:');
+    console.error('📝 Configure as variáveis de ambiente no painel do Render:');
     console.error('   FOOTBALL_API_KEY=sua_chave');
     console.error('   TMDB_API_KEY=sua_chave');
     process.exit(1);
@@ -49,7 +49,9 @@ app.use('/api/', apiLimiter);
 // ============================================
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Servir arquivos estáticos da raiz
+app.use(express.static(__dirname));
 
 // ============================================
 // SISTEMA DE CACHE - SERVIDOR
@@ -424,7 +426,7 @@ app.get('/api/video/redirect', async (req, res) => {
 // ROTAS ESTÁTICAS
 // ============================================
 app.get('/', (req, res) => { 
-    res.sendFile(path.join(__dirname, 'public', 'index.html')); 
+    res.sendFile(path.join(__dirname, 'index.html')); 
 });
 
 app.get('/health', (req, res) => { 
@@ -450,7 +452,7 @@ app.get('/health', (req, res) => {
 // ============================================
 // INICIAR SERVIDOR
 // ============================================
-app.listen(PORT, () => { 
+app.listen(PORT, '0.0.0.0', () => { 
     console.log('🚀 Servidor rodando na porta', PORT);
     console.log('📦 Recursos: Futebol, Filmes/Séries, Trailers');
     console.log('🛡️ Rate Limit: 30 req/min');

@@ -26,6 +26,15 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .progress-bar { width: 0%; height: 4px; background: linear-gradient(90deg, #a855f7, #ec4899); transition: width 0.3s ease; }
         .video-preview { max-width: 100%; max-height: 600px; border-radius: 8px; box-shadow: 0 0 40px rgba(168,85,247,0.3); }
+        
+        /* Efeito Liquid Glass para retângulos dos jogos */
+        .game-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
     </style>
 </head>
 <body class="min-h-screen text-white">
@@ -147,8 +156,8 @@
         const homeScreen = document.getElementById('homeScreen');
         const editorScreen = document.getElementById('editorScreen');
         const controlPanel = document.getElementById('controlPanel');
-        const canvas = document.getElementById('bannerCanvas');
-        const ctx = canvas.getContext('2d');
+        let canvas = document.getElementById('bannerCanvas');
+        let ctx = canvas.getContext('2d');
         const videoContainer = document.getElementById('videoContainer');
 
         // ============================================
@@ -173,8 +182,20 @@
             } catch (e) { console.error('Erro:', e); }
         }
 
-        function openSettings() { document.getElementById('settingsModal').classList.add('active'); }
-        function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+        function openSettings() { 
+            document.getElementById('settingsModal').classList.add('active'); 
+        }
+        
+        function closeSettings() { 
+            document.getElementById('settingsModal').classList.remove('active'); 
+        }
+
+        // Fechar modal ao clicar fora
+        document.getElementById('settingsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettings();
+            }
+        });
 
         function saveSettings() {
             globalSettings.whatsappNumber = document.getElementById('settingsWhatsappNumber').value;
@@ -210,14 +231,15 @@
         });
 
         // ============================================
-        // NAVEGAÇÃO
+        // NAVEGAÇÃO COM AUTO-CLOSE
         // ============================================
         function selectMode(mode) {
             currentMode = mode;
             homeScreen.classList.add('hidden');
             editorScreen.classList.remove('hidden');
             
-            // Limpar canvas anterior
+            // Limpar canvas e banners anteriores
+            clearPreviousBanners();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             selectedContent = null;
             
@@ -229,14 +251,24 @@
         function goHome() {
             editorScreen.classList.add('hidden');
             homeScreen.classList.remove('hidden');
+            clearPreviousBanners();
             currentMode = null;
             selectedContent = null;
             posterImage = null;
             currentTrailer = null;
         }
 
+        // Função para limpar banners anteriores
+        function clearPreviousBanners() {
+            const container = document.getElementById('bannersContainer');
+            container.innerHTML = '<canvas id="bannerCanvas" class="canvas-glow max-w-full h-auto rounded-lg mx-auto"></canvas><div id="videoContainer" class="hidden flex flex-col items-center gap-4"></div>';
+            // Reassign references to new canvas
+            canvas = document.getElementById('bannerCanvas');
+            ctx = canvas.getContext('2d');
+        }
+
         // ============================================
-        // MODO FUTEBOL
+        // MODO FUTEBOL - NOVO LAYOUT COM LIQUID GLASS
         // ============================================
         
         let footballBgPost = null;
@@ -265,7 +297,7 @@
         function loadFootballMode() {
             canvas.classList.add('hidden');
             videoContainer.classList.add('hidden');
-            document.getElementById('bannersContainer').innerHTML = '<canvas id="bannerCanvas" class="canvas-glow max-w-full h-auto rounded-lg mx-auto hidden"></canvas>';
+            clearPreviousBanners();
             
             controlPanel.innerHTML = `
                 <header class="border-b border-zinc-800 pb-5">
@@ -391,6 +423,9 @@
             return today.toISOString().split('T')[0];
         }
 
+        // ============================================
+        // FUNÇÃO COM CACHE NO NAVEGADOR (localStorage)
+        // ============================================
         async function searchFootballGames() {
             const date = document.getElementById('footballDate').value;
             const btn = document.getElementById('footballSearchBtn');
@@ -401,45 +436,87 @@
                 return;
             }
 
+            // VERIFICAR CACHE DO NAVEGADOR PRIMEIRO
+            const cacheKey = `football_cache_${date}`;
+            const cached = localStorage.getItem(cacheKey);
+            
+            if (cached) {
+                try {
+                    const cachedData = JSON.parse(cached);
+                    const cacheAge = Date.now() - cachedData.timestamp;
+                    const cacheHours = Math.floor(cacheAge / (1000 * 60 * 60));
+                    
+                    // Cache válido por 24 horas
+                    if (cacheAge < 24 * 60 * 60 * 1000) {
+                        console.log(`✅ Usando cache do navegador (${cacheHours}h atrás)`);
+                        resultsDiv.innerHTML = '<p class="text-green-400 text-sm p-3">✅ Dados do cache local (salvo há ' + cacheHours + 'h)</p>';
+                        displayFootballResults(cachedData.data, true);
+                        return;
+                    } else {
+                        // Cache expirado, remover
+                        localStorage.removeItem(cacheKey);
+                        console.log('⏰ Cache expirado, buscando dados novos...');
+                    }
+                } catch (e) {
+                    console.error('❌ Erro ao ler cache:', e);
+                    localStorage.removeItem(cacheKey);
+                }
+            }
+
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner mx-auto"></div>';
-            resultsDiv.innerHTML = '<p class="text-zinc-500 text-sm p-3">🔍 Buscando jogos...</p>';
+            resultsDiv.innerHTML = '<p class="text-zinc-500 text-sm p-3">🔍 Buscando jogos na API...</p>';
 
             try {
+                console.log('🌐 Chamando API para:', date);
                 const response = await fetch(`${API_BASE_URL}/api/football/fixtures?date=${date}`);
                 const data = await response.json();
 
                 btn.disabled = false;
                 btn.innerHTML = '🔍 BUSCAR JOGOS';
 
+                // Verificar se a API retornou dados
                 if (!data.response || data.response.length === 0) {
                     resultsDiv.innerHTML = `
                         <div class="border border-zinc-800 p-4 rounded-lg text-center">
                             <p class="text-zinc-400 text-sm">⚽ Nenhum jogo encontrado para esta data</p>
-                            ${data.fromCache ? '<p class="text-green-400 text-xs mt-2">✅ Dados do cache</p>' : ''}
+                            ${data.fromCache ? '<p class="text-green-400 text-xs mt-2">✅ Dados do cache do servidor</p>' : ''}
+                            <p class="text-zinc-500 text-xs mt-2">Tente outra data ou verifique a API</p>
                         </div>
                     `;
+                    document.getElementById('footballControls').classList.add('hidden');
                     return;
                 }
 
+                // SALVAR NO CACHE DO NAVEGADOR
+                const cacheData = {
+                    data: data.response,
+                    timestamp: Date.now(),
+                    date: date
+                };
+                localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+                console.log('💾 Dados salvos no cache do navegador para:', date);
+
                 displayFootballResults(data.response, data.fromCache);
             } catch (error) {
-                console.error('Erro:', error);
+                console.error('❌ Erro na API:', error);
                 btn.disabled = false;
                 btn.innerHTML = '🔍 BUSCAR JOGOS';
                 resultsDiv.innerHTML = `
                     <div class="border border-red-500/30 bg-red-900/20 p-4 rounded-lg">
                         <p class="text-red-400 text-sm">❌ Erro ao buscar jogos</p>
                         <p class="text-xs text-zinc-500 mt-2">${error.message}</p>
+                        <p class="text-xs text-zinc-400 mt-2">Verifique se a API está rodando</p>
                     </div>
                 `;
+                document.getElementById('footballControls').classList.add('hidden');
             }
         }
 
         function displayFootballResults(games, fromCache) {
             const resultsDiv = document.getElementById('footballResults');
             
-            // Ligas permitidas (atualizadas)
+            // Ligas permitidas
             const allowedLeagues = [
                 'Brasileirão Série A',
                 'Serie A',
@@ -468,11 +545,23 @@
                     return false;
                 }
                 
+                // Excluir categorias de base (Sub-20, U18, U21, etc.)
+                if (leagueName.match(/u(\d+)|sub[\s-]?(\d+)|under[\s-]?(\d+)|youth/i)) {
+                    return false;
+                }
+                
                 // Verificar se está nas ligas permitidas
                 return allowedLeagues.some(allowed => 
                     leagueName.includes(allowed) || 
                     allowed.includes(leagueName)
                 );
+            });
+            
+            // Ordenar jogos por horário (NOVO REQUISITO!)
+            filteredGames.sort((a, b) => {
+                const timeA = new Date(a.fixture.date).getTime();
+                const timeB = new Date(b.fixture.date).getTime();
+                return timeA - timeB;
             });
             
             const cacheInfo = fromCache ? 
@@ -548,33 +637,15 @@
             btn.innerHTML = '<div class="spinner mx-auto"></div>';
 
             try {
-                // Dividir jogos em grupos: 5 para Post, 7 para Story
+                // Dividir jogos em grupos: 5 para Post, 8 para Story
                 const isPost = currentFormat === 'post';
-                const gamesPerBanner = isPost ? 5 : 7;
-                const totalGameBanners = Math.ceil(allFootballGames.length / gamesPerBanner);
-                const totalBanners = totalGameBanners + 1; // +1 para a capa
+                const gamesPerBanner = isPost ? 5 : 8; // Post = 5, Story = 8
+                const totalBanners = Math.ceil(allFootballGames.length / gamesPerBanner);
                 
-                // Preparar container
+                // Preparar container - limpar banners anteriores
+                clearPreviousBanners();
                 const container = document.getElementById('bannersContainer');
-                container.innerHTML = '';
 
-                // ===== BANNER 1: CAPA =====
-                const coverCanvas = document.createElement('canvas');
-                coverCanvas.className = 'canvas-glow max-w-full h-auto rounded-lg mx-auto mb-4';
-                coverCanvas.id = 'footballCover';
-                
-                const coverDownloadBtn = document.createElement('button');
-                coverDownloadBtn.className = 'w-full max-w-md mx-auto bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-lg mb-8 flex items-center justify-center gap-2';
-                coverDownloadBtn.innerHTML = `📸 BAIXAR CAPA`;
-                coverDownloadBtn.onclick = () => downloadBanner(coverCanvas, 'capa');
-
-                container.appendChild(coverCanvas);
-                container.appendChild(coverDownloadBtn);
-
-                // Gerar capa
-                await generateCoverBanner(coverCanvas);
-
-                // ===== BANNERS 2+: JOGOS =====
                 // Carregar todas as logos primeiro
                 const gamesWithLogos = await Promise.all(allFootballGames.map(async (game) => {
                     try {
@@ -593,8 +664,8 @@
                     }
                 }));
 
-                // Gerar cada banner de jogos
-                for (let i = 0; i < totalGameBanners; i++) {
+                // Gerar cada banner
+                for (let i = 0; i < totalBanners; i++) {
                     const startIdx = i * gamesPerBanner;
                     const endIdx = Math.min(startIdx + gamesPerBanner, gamesWithLogos.length);
                     const bannerGames = gamesWithLogos.slice(startIdx, endIdx);
@@ -602,23 +673,23 @@
                     // Criar canvas para este banner
                     const canvasEl = document.createElement('canvas');
                     canvasEl.className = 'canvas-glow max-w-full h-auto rounded-lg mx-auto mb-4';
-                    canvasEl.id = `footballBanner${i + 2}`; // +2 porque capa é banner 1
+                    canvasEl.id = `footballBanner${i + 1}`;
                     
                     const downloadBtn = document.createElement('button');
                     downloadBtn.className = 'w-full max-w-md mx-auto bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-6 rounded-lg mb-8 flex items-center justify-center gap-2';
-                    downloadBtn.innerHTML = `⬇️ BAIXAR BANNER ${i + 2} de ${totalBanners}`;
-                    downloadBtn.onclick = () => downloadBanner(canvasEl, i + 2);
+                    downloadBtn.innerHTML = `⬇️ BAIXAR BANNER ${i + 1} de ${totalBanners}`;
+                    downloadBtn.onclick = () => downloadBanner(canvasEl, i + 1);
 
                     container.appendChild(canvasEl);
                     container.appendChild(downloadBtn);
 
-                    // Gerar o banner
-                    await generateFootballListBanner(canvasEl, bannerGames, i + 2, totalBanners);
+                    // Gerar o banner com NOVO LAYOUT LIQUID GLASS
+                    await generateFootballListBannerModern(canvasEl, bannerGames, i + 1, totalBanners);
                 }
 
                 btn.disabled = false;
                 btn.innerHTML = '🎨 GERAR BANNERS';
-                alert(`✅ ${totalBanners} banner${totalBanners > 1 ? 's' : ''} gerado${totalBanners > 1 ? 's' : ''} com sucesso!\n\n📸 Banner 1: Capa\n⚽ Banners 2-${totalBanners}: Jogos`);
+                alert(`✅ ${totalBanners} banner${totalBanners > 1 ? 's' : ''} gerado${totalBanners > 1 ? 's' : ''} com sucesso!`);
 
             } catch (error) {
                 console.error('Erro ao gerar banners:', error);
@@ -628,8 +699,8 @@
             }
         }
 
-        // Gerar banner de capa
-        async function generateCoverBanner(canvasEl) {
+        // NOVA FUNÇÃO: Gerar banner com layout moderno e efeito Liquid Glass MELHORADO
+        async function generateFootballListBannerModern(canvasEl, games, bannerNum, totalBanners) {
             const ctx = canvasEl.getContext('2d');
             const isPost = currentFormat === 'post';
             const width = 1080;
@@ -660,165 +731,8 @@
                 }
                 
                 ctx.drawImage(bgImage, ox, oy, dw, dh);
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-                ctx.fillRect(0, 0, width, height);
-            } else {
-                // Fundo gradiente escuro
-                const gradient = ctx.createLinearGradient(0, 0, 0, height);
-                gradient.addColorStop(0, '#0a0a0a');
-                gradient.addColorStop(0.5, '#1a1a1a');
-                gradient.addColorStop(1, '#0a0a0a');
-                ctx.fillStyle = gradient;
-                ctx.fillRect(0, 0, width, height);
-            }
-
-            // Logo global no topo (se existir)
-            if (uploadedLogo) {
-                ctx.save();
-                ctx.globalAlpha = 1;
-                const logoSize = 200;
-                const logoRatio = uploadedLogo.width / uploadedLogo.height;
-                const logoW = logoSize * logoRatio;
-                const logoH = logoSize;
-                ctx.drawImage(uploadedLogo, (width - logoW) / 2, 60, logoW, logoH);
-                ctx.restore();
-            }
-
-            let currentY = uploadedLogo ? 300 : 150;
-
-            // Texto "FUTEBOL" grande e impactante
-            ctx.save();
-            ctx.textAlign = 'center';
-            
-            // Sombra dramática
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-            ctx.shadowBlur = 30;
-            ctx.shadowOffsetX = 5;
-            ctx.shadowOffsetY = 5;
-            
-            // Texto FU
-            ctx.font = '900 140px Oswald, sans-serif';
-            ctx.fillStyle = '#fff';
-            ctx.fillText('FU', width / 2, currentY);
-            
-            currentY += 120;
-            
-            // Texto TE (com destaque amarelo)
-            ctx.fillStyle = '#fbbf24';
-            ctx.fillText('TE', width / 2, currentY);
-            
-            currentY += 120;
-            
-            // Texto BOL
-            ctx.fillStyle = '#fff';
-            ctx.fillText('BOL', width / 2, currentY);
-            
-            ctx.restore();
-
-            currentY += 80;
-
-            // Bola de futebol (emoji grande)
-            ctx.font = '120px Arial, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('⚽', width / 2, currentY);
-
-            currentY += 120;
-
-            // Data formatada
-            const dateObj = new Date(selectedDate + 'T00:00:00');
-            const weekday = dateObj.toLocaleDateString('pt-BR', { weekday: 'long' }).toUpperCase();
-            const day = dateObj.toLocaleDateString('pt-BR', { day: '2-digit' });
-            const month = dateObj.toLocaleDateString('pt-BR', { month: 'long' }).toUpperCase();
-            const year = dateObj.getFullYear();
-            
-            // Fundo para a data
-            const dateText = `${weekday} - ${day} DE ${month}`;
-            ctx.font = '700 36px Oswald, sans-serif';
-            const dateWidth = ctx.measureText(dateText).width + 80;
-            
-            ctx.save();
-            ctx.fillStyle = '#fff';
-            roundRect(ctx, (width - dateWidth) / 2, currentY - 45, dateWidth, 60, 10);
-            ctx.fill();
-            ctx.restore();
-            
-            // Texto da data
-            ctx.fillStyle = '#000';
-            ctx.textAlign = 'center';
-            ctx.font = '700 36px Oswald, sans-serif';
-            ctx.fillText(dateText, width / 2, currentY - 8);
-
-            currentY += 80;
-
-            // Texto "DIA DE JOGO" vertical na lateral direita
-            ctx.save();
-            ctx.translate(width - 60, height / 2);
-            ctx.rotate(Math.PI / 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-            ctx.font = '900 48px Oswald, sans-serif';
-            ctx.textAlign = 'center';
-            
-            const spacing = 150;
-            ctx.fillText('DIA DE JOGO', spacing * 2, 0);
-            ctx.fillText('DIA DE JOGO', spacing, 0);
-            ctx.fillText('DIA DE JOGO', 0, 0);
-            ctx.fillText('DIA DE JOGO', -spacing, 0);
-            ctx.fillText('DIA DE JOGO', -spacing * 2, 0);
-            ctx.restore();
-
-            // Footer com WhatsApp e CTA
-            const footerY = height - 60;
-            const boxH = 50;
-
-            ctx.fillStyle = '#25D366';
-            roundRect(ctx, 40, footerY - boxH, 200, boxH, 10);
-            ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.font = '700 22px Manrope, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, 140, footerY - boxH / 2 + 8);
-
-            ctx.fillStyle = '#22c55e';
-            roundRect(ctx, width - 240, footerY - boxH, 200, boxH, 10);
-            ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.font = '900 22px Manrope, sans-serif';
-            ctx.fillText(globalSettings.ctaText, width - 140, footerY - boxH / 2 + 8);
-        }
-
-        // Gerar banner com lista de jogos
-        async function generateFootballListBanner(canvasEl, games, bannerNum, totalBanners) {
-            const ctx = canvasEl.getContext('2d');
-            const isPost = currentFormat === 'post';
-            const width = 1080;
-            const height = isPost ? 1080 : 1920;
-
-            canvasEl.width = width;
-            canvasEl.height = height;
-            canvasEl.style.maxWidth = isPost ? '500px' : '300px';
-
-            // Fundo personalizado ou gradiente
-            const bgImage = isPost ? footballBgPost : footballBgStory;
-            
-            if (bgImage) {
-                const imgRatio = bgImage.width / bgImage.height;
-                const canvasRatio = width / height;
-                let dw, dh, ox, oy;
-                
-                if (imgRatio > canvasRatio) {
-                    dh = height;
-                    dw = height * imgRatio;
-                    ox = (width - dw) / 2;
-                    oy = 0;
-                } else {
-                    dw = width;
-                    dh = width / imgRatio;
-                    ox = 0;
-                    oy = (height - dh) / 2;
-                }
-                
-                ctx.drawImage(bgImage, ox, oy, dw, dh);
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                // Overlay mais escuro para melhor contraste do efeito glass
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(0, 0, width, height);
             } else {
                 const gradient = ctx.createLinearGradient(0, 0, 0, height);
@@ -828,11 +742,11 @@
                 ctx.fillRect(0, 0, width, height);
             }
 
-            // Logo global no canto superior direito (maior)
+            // Logo global no canto superior direito
             if (uploadedLogo) {
                 ctx.save();
                 ctx.globalAlpha = 1;
-                const logoSize = 180; // Aumentado de 120
+                const logoSize = 180;
                 const logoRatio = uploadedLogo.width / uploadedLogo.height;
                 const logoW = logoSize * logoRatio;
                 const logoH = logoSize;
@@ -860,212 +774,267 @@
 
             currentY += 70;
 
-            // Desenhar cada jogo
+            // CARD DE CAPA (apenas no primeiro banner)
+            if (bannerNum === 1) {
+                const padding = 40;
+                const coverCardHeight = 200;
+                const gameCardWidth = width - (padding * 2);
+
+                // Desenhar card de capa com Liquid Glass
+                ctx.save();
+                if (bgImage) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                } else {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+                }
+                roundRect(ctx, padding, currentY, gameCardWidth, coverCardHeight, 18);
+                ctx.fill();
+                
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+                roundRect(ctx, padding, currentY, gameCardWidth, coverCardHeight, 18);
+                ctx.fill();
+                
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                roundRect(ctx, padding, currentY, gameCardWidth, coverCardHeight, 18);
+                ctx.stroke();
+                
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+                ctx.shadowBlur = 30;
+                ctx.shadowOffsetY = 12;
+                roundRect(ctx, padding, currentY, gameCardWidth, coverCardHeight, 18);
+                ctx.fill();
+                ctx.restore();
+
+                // Título "JOGOS DO DIA" no card
+                ctx.font = '700 42px Oswald, sans-serif';
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 6;
+                ctx.fillText('JOGOS DO DIA', width / 2, currentY + 55);
+
+                // Data no card
+                ctx.font = '600 24px Manrope, sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                ctx.fillText(dateFormatted.toUpperCase(), width / 2, currentY + 90);
+                ctx.shadowBlur = 0;
+
+                // Carregar e exibir ícones das ligas
+                const leagueIcons = [
+                    '/ligue/Premier_League.png',
+                    '/ligue/La_Liga.png',
+                    '/ligue/Bundesliga.png',
+                    '/ligue/Ligue_1.png',
+                    '/ligue/Campeonato_Brasileiro_Serie_A.png',
+                    '/ligue/UEFA_Champions_League.png',
+                    '/ligue/Copa_Libertadores.png',
+                    '/ligue/Campeonato_Brasileiro_Serie_B.png',
+                    '/ligue/Copa_do_Mundo_FIFA.png'
+                ];
+
+                try {
+                    const iconPromises = leagueIcons.map(path => loadImage(path).catch(() => null));
+                    const loadedIcons = await Promise.all(iconPromises);
+                    const validIcons = loadedIcons.filter(img => img !== null);
+
+                    if (validIcons.length > 0) {
+                        const iconSize = 50;
+                        const iconsSpacing = 10;
+                        const totalIconsWidth = (iconSize * validIcons.length) + (iconsSpacing * (validIcons.length - 1));
+                        let iconX = (width - totalIconsWidth) / 2;
+                        const iconY = currentY + coverCardHeight - 70;
+
+                        validIcons.forEach((icon, index) => {
+                            ctx.save();
+                            ctx.globalAlpha = 0.9;
+                            ctx.drawImage(icon, iconX, iconY, iconSize, iconSize);
+                            ctx.restore();
+                            iconX += iconSize + iconsSpacing;
+                        });
+                    }
+                } catch (error) {
+                    console.log('⚠️ Ícones das ligas não encontrados na pasta /ligue/');
+                }
+
+                currentY += coverCardHeight + 18; // Avançar após o card de capa
+            }
+
+            // NOVO LAYOUT: Retângulos individuais com Liquid Glass MELHORADO
             const padding = 40;
-            const logoSize = 90;
-            const teamSpacing = width / 2;
+            const gameCardWidth = width - (padding * 2);
+            
+            // Calcular altura dinâmica dos cards - melhor espaçamento
+            const availableHeight = height - currentY - 130;
+            const spacing = 18; // Espaçamento entre cards
+            const totalSpacing = (games.length - 1) * spacing;
+            const cardHeight = Math.max(135, Math.min(160, (availableHeight - totalSpacing) / games.length));
 
             for (const game of games) {
                 const league = game.league.name;
                 const time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                 const broadcaster = getBroadcaster(league);
 
-                // ===== ÁREA DE DESTAQUE: LIGA + HORÁRIO =====
-                const headerY = currentY - 8;
-                const headerHeight = 40;
-                
-                // Fundo semi-transparente para Liga + Horário
+                // DESENHAR RETÂNGULO COM EFEITO LIQUID GLASS FOSCO
                 ctx.save();
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-                roundRect(ctx, padding - 10, headerY, width - (padding * 2) + 20, headerHeight, 10);
+                
+                // Fundo FOSCO mais opaco
+                if (bgImage) {
+                    // Fundo mais fosco quando tem imagem
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                } else {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+                }
+                roundRect(ctx, padding, currentY, gameCardWidth, cardHeight, 18);
                 ctx.fill();
                 
-                // Borda sutil esverdeada
-                ctx.strokeStyle = 'rgba(34, 197, 94, 0.3)';
-                ctx.lineWidth = 2;
-                roundRect(ctx, padding - 10, headerY, width - (padding * 2) + 20, headerHeight, 10);
-                ctx.stroke();
-                ctx.restore();
-
-                // Liga (com destaque verde)
-                ctx.textAlign = 'left';
-                ctx.font = '700 22px Manrope, sans-serif';
-                ctx.fillStyle = '#22c55e';
-                ctx.fillText('🏆 ' + league, padding, currentY + 18);
-
-                // Horário (com destaque branco)
-                ctx.textAlign = 'right';
-                ctx.font = '700 24px Manrope, sans-serif';
-                ctx.fillStyle = '#fff';
-                ctx.fillText('🕐 ' + time, width - padding, currentY + 18);
-
-                currentY += 55;
-
-                // ===== ÁREA DE DESTAQUE: ESCUDOS DOS TIMES =====
-                const teamsAreaY = currentY;
-                
-                // Time Casa (esquerda) - Círculo de fundo
-                const homeX = teamSpacing / 2 - logoSize / 2;
-                
-                // Círculo de fundo com brilho para o escudo
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(homeX + logoSize/2, teamsAreaY + logoSize/2, logoSize/2 + 12, 0, Math.PI * 2);
-                
-                // Gradiente radial para brilho sutil
-                const homeGradient = ctx.createRadialGradient(
-                    homeX + logoSize/2, teamsAreaY + logoSize/2, 0,
-                    homeX + logoSize/2, teamsAreaY + logoSize/2, logoSize/2 + 12
-                );
-                homeGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
-                homeGradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.08)');
-                homeGradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
-                ctx.fillStyle = homeGradient;
+                // Overlay adicional para efeito fosco
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+                roundRect(ctx, padding, currentY, gameCardWidth, cardHeight, 18);
                 ctx.fill();
                 
-                // Borda sutil
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                // Borda mais visível
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
                 ctx.lineWidth = 2;
+                roundRect(ctx, padding, currentY, gameCardWidth, cardHeight, 18);
                 ctx.stroke();
-                ctx.restore();
                 
-                // Logo do time casa
+                // Sombra para profundidade
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+                ctx.shadowBlur = 30;
+                ctx.shadowOffsetY = 12;
+                roundRect(ctx, padding, currentY, gameCardWidth, cardHeight, 18);
+                ctx.fill();
+                
+                ctx.restore();
+
+                // LAYOUT INTERNO DO CARD: Esquerda | Centro | Direita
+                const cardPadding = 15;
+                const logoSize = Math.min(75, cardHeight - 50);
+                const centerX = width / 2;
+                
+                // ESQUERDA: Time Casa (escudo + nome) - POSIÇÃO ESTRELA VERMELHA
+                const leftX = padding + cardPadding + logoSize / 2 + 120; // +120 para centralizar conforme estrela
+                const logoY = currentY + cardHeight / 2 - 5;
+                
                 if (game.homeLogoImg) {
-                    ctx.drawImage(game.homeLogoImg, homeX, teamsAreaY, logoSize, logoSize);
+                    // Logo sem círculo de fundo
+                    ctx.drawImage(game.homeLogoImg, leftX - logoSize / 2, logoY - logoSize / 2, logoSize, logoSize);
                 }
                 
-                // Nome do time casa
+                // Nome do time casa - TRUNCAR AUTOMATICAMENTE COM REDUÇÃO DE FONTE
                 ctx.textAlign = 'center';
-                ctx.font = '700 19px Manrope, sans-serif';
+                let homeFontSize = 15;
+                let homeName = game.teams.home.name.toUpperCase();
+                const maxWidth = 200; // Aumentado de 170 para 200
                 
-                // Sombra no texto para melhor legibilidade
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-                ctx.shadowBlur = 8;
-                ctx.shadowOffsetX = 0;
-                ctx.shadowOffsetY = 2;
+                // Se nome muito longo, reduzir fonte antes de truncar
+                ctx.font = `600 ${homeFontSize}px Manrope, sans-serif`;
+                if (ctx.measureText(homeName).width > maxWidth) {
+                    homeFontSize = 13; // Reduzir para 13px
+                    ctx.font = `600 ${homeFontSize}px Manrope, sans-serif`;
+                }
+                
+                // Truncar se ainda muito longo
+                while (ctx.measureText(homeName).width > maxWidth && homeName.length > 3) {
+                    homeName = homeName.slice(0, -1);
+                }
+                if (homeName.length < game.teams.home.name.length) homeName += '...';
                 
                 ctx.fillStyle = '#fff';
-                const homeTeamWrapped = wrapText(ctx, game.teams.home.name.toUpperCase(), 200);
-                homeTeamWrapped.forEach((line, idx) => {
-                    ctx.fillText(line, teamSpacing / 2, teamsAreaY + logoSize + 30 + (idx * 24));
-                });
-                
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                ctx.shadowBlur = 6;
+                const homeNameY = logoY + logoSize / 2 + 24;
+                ctx.fillText(homeName, leftX, homeNameY);
                 ctx.shadowBlur = 0;
-                ctx.shadowOffsetY = 0;
 
-                // VS (símbolo × com destaque)
-                ctx.save();
-                ctx.font = '700 56px Oswald, sans-serif';
-                
-                // Círculo de fundo para o VS
-                ctx.beginPath();
-                ctx.arc(width / 2, teamsAreaY + logoSize / 2, 35, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                
-                // Texto VS
-                ctx.fillStyle = '#fff';
+                // CENTRO: Liga, Horário, Transmissão - TUDO BRANCO E MAIS ESPAÇADO
                 ctx.textAlign = 'center';
-                ctx.shadowColor = 'rgba(239, 68, 68, 0.8)';
-                ctx.shadowBlur = 15;
-                ctx.fillText('×', width / 2, teamsAreaY + logoSize / 2 + 18);
-                ctx.restore();
+                const centerTextY = currentY + cardHeight / 2;
+                
+                // Liga (topo) - BRANCO
+                ctx.font = '700 16px Manrope, sans-serif';
+                ctx.fillStyle = '#ffffff'; // BRANCO
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 4;
+                // Truncar liga se muito longa
+                let leagueTrunc = league;
+                const leagueMaxW = 320;
+                while (ctx.measureText(leagueTrunc).width > leagueMaxW && leagueTrunc.length > 3) {
+                    leagueTrunc = leagueTrunc.slice(0, -1);
+                }
+                if (leagueTrunc.length < league.length) leagueTrunc += '...';
+                ctx.fillText(leagueTrunc, centerX, centerTextY - 35); // AUMENTADO de -28 para -35
+                
+                // Horário (meio) - BRANCO, MAIS DESTAQUE E ESPAÇADO
+                ctx.font = '700 38px Oswald, sans-serif'; // Aumentado de 36 para 38
+                ctx.fillStyle = '#ffffff'; // BRANCO
+                ctx.shadowBlur = 6;
+                ctx.fillText(time, centerX, centerTextY + 10); // AUMENTADO de +8 para +10
+                
+                // Transmissão (baixo) - BRANCO E MAIS ESPAÇADO
+                ctx.font = '600 13px Manrope, sans-serif';
+                ctx.fillStyle = '#ffffff'; // BRANCO (antes era roxo)
+                ctx.shadowBlur = 4;
+                // Remover emoji de TV e truncar
+                let broadcastClean = broadcaster.replace('📺 ', '');
+                const broadcastMaxW = 350;
+                while (ctx.measureText(broadcastClean).width > broadcastMaxW && broadcastClean.length > 3) {
+                    broadcastClean = broadcastClean.slice(0, -1);
+                }
+                if (broadcastClean.length < broadcaster.replace('📺 ', '').length) broadcastClean += '...';
+                ctx.fillText(broadcastClean, centerX, centerTextY + 40); // AUMENTADO de +34 para +40
+                ctx.shadowBlur = 0;
 
-                // Time Visitante (direita) - Círculo de fundo
-                const awayX = teamSpacing + teamSpacing / 2 - logoSize / 2;
+                // DIREITA: Time Visitante (escudo + nome) - POSIÇÃO ESTRELA VERMELHA
+                const rightX = width - padding - cardPadding - logoSize / 2 - 120; // -120 para centralizar conforme estrela
                 
-                // Círculo de fundo com brilho para o escudo
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(awayX + logoSize/2, teamsAreaY + logoSize/2, logoSize/2 + 12, 0, Math.PI * 2);
-                
-                const awayGradient = ctx.createRadialGradient(
-                    awayX + logoSize/2, teamsAreaY + logoSize/2, 0,
-                    awayX + logoSize/2, teamsAreaY + logoSize/2, logoSize/2 + 12
-                );
-                awayGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
-                awayGradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.08)');
-                awayGradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
-                ctx.fillStyle = awayGradient;
-                ctx.fill();
-                
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.restore();
-                
-                // Logo do time visitante
                 if (game.awayLogoImg) {
-                    ctx.drawImage(game.awayLogoImg, awayX, teamsAreaY, logoSize, logoSize);
+                    // Logo sem círculo de fundo
+                    ctx.drawImage(game.awayLogoImg, rightX - logoSize / 2, logoY - logoSize / 2, logoSize, logoSize);
                 }
                 
-                // Nome do time visitante
+                // Nome do time visitante - TRUNCAR AUTOMATICAMENTE COM REDUÇÃO DE FONTE
                 ctx.textAlign = 'center';
-                ctx.font = '700 19px Manrope, sans-serif';
+                let awayFontSize = 15;
+                let awayName = game.teams.away.name.toUpperCase();
                 
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-                ctx.shadowBlur = 8;
-                ctx.shadowOffsetY = 2;
+                // Se nome muito longo, reduzir fonte antes de truncar
+                ctx.font = `600 ${awayFontSize}px Manrope, sans-serif`;
+                if (ctx.measureText(awayName).width > maxWidth) {
+                    awayFontSize = 13; // Reduzir para 13px
+                    ctx.font = `600 ${awayFontSize}px Manrope, sans-serif`;
+                }
+                
+                // Truncar se ainda muito longo
+                while (ctx.measureText(awayName).width > maxWidth && awayName.length > 3) {
+                    awayName = awayName.slice(0, -1);
+                }
+                if (awayName.length < game.teams.away.name.length) awayName += '...';
                 
                 ctx.fillStyle = '#fff';
-                const awayTeamWrapped = wrapText(ctx, game.teams.away.name.toUpperCase(), 200);
-                awayTeamWrapped.forEach((line, idx) => {
-                    ctx.fillText(line, teamSpacing + teamSpacing / 2, teamsAreaY + logoSize + 30 + (idx * 24));
-                });
-                
-                ctx.shadowBlur = 0;
-                ctx.shadowOffsetY = 0;
-
-                currentY = teamsAreaY + logoSize + 65;
-
-                // ===== ÁREA DE DESTAQUE: TRANSMISSÃO =====
-                const broadcastY = currentY;
-                const broadcastHeight = 36;
-                const broadcastWidth = Math.min(broadcaster.length * 10 + 60, width - padding * 2);
-                const broadcastX = (width - broadcastWidth) / 2;
-                
-                // Fundo semi-transparente para transmissão
-                ctx.save();
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-                roundRect(ctx, broadcastX, broadcastY - 24, broadcastWidth, broadcastHeight, 8);
-                ctx.fill();
-                
-                // Borda com cor de destaque (azul/roxo)
-                ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
-                ctx.lineWidth = 2;
-                roundRect(ctx, broadcastX, broadcastY - 24, broadcastWidth, broadcastHeight, 8);
-                ctx.stroke();
-                ctx.restore();
-                
-                // Texto da transmissão
-                ctx.textAlign = 'center';
-                ctx.font = '600 18px Manrope, sans-serif';
-                
-                ctx.shadowColor = 'rgba(168, 85, 247, 0.5)';
-                ctx.shadowBlur = 10;
-                
-                ctx.fillStyle = '#fff';
-                ctx.fillText(broadcaster, width / 2, broadcastY - 4);
-                
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                ctx.shadowBlur = 6;
+                ctx.fillText(awayName, rightX, homeNameY);
                 ctx.shadowBlur = 0;
 
-                currentY += 50;
+                currentY += cardHeight + spacing; // Espaçamento AUMENTADO
             }
 
-            // Aviso de última hora (com espaçamento do último jogo)
-            currentY += 30;
+            // Aviso de última hora (com melhor espaçamento)
+            currentY += 20;
             ctx.textAlign = 'center';
-            ctx.font = '500 18px Manrope, sans-serif';
+            ctx.font = '500 15px Manrope, sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            ctx.shadowBlur = 4;
             ctx.fillText('⚠️ Os canais podem sofrer alteração de última hora', width / 2, currentY);
+            ctx.shadowBlur = 0;
 
-            // Footer com WhatsApp e CTA (garantir que não sobreponha)
-            currentY += 50;
+            // Footer com WhatsApp e CTA
+            currentY += 35;
             const boxH = 45;
-            const boxY = Math.max(currentY, height - 60); // Garante no mínimo 60px da base
+            const boxY = Math.max(currentY, height - 65);
 
             ctx.fillStyle = '#25D366';
             roundRect(ctx, padding, boxY - boxH, 180, boxH, 8);
@@ -1098,13 +1067,7 @@
             const dataUrl = canvasEl.toDataURL('image/png');
             const link = document.createElement('a');
             const dateStr = new Date(selectedDate).toLocaleDateString('pt-BR').replace(/\//g, '-');
-            
-            if (num === 'capa') {
-                link.download = `capa_jogos_${dateStr}.png`;
-            } else {
-                link.download = `jogos_${dateStr}_banner_${num}.png`;
-            }
-            
+            link.download = `jogos_${dateStr}_banner_${num}.png`;
             link.href = dataUrl;
             document.body.appendChild(link);
             link.click();
@@ -1150,7 +1113,7 @@
         }
 
         // ============================================
-        // MODO VÍDEO (NOVO!)
+        // MODO VÍDEO
         // ============================================
         async function loadVideoMode() {
             controlPanel.innerHTML = `
@@ -1511,7 +1474,7 @@
         }
 
         // ============================================
-        // MODO FILMES (CÓDIGO ORIGINAL)
+        // MODO FILMES (CÓDIGO ORIGINAL MANTIDO)
         // ============================================
         async function loadMoviesMode() {
             canvas.classList.remove('hidden');

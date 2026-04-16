@@ -1,9 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Banner Generator Pro - Futebol, Filmes e Vídeos</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Banner Generator Pro - Futebol, Filmes e Vídeos" />
+    <title>Banner Generator Pro</title>
+    <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
+    <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,7 +35,7 @@
 </head>
 <body class="min-h-screen text-white">
 
-    <button onclick="openSettings()" class="fixed top-6 right-6 z-50 w-12 h-12 bg-zinc-800 hover:bg-zinc-700 rounded-full flex items-center justify-center transition-all shadow-lg" title="Configurações">
+    <button onclick="openSettings()" class="fixed top-6 right-6 z-50 w-12 h-12 bg-zinc-800 hover:bg-zinc-700 rounded-full flex items-center justify-center transition-all shadow-lg" title="Configurações" data-testid="settings-btn">
         <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 256 256"><path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88-29.84q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.21,107.21,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.71,107.71,0,0,0-26.25-10.87,8,8,0,0,0-7.06,1.49L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.21,107.21,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06Z"/></svg>
     </button>
 
@@ -39,31 +43,31 @@
         <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <header class="flex items-center justify-between mb-6">
                 <h2 class="font-oswald text-3xl font-bold">Configurações Globais</h2>
-                <button onclick="closeSettings()" class="text-zinc-500 hover:text-white transition-colors">✕</button>
+                <button onclick="closeSettings()" class="text-zinc-500 hover:text-white transition-colors" data-testid="close-settings-btn">✕</button>
             </header>
             <div class="flex flex-col gap-6">
                 <section class="border border-zinc-800 rounded-lg p-5">
                     <label class="text-sm font-semibold text-zinc-300 mb-3 block">Logo / Marca d'água Padrão</label>
                     <label class="border border-dashed border-zinc-700 p-5 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg">
                         <span id="settingsLogoText" class="text-sm text-zinc-400">Carregar logo padrão</span>
-                        <input type="file" id="settingsLogoInput" accept="image/*" class="hidden">
+                        <input type="file" id="settingsLogoInput" accept="image/*" class="hidden" data-testid="settings-logo-input">
                     </label>
                     <button id="settingsRemoveLogo" class="mt-2 text-xs text-red-500 hover:text-red-400 transition-colors hidden">✕ Remover logo</button>
                 </section>
                 <section class="border border-zinc-800 rounded-lg p-5">
                     <label class="text-sm font-semibold text-zinc-300 mb-3 block">Número do WhatsApp</label>
-                    <input type="tel" id="settingsWhatsappNumber" placeholder="(00) 00000-0000" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-green-500 w-full rounded-lg">
+                    <input type="tel" id="settingsWhatsappNumber" placeholder="(00) 00000-0000" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-green-500 w-full rounded-lg" data-testid="settings-whatsapp-input">
                 </section>
                 <section class="border border-zinc-800 rounded-lg p-5">
                     <label class="text-sm font-semibold text-zinc-300 mb-3 block">Texto do Box WhatsApp</label>
-                    <input type="text" id="settingsWhatsappText" value="Grupo VIP" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-green-500 w-full rounded-lg">
+                    <input type="text" id="settingsWhatsappText" value="Grupo VIP" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-green-500 w-full rounded-lg" data-testid="settings-whatsapp-text-input">
                 </section>
                 <section class="border border-zinc-800 rounded-lg p-5">
                     <label class="text-sm font-semibold text-zinc-300 mb-3 block">Texto do Botão CTA</label>
-                    <input type="text" id="settingsCtaText" value="ASSINA JÁ" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 w-full rounded-lg">
+                    <input type="text" id="settingsCtaText" value="ASSINA JÁ" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 w-full rounded-lg" data-testid="settings-cta-input">
                 </section>
                 <div class="flex gap-3 pt-4 border-t border-zinc-800">
-                    <button onclick="saveSettings()" class="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-4 rounded-lg transition-all">Salvar</button>
+                    <button onclick="saveSettings()" class="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-4 rounded-lg transition-all" data-testid="save-settings-btn">Salvar</button>
                     <button onclick="closeSettings()" class="px-8 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 rounded-lg transition-all">Cancelar</button>
                 </div>
             </div>
@@ -79,24 +83,31 @@
                 </h1>
                 <p class="text-zinc-500 text-xl">Escolha o tipo de banner que deseja criar</p>
             </header>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="box-selector bg-gradient-to-br from-green-900/20 to-zinc-900 border-2 border-green-500/30 rounded-2xl p-8 hover:border-green-500" onclick="selectMode('football')">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="box-selector bg-gradient-to-br from-green-900/20 to-zinc-900 border-2 border-green-500/30 rounded-2xl p-8 hover:border-green-500" onclick="selectMode('football')" data-testid="football-mode-btn">
                     <div class="text-center">
-                        <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">⚽</div>
+                        <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">&#9917;</div>
                         <h3 class="font-oswald text-2xl font-bold mb-3">Futebol do Dia</h3>
                         <p class="text-zinc-400 text-sm mb-6">Gere banners para jogos de futebol</p>
                     </div>
                 </div>
-                <div class="box-selector bg-gradient-to-br from-red-900/20 to-zinc-900 border-2 border-red-500/30 rounded-2xl p-8 hover:border-red-500" onclick="selectMode('movies')">
+                <div class="box-selector bg-gradient-to-br from-emerald-900/20 to-zinc-900 border-2 border-emerald-500/30 rounded-2xl p-8 hover:border-emerald-500" onclick="selectMode('footballManual')" data-testid="football-manual-mode-btn">
                     <div class="text-center">
-                        <div class="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6">🎬</div>
+                        <div class="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">&#9997;</div>
+                        <h3 class="font-oswald text-2xl font-bold mb-3">Futebol Manual</h3>
+                        <p class="text-zinc-400 text-sm mb-6">Adicione jogos manualmente</p>
+                    </div>
+                </div>
+                <div class="box-selector bg-gradient-to-br from-red-900/20 to-zinc-900 border-2 border-red-500/30 rounded-2xl p-8 hover:border-red-500" onclick="selectMode('movies')" data-testid="movies-mode-btn">
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">&#127916;</div>
                         <h3 class="font-oswald text-2xl font-bold mb-3">Filmes e Séries</h3>
                         <p class="text-zinc-400 text-sm mb-6">Crie banners incríveis para filmes e séries</p>
                     </div>
                 </div>
-                <div class="box-selector bg-gradient-to-br from-purple-900/20 to-zinc-900 border-2 border-purple-500/30 rounded-2xl p-8 hover:border-purple-500" onclick="selectMode('video')">
+                <div class="box-selector bg-gradient-to-br from-purple-900/20 to-zinc-900 border-2 border-purple-500/30 rounded-2xl p-8 hover:border-purple-500" onclick="selectMode('video')" data-testid="video-mode-btn">
                     <div class="text-center">
-                        <div class="w-20 h-20 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">🎥</div>
+                        <div class="w-20 h-20 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">&#127909;</div>
                         <h3 class="font-oswald text-2xl font-bold mb-3">Trailers em Vídeo</h3>
                         <p class="text-zinc-400 text-sm mb-6">Gere trailers em MP4 (PT dublado)</p>
                     </div>
@@ -108,10 +119,10 @@
     <div id="editorScreen" class="min-h-screen hidden">
         <div class="flex flex-col lg:flex-row min-h-screen">
             <div class="w-full lg:w-20 bg-zinc-950 border-r border-zinc-800 flex lg:flex-col items-center justify-start lg:justify-center gap-4 p-4">
-                <button onclick="goHome()" class="w-12 h-12 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors" title="Voltar">🏠</button>
+                <button onclick="goHome()" class="w-12 h-12 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors" title="Voltar" data-testid="go-home-btn">&#127968;</button>
             </div>
-            <aside id="controlPanel" class="w-full lg:w-[420px] border-r border-zinc-800 bg-zinc-900/50 p-6 lg:p-8 overflow-y-auto lg:h-screen flex flex-col gap-5"></aside>
-            <main class="flex-1 relative flex items-center justify-center p-6 lg:p-12 bg-[#050505] min-h-[600px] lg:min-h-screen overflow-y-auto">
+            <aside id="controlPanel" class="w-full lg:w-[420px] border-r border-zinc-800 bg-zinc-900/50 p-6 lg:p-8 overflow-y-auto lg:h-screen lg:sticky lg:top-0 flex flex-col gap-5"></aside>
+            <main class="flex-1 relative p-6 lg:p-12 bg-[#050505] min-h-[600px]">
                 <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_#18181b_0%,_#050505_70%)] opacity-50"></div>
                 <div class="relative z-10 w-full max-w-4xl" id="bannersContainer">
                     <canvas id="bannerCanvas" class="canvas-glow max-w-full h-auto rounded-lg mx-auto"></canvas>

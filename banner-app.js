@@ -44,15 +44,29 @@ const leagueBroadcasters = {
 // ============================================
 function loadGlobalSettings() {
     try {
-        const saved = localStorage.getItem('bannerGeneratorSettings');
+        var saved = localStorage.getItem('bannerGeneratorSettings');
         if (saved) {
             globalSettings = JSON.parse(saved);
             if (globalSettings.logo) {
-                const img = new Image();
+                var img = new Image();
                 img.onload = function() { uploadedLogo = img; };
                 img.src = globalSettings.logo;
                 document.getElementById('settingsLogoText').textContent = 'Logo carregada';
                 document.getElementById('settingsRemoveLogo').classList.remove('hidden');
+            }
+            if (globalSettings.bgPost) {
+                var imgP = new Image();
+                imgP.onload = function() { footballBgPost = imgP; };
+                imgP.src = globalSettings.bgPost;
+                document.getElementById('settingsBgPostText').textContent = 'Fundo Post carregado';
+                document.getElementById('settingsRemoveBgPost').classList.remove('hidden');
+            }
+            if (globalSettings.bgStory) {
+                var imgS = new Image();
+                imgS.onload = function() { footballBgStory = imgS; };
+                imgS.src = globalSettings.bgStory;
+                document.getElementById('settingsBgStoryText').textContent = 'Fundo Story carregado';
+                document.getElementById('settingsRemoveBgStory').classList.remove('hidden');
             }
             document.getElementById('settingsWhatsappNumber').value = globalSettings.whatsappNumber || '';
             document.getElementById('settingsWhatsappText').value = globalSettings.whatsappText || 'Grupo VIP';
@@ -77,13 +91,14 @@ function saveSettings() {
     closeSettings();
 }
 
+// Logo
 document.getElementById('settingsLogoInput').addEventListener('change', function(e) {
-    const file = e.target.files[0];
+    var file = e.target.files[0];
     if (file) {
-        const reader = new FileReader();
+        var reader = new FileReader();
         reader.onload = function(ev) {
             globalSettings.logo = ev.target.result;
-            const img = new Image();
+            var img = new Image();
             img.onload = function() { uploadedLogo = img; };
             img.src = ev.target.result;
             document.getElementById('settingsLogoText').textContent = file.name;
@@ -92,13 +107,57 @@ document.getElementById('settingsLogoInput').addEventListener('change', function
         reader.readAsDataURL(file);
     }
 });
-
 document.getElementById('settingsRemoveLogo').addEventListener('click', function() {
-    globalSettings.logo = null;
-    uploadedLogo = null;
+    globalSettings.logo = null; uploadedLogo = null;
     document.getElementById('settingsLogoInput').value = '';
     document.getElementById('settingsLogoText').textContent = 'Carregar logo padrão';
     document.getElementById('settingsRemoveLogo').classList.add('hidden');
+});
+
+// Fundo Post
+document.getElementById('settingsBgPostInput').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (file) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            globalSettings.bgPost = ev.target.result;
+            var img = new Image();
+            img.onload = function() { footballBgPost = img; };
+            img.src = ev.target.result;
+            document.getElementById('settingsBgPostText').textContent = file.name;
+            document.getElementById('settingsRemoveBgPost').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+});
+document.getElementById('settingsRemoveBgPost').addEventListener('click', function() {
+    globalSettings.bgPost = null; footballBgPost = null;
+    document.getElementById('settingsBgPostInput').value = '';
+    document.getElementById('settingsBgPostText').textContent = 'Carregar fundo Post';
+    document.getElementById('settingsRemoveBgPost').classList.add('hidden');
+});
+
+// Fundo Story
+document.getElementById('settingsBgStoryInput').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (file) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            globalSettings.bgStory = ev.target.result;
+            var img = new Image();
+            img.onload = function() { footballBgStory = img; };
+            img.src = ev.target.result;
+            document.getElementById('settingsBgStoryText').textContent = file.name;
+            document.getElementById('settingsRemoveBgStory').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+});
+document.getElementById('settingsRemoveBgStory').addEventListener('click', function() {
+    globalSettings.bgStory = null; footballBgStory = null;
+    document.getElementById('settingsBgStoryInput').value = '';
+    document.getElementById('settingsBgStoryText').textContent = 'Carregar fundo Story';
+    document.getElementById('settingsRemoveBgStory').classList.add('hidden');
 });
 
 // ============================================
@@ -143,9 +202,6 @@ function loadFootballMode() {
     clearPreviousBanners();
 
     controlPanel.innerHTML = '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-green-400">&#9917; Futebol do Dia</h2><p class="text-zinc-500 text-sm mt-2">Banners com lista de jogos</p></header>' +
-        '<section class="mt-5 border border-zinc-800 rounded-lg p-4"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Imagem de Fundo (Opcional)</label><div class="space-y-3">' +
-        '<div><label class="text-xs text-zinc-400 block mb-2">Post (1080x1080px)</label><label class="border border-dashed border-zinc-700 p-3 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg"><span id="footballBgPostText" class="text-xs text-zinc-400">Carregar fundo Post</span><input type="file" id="footballBgPostInput" accept="image/*" class="hidden"></label><button id="footballRemoveBgPost" class="mt-1 text-xs text-red-500 hover:text-red-400 transition-colors hidden">&#10005; Remover</button></div>' +
-        '<div><label class="text-xs text-zinc-400 block mb-2">Story (1080x1920px)</label><label class="border border-dashed border-zinc-700 p-3 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg"><span id="footballBgStoryText" class="text-xs text-zinc-400">Carregar fundo Story</span><input type="file" id="footballBgStoryInput" accept="image/*" class="hidden"></label><button id="footballRemoveBgStory" class="mt-1 text-xs text-red-500 hover:text-red-400 transition-colors hidden">&#10005; Remover</button></div></div></section>' +
         '<section class="mt-5"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Selecionar Data</label><input type="date" id="footballDate" value="' + getTodayDate() + '" class="bg-black border-2 border-zinc-800 p-4 text-white focus:outline-none focus:border-green-500 w-full rounded-lg" data-testid="football-date-input">' +
         '<button id="footballSearchBtn" class="w-full mt-3 bg-green-500 hover:bg-green-400 text-white font-bold py-3 rounded-lg transition-all" data-testid="football-search-btn">BUSCAR JOGOS</button><div id="footballResults" class="mt-4"></div></section>' +
         '<section id="footballControls" class="hidden flex flex-col gap-5 mt-5"><section class="flex flex-col gap-3"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label><div class="flex gap-2">' +
@@ -155,32 +211,6 @@ function loadFootballMode() {
         '<button id="footballCopyBtn" class="flex-1 bg-purple-600 text-white font-bold uppercase tracking-widest py-4 hover:bg-purple-500 transition-all rounded-lg" data-testid="football-copy-btn">COPIAR INFO</button></div></section>';
 
     setTimeout(function() {
-        document.getElementById('footballBgPostInput').addEventListener('change', function(e) {
-            var file = e.target.files[0];
-            if (file) {
-                var reader = new FileReader();
-                reader.onload = function(ev) {
-                    var img = new Image();
-                    img.onload = function() { footballBgPost = img; document.getElementById('footballBgPostText').textContent = file.name; document.getElementById('footballRemoveBgPost').classList.remove('hidden'); };
-                    img.src = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-        document.getElementById('footballRemoveBgPost').addEventListener('click', function() { footballBgPost = null; document.getElementById('footballBgPostInput').value = ''; document.getElementById('footballBgPostText').textContent = 'Carregar fundo Post'; document.getElementById('footballRemoveBgPost').classList.add('hidden'); });
-        document.getElementById('footballBgStoryInput').addEventListener('change', function(e) {
-            var file = e.target.files[0];
-            if (file) {
-                var reader = new FileReader();
-                reader.onload = function(ev) {
-                    var img = new Image();
-                    img.onload = function() { footballBgStory = img; document.getElementById('footballBgStoryText').textContent = file.name; document.getElementById('footballRemoveBgStory').classList.remove('hidden'); };
-                    img.src = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-        document.getElementById('footballRemoveBgStory').addEventListener('click', function() { footballBgStory = null; document.getElementById('footballBgStoryInput').value = ''; document.getElementById('footballBgStoryText').textContent = 'Carregar fundo Story'; document.getElementById('footballRemoveBgStory').classList.add('hidden'); });
         document.getElementById('footballSearchBtn').addEventListener('click', searchFootballGames);
         document.getElementById('footballDate').addEventListener('change', function() { document.getElementById('footballResults').innerHTML = ''; document.getElementById('footballControls').classList.add('hidden'); });
     }, 100);
@@ -688,7 +718,7 @@ async function generateFootballListBannerModern(canvasEl, games, bannerNum, tota
         var game = games[gi];
         var league = game.league.name;
         var time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        var broadcaster = getBroadcaster(league);
+        var broadcaster = game.manualBroadcaster || getBroadcaster(league);
 
         // Card background
         cvs.save();
@@ -830,9 +860,6 @@ function loadFootballManualMode() {
     clearPreviousBanners();
 
     controlPanel.innerHTML = '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-emerald-400">&#9997; Futebol Manual</h2><p class="text-zinc-500 text-sm mt-2">Adicione jogos manualmente</p></header>' +
-        '<section class="mt-5 border border-zinc-800 rounded-lg p-4"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Imagem de Fundo (Opcional)</label><div class="space-y-3">' +
-        '<div><label class="text-xs text-zinc-400 block mb-2">Post (1080x1080px)</label><label class="border border-dashed border-zinc-700 p-3 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg"><span id="manualBgPostText" class="text-xs text-zinc-400">Carregar fundo Post</span><input type="file" id="manualBgPostInput" accept="image/*" class="hidden"></label></div>' +
-        '<div><label class="text-xs text-zinc-400 block mb-2">Story (1080x1920px)</label><label class="border border-dashed border-zinc-700 p-3 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg"><span id="manualBgStoryText" class="text-xs text-zinc-400">Carregar fundo Story</span><input type="file" id="manualBgStoryInput" accept="image/*" class="hidden"></label></div></div></section>' +
         '<section class="mt-5"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Data dos Jogos</label><input type="date" id="manualDate" value="' + getTodayDate() + '" class="bg-black border-2 border-zinc-800 p-3 text-white focus:outline-none focus:border-emerald-500 w-full rounded-lg" data-testid="manual-date-input"></section>' +
         '<div id="manualGamesList" class="mt-5 flex flex-col gap-3"></div>' +
         '<button id="manualAddGameBtn" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition-all" data-testid="manual-add-game-btn">+ ADICIONAR JOGO</button>' +
@@ -849,36 +876,85 @@ function loadFootballManualMode() {
         document.getElementById('manualGenerateBtn').addEventListener('click', generateManualBanners);
         document.getElementById('manualFormatPost').addEventListener('click', function() { currentFormat = 'post'; updateManualFormatButtons(); });
         document.getElementById('manualFormatStory').addEventListener('click', function() { currentFormat = 'story'; updateManualFormatButtons(); });
-        document.getElementById('manualBgPostInput').addEventListener('change', function(e) {
-            var file = e.target.files[0]; if (!file) return;
-            var reader = new FileReader(); reader.onload = function(ev) { var img = new Image(); img.onload = function() { footballBgPost = img; document.getElementById('manualBgPostText').textContent = file.name; }; img.src = ev.target.result; }; reader.readAsDataURL(file);
-        });
-        document.getElementById('manualBgStoryInput').addEventListener('change', function(e) {
-            var file = e.target.files[0]; if (!file) return;
-            var reader = new FileReader(); reader.onload = function(ev) { var img = new Image(); img.onload = function() { footballBgStory = img; document.getElementById('manualBgStoryText').textContent = file.name; }; img.src = ev.target.result; }; reader.readAsDataURL(file);
-        });
         addManualGame();
     }, 100);
 
     showPlaceholder('&#9997;', 'MANUAL', 'Adicione jogos manualmente', '#0a4d0a', '#001a00');
 }
 
+// Mapeamento liga -> canal padrão
+var leagueToBroadcaster = {
+    'Campeonato_Brasileiro_Serie_A': 'globo_sportv_premiere_prime_cazetv',
+    'Campeonato_Brasileiro_Srrie_B': 'espn_disney_sportv',
+    'Copa_Libertadores': 'globo_espn_disney_paramount',
+    'Premier_League': 'espn_star',
+    'La_Liga': 'espn_star',
+    'Bundesliga': 'onefootball_youtube',
+    'Ligue_1': 'cazetv_prime',
+    'UEFA_Champions_League': 'sbt_tnt_hbo',
+    'Copa_do_Mundo_FIFA': 'globo_sportv_cazetv',
+    'Amistosos_Internacionais': 'sportv'
+};
+
 function addManualGame() {
     var id = manualGameIdCounter++;
-    manualGames.push({ id: id, homeName: '', awayName: '', homeLogo: null, awayLogo: null, time: '20:00', broadcaster: '' });
+    var defaultBroadcaster = leagueToBroadcaster['Campeonato_Brasileiro_Serie_A'];
+    manualGames.push({ id: id, homeName: '', awayName: '', homeLogo: null, awayLogo: null, league: 'Campeonato_Brasileiro_Serie_A', time: '20:00', broadcaster: defaultBroadcaster });
     var container = document.getElementById('manualGamesList');
     var gameDiv = document.createElement('div');
     gameDiv.id = 'manualGame_' + id;
     gameDiv.className = 'border border-zinc-800 rounded-lg p-4 bg-black/30';
+
+    var broadcasterOptions =
+        '<option value="globo_sportv_premiere_prime_cazetv">Globo / SporTV / Premiere / Prime / Caz\u00E9TV</option>' +
+        '<option value="espn_disney_sportv">ESPN / Disney+ / SporTV</option>' +
+        '<option value="globo_espn_disney_paramount">Globo / ESPN / Disney+ / Paramount+</option>' +
+        '<option value="espn_star">ESPN / Star+</option>' +
+        '<option value="espn_disney_paramount">ESPN / Disney+ / Paramount+</option>' +
+        '<option value="onefootball_youtube">OneFootball / YouTube</option>' +
+        '<option value="cazetv_prime">Caz\u00E9TV / Prime Video</option>' +
+        '<option value="sbt_tnt_hbo">SBT / TNT Sports / HBO Max</option>' +
+        '<option value="globo_sportv_cazetv">Globo / SporTV / Caz\u00E9TV</option>' +
+        '<option value="sportv">SporTV</option>' +
+        '<option value="globo_premiere">Globo / Premiere</option>' +
+        '<option value="band">Band</option>' +
+        '<option value="record">Record</option>';
+
     gameDiv.innerHTML =
         '<div class="flex items-center justify-between mb-3"><span class="text-xs text-emerald-400 font-semibold uppercase">Jogo ' + (manualGames.length) + '</span><button onclick="removeManualGame(' + id + ')" class="text-red-500 hover:text-red-400 text-xs font-semibold">&#10005; Remover</button></div>' +
         '<div class="grid grid-cols-2 gap-3 mb-3">' +
         '<div><label class="text-xs text-zinc-400 block mb-1">Time Casa</label><div class="flex gap-2 items-center"><label class="w-10 h-10 border border-dashed border-zinc-700 rounded cursor-pointer flex items-center justify-center shrink-0 overflow-hidden" title="Logo"><img id="manualHomeLogo_' + id + '" src="" class="w-full h-full object-contain hidden"><span id="manualHomeLogoIcon_' + id + '" class="text-zinc-600 text-lg">+</span><input type="file" accept="image/*" class="hidden" onchange="handleManualLogo(' + id + ',\'home\',this)"></label><input type="text" placeholder="Nome" class="bg-black border border-zinc-800 p-2 text-white text-sm flex-1 rounded focus:outline-none focus:border-emerald-500 min-w-0" oninput="updateManualGame(' + id + ',\'homeName\',this.value)" data-testid="manual-home-' + id + '"></div></div>' +
         '<div><label class="text-xs text-zinc-400 block mb-1">Time Fora</label><div class="flex gap-2 items-center"><label class="w-10 h-10 border border-dashed border-zinc-700 rounded cursor-pointer flex items-center justify-center shrink-0 overflow-hidden" title="Logo"><img id="manualAwayLogo_' + id + '" src="" class="w-full h-full object-contain hidden"><span id="manualAwayLogoIcon_' + id + '" class="text-zinc-600 text-lg">+</span><input type="file" accept="image/*" class="hidden" onchange="handleManualLogo(' + id + ',\'away\',this)"></label><input type="text" placeholder="Nome" class="bg-black border border-zinc-800 p-2 text-white text-sm flex-1 rounded focus:outline-none focus:border-emerald-500 min-w-0" oninput="updateManualGame(' + id + ',\'awayName\',this.value)" data-testid="manual-away-' + id + '"></div></div></div>' +
+        '<div class="mb-3"><label class="text-xs text-zinc-400 block mb-1">Liga</label><select class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer" onchange="onManualLeagueChange(' + id + ',this.value)" data-testid="manual-league-' + id + '">' +
+        '<option value="Campeonato_Brasileiro_Serie_A">Brasileir\u00E3o S\u00E9rie A</option>' +
+        '<option value="Campeonato_Brasileiro_Srrie_B">Brasileir\u00E3o S\u00E9rie B</option>' +
+        '<option value="Copa_Libertadores">Copa Libertadores</option>' +
+        '<option value="Premier_League">Premier League</option>' +
+        '<option value="La_Liga">La Liga</option>' +
+        '<option value="Bundesliga">Bundesliga</option>' +
+        '<option value="Ligue_1">Ligue 1</option>' +
+        '<option value="UEFA_Champions_League">UEFA Champions League</option>' +
+        '<option value="Copa_do_Mundo_FIFA">Copa do Mundo FIFA</option>' +
+        '<option value="Amistosos_Internacionais">Amistosos Internacionais</option>' +
+        '</select></div>' +
         '<div class="grid grid-cols-2 gap-3"><div><label class="text-xs text-zinc-400 block mb-1">Horario</label><input type="time" value="20:00" class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500" oninput="updateManualGame(' + id + ',\'time\',this.value)"></div>' +
-        '<div><label class="text-xs text-zinc-400 block mb-1">Transmissao</label><input type="text" placeholder="ESPN / Globo..." class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500" oninput="updateManualGame(' + id + ',\'broadcaster\',this.value)"></div></div>';
+        '<div><label class="text-xs text-zinc-400 block mb-1">Transmissao</label><select id="manualBroadcaster_' + id + '" class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer" onchange="updateManualGame(' + id + ',\'broadcaster\',this.value)" data-testid="manual-broadcaster-' + id + '">' + broadcasterOptions + '</select></div></div>';
+
     container.appendChild(gameDiv);
+
+    // Setar canal padrão no select
+    var bcSelect = document.getElementById('manualBroadcaster_' + id);
+    if (bcSelect) bcSelect.value = defaultBroadcaster;
 }
+
+window.onManualLeagueChange = function(id, leagueValue) {
+    updateManualGame(id, 'league', leagueValue);
+    // Auto-selecionar canal baseado na liga
+    var bc = leagueToBroadcaster[leagueValue] || 'sportv';
+    var bcSelect = document.getElementById('manualBroadcaster_' + id);
+    if (bcSelect) bcSelect.value = bc;
+    updateManualGame(id, 'broadcaster', bc);
+};
 
 window.removeManualGame = function(id) {
     manualGames = manualGames.filter(function(g) { return g.id !== id; });
@@ -938,13 +1014,46 @@ async function generateManualBanners() {
     var isPost = currentFormat === 'post';
     var gamesPerBanner = isPost ? 5 : 8;
 
+    // Mapeamento de nomes de arquivo para nomes legíveis
+    var leagueDisplayNames = {
+        'Campeonato_Brasileiro_Serie_A': 'Brasileirão Série A',
+        'Campeonato_Brasileiro_Srrie_B': 'Brasileirão Série B',
+        'Copa_Libertadores': 'Copa Libertadores',
+        'Premier_League': 'Premier League',
+        'La_Liga': 'La Liga',
+        'Bundesliga': 'Bundesliga',
+        'Ligue_1': 'Ligue 1',
+        'UEFA_Champions_League': 'UEFA Champions League',
+        'Copa_do_Mundo_FIFA': 'Copa do Mundo FIFA',
+        'Amistosos_Internacionais': 'Amistosos Internacionais'
+    };
+
+    var broadcasterDisplayNames = {
+        'globo_sportv_premiere_prime_cazetv': 'Globo / SporTV / Premiere / Prime / CazéTV',
+        'espn_disney_sportv': 'ESPN / Disney+ / SporTV',
+        'globo_espn_disney_paramount': 'Globo / ESPN / Disney+ / Paramount+',
+        'espn_star': 'ESPN / Star+',
+        'espn_disney_paramount': 'ESPN / Disney+ / Paramount+',
+        'onefootball_youtube': 'OneFootball / YouTube',
+        'cazetv_prime': 'CazéTV / Prime Video',
+        'sbt_tnt_hbo': 'SBT / TNT Sports / HBO Max',
+        'globo_sportv_cazetv': 'Globo / SporTV / CazéTV',
+        'sportv': 'SporTV',
+        'globo_premiere': 'Globo / Premiere',
+        'band': 'Band',
+        'record': 'Record'
+    };
+
     var gamesForBanner = validGames.map(function(g) {
+        var leagueName = leagueDisplayNames[g.league] || g.league || '';
+        var broadcasterText = broadcasterDisplayNames[g.broadcaster] || g.broadcaster || '';
         return {
             fixture: { date: selectedDate + 'T' + (g.time || '20:00') + ':00' },
-            league: { name: g.broadcaster || '' },
+            league: { name: leagueName },
             teams: { home: { name: g.homeName }, away: { name: g.awayName } },
             homeLogoImg: g.homeLogo,
-            awayLogoImg: g.awayLogo
+            awayLogoImg: g.awayLogo,
+            manualBroadcaster: broadcasterText
         };
     });
 

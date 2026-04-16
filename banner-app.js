@@ -113,6 +113,7 @@ function selectMode(mode) {
     selectedContent = null;
     if (mode === 'movies') loadMoviesMode();
     else if (mode === 'football') loadFootballMode();
+    else if (mode === 'footballManual') loadFootballManualMode();
     else if (mode === 'video') loadVideoMode();
 }
 
@@ -816,6 +817,182 @@ async function generateFootballListBannerModern(canvasEl, games, bannerNum, tota
     cvs.font = '700 18px Manrope, sans-serif';
     cvs.fillText(globalSettings.ctaText, padding + 285, btnY - boxH / 2 + 6);
 }
+
+// ============================================
+// FOOTBALL MANUAL MODE
+// ============================================
+var manualGames = [];
+var manualGameIdCounter = 0;
+
+function loadFootballManualMode() {
+    canvas.classList.add('hidden');
+    videoContainer.classList.add('hidden');
+    clearPreviousBanners();
+
+    controlPanel.innerHTML = '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-emerald-400">&#9997; Futebol Manual</h2><p class="text-zinc-500 text-sm mt-2">Adicione jogos manualmente</p></header>' +
+        '<section class="mt-5 border border-zinc-800 rounded-lg p-4"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Imagem de Fundo (Opcional)</label><div class="space-y-3">' +
+        '<div><label class="text-xs text-zinc-400 block mb-2">Post (1080x1080px)</label><label class="border border-dashed border-zinc-700 p-3 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg"><span id="manualBgPostText" class="text-xs text-zinc-400">Carregar fundo Post</span><input type="file" id="manualBgPostInput" accept="image/*" class="hidden"></label></div>' +
+        '<div><label class="text-xs text-zinc-400 block mb-2">Story (1080x1920px)</label><label class="border border-dashed border-zinc-700 p-3 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg"><span id="manualBgStoryText" class="text-xs text-zinc-400">Carregar fundo Story</span><input type="file" id="manualBgStoryInput" accept="image/*" class="hidden"></label></div></div></section>' +
+        '<section class="mt-5"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Data dos Jogos</label><input type="date" id="manualDate" value="' + getTodayDate() + '" class="bg-black border-2 border-zinc-800 p-3 text-white focus:outline-none focus:border-emerald-500 w-full rounded-lg" data-testid="manual-date-input"></section>' +
+        '<div id="manualGamesList" class="mt-5 flex flex-col gap-3"></div>' +
+        '<button id="manualAddGameBtn" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition-all" data-testid="manual-add-game-btn">+ ADICIONAR JOGO</button>' +
+        '<section class="flex flex-col gap-3 mt-5"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label><div class="flex gap-2">' +
+        '<button id="manualFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white" data-testid="manual-format-post">Post</button>' +
+        '<button id="manualFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800" data-testid="manual-format-story">Story</button></div></section>' +
+        '<button id="manualGenerateBtn" class="w-full mt-4 bg-green-500 hover:bg-green-400 text-white font-bold uppercase tracking-widest py-4 rounded-lg transition-all" data-testid="manual-generate-btn">GERAR BANNERS</button>';
+
+    manualGames = [];
+    manualGameIdCounter = 0;
+
+    setTimeout(function() {
+        document.getElementById('manualAddGameBtn').addEventListener('click', addManualGame);
+        document.getElementById('manualGenerateBtn').addEventListener('click', generateManualBanners);
+        document.getElementById('manualFormatPost').addEventListener('click', function() { currentFormat = 'post'; updateManualFormatButtons(); });
+        document.getElementById('manualFormatStory').addEventListener('click', function() { currentFormat = 'story'; updateManualFormatButtons(); });
+        document.getElementById('manualBgPostInput').addEventListener('change', function(e) {
+            var file = e.target.files[0]; if (!file) return;
+            var reader = new FileReader(); reader.onload = function(ev) { var img = new Image(); img.onload = function() { footballBgPost = img; document.getElementById('manualBgPostText').textContent = file.name; }; img.src = ev.target.result; }; reader.readAsDataURL(file);
+        });
+        document.getElementById('manualBgStoryInput').addEventListener('change', function(e) {
+            var file = e.target.files[0]; if (!file) return;
+            var reader = new FileReader(); reader.onload = function(ev) { var img = new Image(); img.onload = function() { footballBgStory = img; document.getElementById('manualBgStoryText').textContent = file.name; }; img.src = ev.target.result; }; reader.readAsDataURL(file);
+        });
+        addManualGame();
+    }, 100);
+
+    showPlaceholder('&#9997;', 'MANUAL', 'Adicione jogos manualmente', '#0a4d0a', '#001a00');
+}
+
+function addManualGame() {
+    var id = manualGameIdCounter++;
+    manualGames.push({ id: id, homeName: '', awayName: '', homeLogo: null, awayLogo: null, time: '20:00', broadcaster: '' });
+    var container = document.getElementById('manualGamesList');
+    var gameDiv = document.createElement('div');
+    gameDiv.id = 'manualGame_' + id;
+    gameDiv.className = 'border border-zinc-800 rounded-lg p-4 bg-black/30';
+    gameDiv.innerHTML =
+        '<div class="flex items-center justify-between mb-3"><span class="text-xs text-emerald-400 font-semibold uppercase">Jogo ' + (manualGames.length) + '</span><button onclick="removeManualGame(' + id + ')" class="text-red-500 hover:text-red-400 text-xs font-semibold">&#10005; Remover</button></div>' +
+        '<div class="grid grid-cols-2 gap-3 mb-3">' +
+        '<div><label class="text-xs text-zinc-400 block mb-1">Time Casa</label><div class="flex gap-2 items-center"><label class="w-10 h-10 border border-dashed border-zinc-700 rounded cursor-pointer flex items-center justify-center shrink-0 overflow-hidden" title="Logo"><img id="manualHomeLogo_' + id + '" src="" class="w-full h-full object-contain hidden"><span id="manualHomeLogoIcon_' + id + '" class="text-zinc-600 text-lg">+</span><input type="file" accept="image/*" class="hidden" onchange="handleManualLogo(' + id + ',\'home\',this)"></label><input type="text" placeholder="Nome" class="bg-black border border-zinc-800 p-2 text-white text-sm flex-1 rounded focus:outline-none focus:border-emerald-500 min-w-0" oninput="updateManualGame(' + id + ',\'homeName\',this.value)" data-testid="manual-home-' + id + '"></div></div>' +
+        '<div><label class="text-xs text-zinc-400 block mb-1">Time Fora</label><div class="flex gap-2 items-center"><label class="w-10 h-10 border border-dashed border-zinc-700 rounded cursor-pointer flex items-center justify-center shrink-0 overflow-hidden" title="Logo"><img id="manualAwayLogo_' + id + '" src="" class="w-full h-full object-contain hidden"><span id="manualAwayLogoIcon_' + id + '" class="text-zinc-600 text-lg">+</span><input type="file" accept="image/*" class="hidden" onchange="handleManualLogo(' + id + ',\'away\',this)"></label><input type="text" placeholder="Nome" class="bg-black border border-zinc-800 p-2 text-white text-sm flex-1 rounded focus:outline-none focus:border-emerald-500 min-w-0" oninput="updateManualGame(' + id + ',\'awayName\',this.value)" data-testid="manual-away-' + id + '"></div></div></div>' +
+        '<div class="grid grid-cols-2 gap-3"><div><label class="text-xs text-zinc-400 block mb-1">Horario</label><input type="time" value="20:00" class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500" oninput="updateManualGame(' + id + ',\'time\',this.value)"></div>' +
+        '<div><label class="text-xs text-zinc-400 block mb-1">Transmissao</label><input type="text" placeholder="ESPN / Globo..." class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500" oninput="updateManualGame(' + id + ',\'broadcaster\',this.value)"></div></div>';
+    container.appendChild(gameDiv);
+}
+
+window.removeManualGame = function(id) {
+    manualGames = manualGames.filter(function(g) { return g.id !== id; });
+    var el = document.getElementById('manualGame_' + id);
+    if (el) el.remove();
+    document.querySelectorAll('#manualGamesList > div').forEach(function(item, idx) {
+        var label = item.querySelector('span'); if (label) label.textContent = 'Jogo ' + (idx + 1);
+    });
+};
+
+window.updateManualGame = function(id, field, value) {
+    var game = manualGames.find(function(g) { return g.id === id; });
+    if (game) game[field] = value;
+};
+
+window.handleManualLogo = function(id, side, input) {
+    var file = input.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+        var img = new Image();
+        img.onload = function() {
+            var game = manualGames.find(function(g) { return g.id === id; });
+            if (!game) return;
+            if (side === 'home') game.homeLogo = img; else game.awayLogo = img;
+            var prefix = side === 'home' ? 'Home' : 'Away';
+            var imgEl = document.getElementById('manual' + prefix + 'Logo_' + id);
+            var iconEl = document.getElementById('manual' + prefix + 'LogoIcon_' + id);
+            if (imgEl) { imgEl.src = ev.target.result; imgEl.classList.remove('hidden'); }
+            if (iconEl) iconEl.classList.add('hidden');
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+function updateManualFormatButtons() {
+    var postBtn = document.getElementById('manualFormatPost');
+    var storyBtn = document.getElementById('manualFormatStory');
+    if (currentFormat === 'post') {
+        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
+        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
+    } else {
+        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
+        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
+    }
+}
+
+async function generateManualBanners() {
+    var validGames = manualGames.filter(function(g) { return g.homeName.trim() && g.awayName.trim(); });
+    if (validGames.length === 0) { alert('Adicione pelo menos 1 jogo com os nomes dos times!'); return; }
+
+    var btn = document.getElementById('manualGenerateBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner mx-auto"></div>';
+
+    selectedDate = document.getElementById('manualDate').value;
+    var isPost = currentFormat === 'post';
+    var gamesPerBanner = isPost ? 5 : 8;
+
+    var gamesForBanner = validGames.map(function(g) {
+        return {
+            fixture: { date: selectedDate + 'T' + (g.time || '20:00') + ':00' },
+            league: { name: g.broadcaster || '' },
+            teams: { home: { name: g.homeName }, away: { name: g.awayName } },
+            homeLogoImg: g.homeLogo,
+            awayLogoImg: g.awayLogo
+        };
+    });
+
+    allFootballGames = gamesForBanner;
+
+    try {
+        clearPreviousBanners();
+        var container = document.getElementById('bannersContainer');
+        var totalGameBanners = Math.ceil(gamesForBanner.length / gamesPerBanner);
+        var totalBanners = 1 + totalGameBanners;
+
+        // CAPA
+        var coverCanvas = document.createElement('canvas');
+        coverCanvas.className = 'canvas-glow max-w-full h-auto rounded-lg mx-auto mb-4';
+        var coverDlBtn = document.createElement('button');
+        coverDlBtn.className = 'w-full max-w-md mx-auto bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-6 rounded-lg mb-8 flex items-center justify-center gap-2';
+        coverDlBtn.innerHTML = 'BAIXAR CAPA (1 de ' + totalBanners + ')';
+        coverDlBtn.onclick = function() { downloadBanner(coverCanvas, 'capa'); };
+        container.appendChild(coverCanvas);
+        container.appendChild(coverDlBtn);
+        await generateFootballCoverBanner(coverCanvas, [], totalBanners);
+
+        // JOGOS
+        for (var bi = 0; bi < totalGameBanners; bi++) {
+            var bannerGames = gamesForBanner.slice(bi * gamesPerBanner, Math.min((bi + 1) * gamesPerBanner, gamesForBanner.length));
+            var canvasEl = document.createElement('canvas');
+            canvasEl.className = 'canvas-glow max-w-full h-auto rounded-lg mx-auto mb-4';
+            canvasEl.id = 'manualBanner' + (bi + 2);
+            var dlBtn = document.createElement('button');
+            dlBtn.className = 'w-full max-w-md mx-auto bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-6 rounded-lg mb-8 flex items-center justify-center gap-2';
+            dlBtn.innerHTML = 'BAIXAR BANNER ' + (bi + 2) + ' de ' + totalBanners;
+            (function(ce, idx) { dlBtn.onclick = function() { downloadBanner(ce, idx + 2); }; })(canvasEl, bi);
+            container.appendChild(canvasEl);
+            container.appendChild(dlBtn);
+            await generateFootballListBannerModern(canvasEl, bannerGames, bi + 2, totalBanners);
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = 'GERAR BANNERS';
+        alert(totalBanners + ' banner' + (totalBanners > 1 ? 's' : '') + ' gerado' + (totalBanners > 1 ? 's' : '') + '!');
+    } catch (error) {
+        console.error('Erro:', error);
+        btn.disabled = false;
+        btn.innerHTML = 'GERAR BANNERS';
+        alert('Erro: ' + error.message);
+    }
+}
+
 
 function getBroadcaster(leagueName) {
     for (var key in leagueBroadcasters) {

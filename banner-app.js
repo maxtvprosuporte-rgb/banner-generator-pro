@@ -406,8 +406,8 @@ async function generateAllFootballBanners() {
 async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners) {
     var cvs = canvasEl.getContext('2d');
     var isPost = currentFormat === 'post';
-    var width = 1080;
-    var height = isPost ? 1080 : 1920;
+    var width = isPost ? 1030 : 1080;
+    var height = isPost ? 1350 : 1920;
     canvasEl.width = width;
     canvasEl.height = height;
     canvasEl.style.maxWidth = isPost ? '500px' : '300px';
@@ -650,8 +650,8 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
 async function generateFootballListBannerModern(canvasEl, games, bannerNum, totalBanners) {
     var cvs = canvasEl.getContext('2d');
     var isPost = currentFormat === 'post';
-    var width = 1080;
-    var height = isPost ? 1080 : 1920;
+    var width = isPost ? 1030 : 1080;
+    var height = isPost ? 1350 : 1920;
     canvasEl.width = width;
     canvasEl.height = height;
     canvasEl.style.maxWidth = isPost ? '500px' : '300px';
@@ -854,6 +854,103 @@ async function generateFootballListBannerModern(canvasEl, games, bannerNum, tota
 var manualGames = [];
 var manualGameIdCounter = 0;
 
+// ============================================
+// LISTA DE TIMES (logos em /logo_time/)
+// ============================================
+var TEAM_FILES = [
+    'ABC.png','America_Mineiro.png','Arsenal_Football_Club.png','Associazione_Calcio_Firenze_Fiorentina.png',
+    'Associazione_Calcio_Milan.png','Associazione_Sportiva_Roma.png','Aston_Villa_Football_Club.png','AS_Monaco.png',
+    'Atalanta_Bergamasca_Calcio.png','Athletic_Club.png','Atletico_Goianiense.png','Atletico_Mineiro.png',
+    'Atletico_Osasuna.png','Atletico_Paranaense.png','Avai.png','Bahia.png','Barcelona.png','Bayern_Munchen.png',
+    'Bayer_04_Leverkusen.png','Bologna_1909.png','Borussia_Dortmund.png','Borussia_Monchengladbach.png',
+    'Botafogo_PB.png','Botafogo_RJ.png','Botafogo_SP.png','Brentford_Football_Club.png',
+    'Brighton_&_Hove_Albion_Football_Club.png','Brusque.png','Burnley_Football.png','Cadiz_Club_de_Futbol.png',
+    'Cagliari_Calcio.png','Ceara.png','Chapecoense.png','Chelsea_Football_Club.png','Clermont_Foot_63.png',
+    'Clube_de_Regatas.png','Club_Atletico_de_Madrid.png','Confianca_SE.png','Corinthians.png','Coritiba.png',
+    'Criciuma.png','Cruzeiro.png','Crystal_Palace_Football.png','CSA_Centro_Sportivo.png','Cuiaba.png',
+    'Deportivo_Alaves.png','Eintracht_Frankfurt.png','Empoli.png','Everton_Football_Club.png',
+    'FC_Augsburg_1907.png','FC_Koln.png','FC_Lorient.png','FC_Metz.png','FC_Union_Berlin.png','Figueirense.png',
+    'Flamengo.png','Fluminense.png','Football_Club_de_Nantes.png','Football_Club_Internazionale_Milano.png',
+    'Fortaleza.png','Genoa_Cricket.png','Getafe_Club_de_Futbol.png','Girona_Futbol.png','Goias.png',
+    'Granada_Club.png','Gremio.png','Gremio_Novorizontino.png','Guarani.png','Hellas_Verona_Football_Club.png',
+    'Internacional.png','Ituano.png','Juventude.png','Juventus_Football_Club.png','Le_Racing_Club_de_Lens.png',
+    'Lille_Olympique_Sporting_Club.png','Liverpool_Football_Club.png','Londrina.png','Mainz_05.png',
+    'Manchester_City_Football_Club.png','Manchester_United_Football_Club.png','Mirassol.png',
+    'Montpellier_Herault_Sport_Club.png','Nautico.png','Newcastle_United.png','Olympique_de_Marseille.png',
+    'Olympique_Lyonnais.png','Operario_PR.png','Palmeiras.png','Paris_Saint_Germain.png','Paysandu.png',
+    'Ponte_Preta.png','Racing_Club_de_Strasbourg_Alsace.png','Rayo_Vallecano_de_Madrid.png','RB_Leipzig.png',
+    'Real_Betis_Balompie.png','Real_Club_Celta_de_Vigo.png','Real_Club_Deportivo_Mallorca.png',
+    'Real_Madrid_Club.png','Real_Sociedad.png','Recife.png','Red_Bull_Bragantino.png','Remo.png',
+    'Sampaio_Correa.png','Santos.png','Sao_Bernardo.png','Sao_Jose_RS.png','Sao_Paulo.png','Sevilla_Futbol.png',
+    'Societa_Sportiva_Calcio_Napoli.png','Societa_Sportiva_Lazio.png','Sport_Club_Freiburg.png',
+    'Stade_de_Reims.png','Tombense.png','Torino_Football_Club.png','Tottenham_Hotspur.png',
+    'TSG_1899_Hoffenheim.png','Udinese_Calcio.png','Unione_Sportiva_Salernitana_1919.png',
+    'Unione_Sportiva_Sassuolo_Calcio.png','Valencia_Club.png','Vasco_da_Gama.png','VfB_Stuttgart.png',
+    'VfL_Bochum.png','VfL_Wolfsburg.png','Vila_Nova.png','Villarreal_Club.png','Vitoria.png',
+    'Volta_Redonda.png','West_Ham_United.png','Wolverhampton_Wanderers_Football.png','Ypiranga_de_Erechim.png'
+];
+var TEAMS_LIST = TEAM_FILES.map(function(f) {
+    return { file: f, name: f.replace('.png', '').replace(/_/g, ' ') };
+}).sort(function(a, b) { return a.name.localeCompare(b.name, 'pt-BR'); });
+
+function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+window.filterManualTeams = function(id, side, query) {
+    var dropdown = document.getElementById('manualTeamDropdown_' + side + '_' + id);
+    if (!dropdown) return;
+    var q = (query || '').toLowerCase().trim();
+    var filtered = q ? TEAMS_LIST.filter(function(t) { return t.name.toLowerCase().indexOf(q) !== -1; }) : TEAMS_LIST;
+    if (filtered.length === 0) {
+        dropdown.innerHTML = '<div class="p-3 text-zinc-500 text-sm">Nenhum time encontrado</div>';
+    } else {
+        dropdown.innerHTML = filtered.slice(0, 80).map(function(t) {
+            var safeName = escapeHtml(t.name);
+            var safeFile = escapeHtml(t.file);
+            return '<div onmousedown="event.preventDefault()" onclick="selectManualTeam(' + id + ',\'' + side + '\',\'' + safeFile + '\',\'' + safeName.replace(/'/g, '&#39;') + '\')" class="flex items-center gap-2 p-2 hover:bg-emerald-600/30 cursor-pointer border-b border-zinc-800">' +
+                '<img src="/logo_time/' + encodeURI(t.file) + '" class="w-7 h-7 object-contain shrink-0" onerror="this.style.display=\'none\'">' +
+                '<span class="text-white text-sm">' + safeName + '</span></div>';
+        }).join('');
+    }
+    dropdown.classList.remove('hidden');
+};
+
+window.showManualDropdown = function(id, side) {
+    var inp = document.getElementById('manualTeamSearch_' + side + '_' + id);
+    window.filterManualTeams(id, side, inp ? inp.value : '');
+};
+
+window.hideManualDropdown = function(id, side) {
+    setTimeout(function() {
+        var dd = document.getElementById('manualTeamDropdown_' + side + '_' + id);
+        if (dd) dd.classList.add('hidden');
+    }, 200);
+};
+
+window.selectManualTeam = function(id, side, filename, name) {
+    var game = manualGames.find(function(g) { return g.id === id; });
+    if (!game) return;
+    var searchInput = document.getElementById('manualTeamSearch_' + side + '_' + id);
+    if (searchInput) searchInput.value = name;
+    if (side === 'home') game.homeName = name; else game.awayName = name;
+    var img = new Image();
+    img.onload = function() {
+        if (side === 'home') game.homeLogo = img; else game.awayLogo = img;
+        var prefix = side === 'home' ? 'Home' : 'Away';
+        var imgEl = document.getElementById('manual' + prefix + 'Logo_' + id);
+        var iconEl = document.getElementById('manual' + prefix + 'LogoIcon_' + id);
+        if (imgEl) { imgEl.src = '/logo_time/' + encodeURI(filename); imgEl.classList.remove('hidden'); }
+        if (iconEl) iconEl.classList.add('hidden');
+    };
+    img.onerror = function() {
+        if (side === 'home') game.homeLogo = null; else game.awayLogo = null;
+    };
+    img.src = '/logo_time/' + encodeURI(filename);
+    var dd = document.getElementById('manualTeamDropdown_' + side + '_' + id);
+    if (dd) dd.classList.add('hidden');
+};
+
 function loadFootballManualMode() {
     canvas.classList.add('hidden');
     videoContainer.classList.add('hidden');
@@ -923,8 +1020,31 @@ function addManualGame() {
     gameDiv.innerHTML =
         '<div class="flex items-center justify-between mb-3"><span class="text-xs text-emerald-400 font-semibold uppercase">Jogo ' + (manualGames.length) + '</span><button onclick="removeManualGame(' + id + ')" class="text-red-500 hover:text-red-400 text-xs font-semibold">&#10005; Remover</button></div>' +
         '<div class="grid grid-cols-2 gap-3 mb-3">' +
-        '<div><label class="text-xs text-zinc-400 block mb-1">Time Casa</label><div class="flex gap-2 items-center"><label class="w-10 h-10 border border-dashed border-zinc-700 rounded cursor-pointer flex items-center justify-center shrink-0 overflow-hidden" title="Logo"><img id="manualHomeLogo_' + id + '" src="" class="w-full h-full object-contain hidden"><span id="manualHomeLogoIcon_' + id + '" class="text-zinc-600 text-lg">+</span><input type="file" accept="image/*" class="hidden" onchange="handleManualLogo(' + id + ',\'home\',this)"></label><input type="text" placeholder="Nome" class="bg-black border border-zinc-800 p-2 text-white text-sm flex-1 rounded focus:outline-none focus:border-emerald-500 min-w-0" oninput="updateManualGame(' + id + ',\'homeName\',this.value)" data-testid="manual-home-' + id + '"></div></div>' +
-        '<div><label class="text-xs text-zinc-400 block mb-1">Time Fora</label><div class="flex gap-2 items-center"><label class="w-10 h-10 border border-dashed border-zinc-700 rounded cursor-pointer flex items-center justify-center shrink-0 overflow-hidden" title="Logo"><img id="manualAwayLogo_' + id + '" src="" class="w-full h-full object-contain hidden"><span id="manualAwayLogoIcon_' + id + '" class="text-zinc-600 text-lg">+</span><input type="file" accept="image/*" class="hidden" onchange="handleManualLogo(' + id + ',\'away\',this)"></label><input type="text" placeholder="Nome" class="bg-black border border-zinc-800 p-2 text-white text-sm flex-1 rounded focus:outline-none focus:border-emerald-500 min-w-0" oninput="updateManualGame(' + id + ',\'awayName\',this.value)" data-testid="manual-away-' + id + '"></div></div></div>' +
+        '<div><label class="text-xs text-zinc-400 block mb-1">Time Casa</label>' +
+            '<div class="relative">' +
+                '<div class="flex gap-2 items-center">' +
+                    '<div class="w-10 h-10 border border-zinc-700 rounded flex items-center justify-center shrink-0 overflow-hidden bg-black" title="Logo">' +
+                        '<img id="manualHomeLogo_' + id + '" src="" class="w-full h-full object-contain hidden">' +
+                        '<span id="manualHomeLogoIcon_' + id + '" class="text-zinc-600 text-lg">+</span>' +
+                    '</div>' +
+                    '<input type="text" id="manualTeamSearch_home_' + id + '" placeholder="Buscar time..." autocomplete="off" class="bg-black border border-zinc-800 p-2 text-white text-sm flex-1 rounded focus:outline-none focus:border-emerald-500 min-w-0" oninput="filterManualTeams(' + id + ',\'home\',this.value)" onfocus="showManualDropdown(' + id + ',\'home\')" onblur="hideManualDropdown(' + id + ',\'home\')" data-testid="manual-home-' + id + '">' +
+                '</div>' +
+                '<div id="manualTeamDropdown_home_' + id + '" class="absolute left-0 right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded max-h-60 overflow-y-auto z-50 hidden shadow-2xl"></div>' +
+            '</div>' +
+        '</div>' +
+        '<div><label class="text-xs text-zinc-400 block mb-1">Time Fora</label>' +
+            '<div class="relative">' +
+                '<div class="flex gap-2 items-center">' +
+                    '<div class="w-10 h-10 border border-zinc-700 rounded flex items-center justify-center shrink-0 overflow-hidden bg-black" title="Logo">' +
+                        '<img id="manualAwayLogo_' + id + '" src="" class="w-full h-full object-contain hidden">' +
+                        '<span id="manualAwayLogoIcon_' + id + '" class="text-zinc-600 text-lg">+</span>' +
+                    '</div>' +
+                    '<input type="text" id="manualTeamSearch_away_' + id + '" placeholder="Buscar time..." autocomplete="off" class="bg-black border border-zinc-800 p-2 text-white text-sm flex-1 rounded focus:outline-none focus:border-emerald-500 min-w-0" oninput="filterManualTeams(' + id + ',\'away\',this.value)" onfocus="showManualDropdown(' + id + ',\'away\')" onblur="hideManualDropdown(' + id + ',\'away\')" data-testid="manual-away-' + id + '">' +
+                '</div>' +
+                '<div id="manualTeamDropdown_away_' + id + '" class="absolute left-0 right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded max-h-60 overflow-y-auto z-50 hidden shadow-2xl"></div>' +
+            '</div>' +
+        '</div>' +
+        '</div>' +
         '<div class="mb-3"><label class="text-xs text-zinc-400 block mb-1">Liga</label><select class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer" onchange="onManualLeagueChange(' + id + ',this.value)" data-testid="manual-league-' + id + '">' +
         '<option value="Campeonato_Brasileiro_Serie_A">Brasileir\u00E3o S\u00E9rie A</option>' +
         '<option value="Campeonato_Brasileiro_Srrie_B">Brasileir\u00E3o S\u00E9rie B</option>' +
@@ -1236,8 +1356,8 @@ window.copyMovieInfo = function() {
 function generateMovieBanner() {
     if (!selectedContent || currentMode !== 'movies') return;
     var isPost = currentFormat === 'post';
-    var width = 1080;
-    var height = isPost ? 1080 : 1920;
+    var width = isPost ? 1030 : 1080;
+    var height = isPost ? 1350 : 1920;
     canvas.width = width;
     canvas.height = height;
     canvas.style.maxWidth = isPost ? '400px' : '280px';

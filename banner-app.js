@@ -512,15 +512,30 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
 
     y += 75;
 
-    // === LEAGUE GRID ===
-    var leagueLogos = await Promise.all(uniqueLeagues.map(async function(league) {
-        try {
-            var img = await loadImage(league.logo);
-            return Object.assign({}, league, { logoImg: img });
-        } catch (e) { return Object.assign({}, league, { logoImg: null }); }
-    }));
+    // === LEAGUE GRID - ÍCONES LOCAIS DA PASTA /ligue/ ===
+    var localLeagueIcons = [
+        { path: '/ligue/Campeonato_Brasileiro_Serie_A.png', name: 'Brasileirão Série A' },
+        { path: '/ligue/Campeonato_Brasileiro_Srrie_B.png', name: 'Brasileirão Série B' },
+        { path: '/ligue/Copa_Libertadores.png', name: 'Copa Libertadores' },
+        { path: '/ligue/Premier_League.png', name: 'Premier League' },
+        { path: '/ligue/La_Liga.png', name: 'La Liga' },
+        { path: '/ligue/Bundesliga.png', name: 'Bundesliga' },
+        { path: '/ligue/Ligue_1.png', name: 'Ligue 1' },
+        { path: '/ligue/UEFA_Champions_League.png', name: 'Champions League' },
+        { path: '/ligue/Copa_do_Mundo_FIFA.png', name: 'Copa do Mundo' },
+        { path: '/ligue/Amistosos_Internacionais.png', name: 'Amistosos' }
+    ];
 
-    var cols = 3;
+    var leagueLogos = await Promise.all(localLeagueIcons.map(async function(item) {
+        try {
+            var img = await loadImage(item.path);
+            return { name: item.name, logoImg: img };
+        } catch (e) { return { name: item.name, logoImg: null }; }
+    }));
+    // Filtrar apenas os que carregaram com sucesso
+    leagueLogos = leagueLogos.filter(function(l) { return l.logoImg !== null; });
+
+    var cols = isPost ? 5 : 5;
     var rows = Math.ceil(leagueLogos.length / cols);
     var cellW = (width - 100) / cols;
     var cellH = isPost ? 115 : 135;
@@ -547,18 +562,18 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
         // Logo
         if (league.logoImg) {
             var ls = isPost ? 48 : 56;
-            cvs.drawImage(league.logoImg, cx + cellW / 2 - ls / 2, cy + 12, ls, ls);
+            cvs.drawImage(league.logoImg, cx + cellW / 2 - ls / 2, cy + 10, ls, ls);
         }
 
         // Name
         cvs.textAlign = 'center';
-        cvs.font = '600 ' + (isPost ? '14' : '16') + 'px Manrope, sans-serif';
+        cvs.font = '600 ' + (isPost ? '11' : '13') + 'px Manrope, sans-serif';
         cvs.fillStyle = 'rgba(255,255,255,0.78)';
         var lname = league.name;
-        var maxNW = cellW - 24;
+        var maxNW = cellW - 16;
         while (cvs.measureText(lname).width > maxNW && lname.length > 3) lname = lname.slice(0, -1);
         if (lname.length < league.name.length) lname += '...';
-        cvs.fillText(lname, cx + cellW / 2, cy + cellH - 22);
+        cvs.fillText(lname, cx + cellW / 2, cy + cellH - 20);
     }
 
     // Warning
@@ -658,13 +673,15 @@ async function generateFootballListBannerModern(canvasEl, games, bannerNum, tota
 
     // NO COVER CARD - Go straight to game cards
 
-    // Game cards
+    // Layout: reservar espaço fixo no rodapé
+    // [aviso: 30px] + [gap: 15px] + [botões: 50px] + [margem: 30px] = 125px
+    var footerReserved = 125;
     var padding = 40;
     var gameCardWidth = width - (padding * 2);
-    var availableHeight = height - currentY - 130;
-    var spacing = 18;
+    var availableHeight = height - currentY - footerReserved;
+    var spacing = 14;
     var totalSpacing = (games.length - 1) * spacing;
-    var cardHeight = Math.max(135, Math.min(160, (availableHeight - totalSpacing) / games.length));
+    var cardHeight = Math.max(120, Math.min(160, (availableHeight - totalSpacing) / games.length));
 
     for (var gi = 0; gi < games.length; gi++) {
         var game = games[gi];
@@ -768,33 +785,36 @@ async function generateFootballListBannerModern(canvasEl, games, bannerNum, tota
         currentY += cardHeight + spacing;
     }
 
-    // Warning
-    currentY += 20;
+    // === RODAPÉ FIXO: Aviso + Botões ===
+    // Posicionar de baixo para cima
+    var boxH = 45;
+    var bottomMargin = 25;
+    var btnY = height - bottomMargin;             // base dos botões
+    var warningY = btnY - boxH - 20;              // aviso acima dos botões
+
+    // Aviso
     cvs.textAlign = 'center';
     cvs.font = '500 15px Manrope, sans-serif';
     cvs.fillStyle = 'rgba(255,255,255,0.6)';
     cvs.shadowColor = 'rgba(0, 0, 0, 0.8)';
     cvs.shadowBlur = 4;
-    cvs.fillText('Os canais podem sofrer altera\u00E7\u00E3o de \u00FAltima hora', width / 2, currentY);
+    cvs.fillText('Os canais podem sofrer altera\u00E7\u00E3o de \u00FAltima hora', width / 2, warningY);
     cvs.shadowBlur = 0;
 
-    // Footer
-    currentY += 35;
-    var boxH = 45;
-    var boxY = Math.max(currentY, height - 65);
+    // Botões WhatsApp + CTA
     cvs.fillStyle = '#25D366';
-    roundRect(cvs, padding, boxY - boxH, 180, boxH, 8);
+    roundRect(cvs, padding, btnY - boxH, 180, boxH, 8);
     cvs.fill();
     cvs.fillStyle = '#fff';
     cvs.font = '600 18px Manrope, sans-serif';
     cvs.textAlign = 'center';
-    cvs.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, padding + 90, boxY - boxH / 2 + 6);
+    cvs.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, padding + 90, btnY - boxH / 2 + 6);
     cvs.fillStyle = '#22c55e';
-    roundRect(cvs, padding + 195, boxY - boxH, 180, boxH, 8);
+    roundRect(cvs, padding + 195, btnY - boxH, 180, boxH, 8);
     cvs.fill();
     cvs.fillStyle = '#fff';
     cvs.font = '700 18px Manrope, sans-serif';
-    cvs.fillText(globalSettings.ctaText, padding + 285, boxY - boxH / 2 + 6);
+    cvs.fillText(globalSettings.ctaText, padding + 285, btnY - boxH / 2 + 6);
 }
 
 function getBroadcaster(leagueName) {

@@ -464,13 +464,13 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
     cvs.beginPath(); cvs.moveTo(width - 40, height - 40); cvs.lineTo(width - 40, height - 100); cvs.stroke();
     cvs.beginPath(); cvs.moveTo(width - 40, height - 40); cvs.lineTo(width - 100, height - 40); cvs.stroke();
 
-    // Logo top-right
+    // Logo top-right - colada no canto superior direito
     if (uploadedLogo) {
         cvs.save();
-        var logoMaxH = isPost ? 160 : 200;
+        var logoMaxH = isPost ? 90 : 110;
         var logoRatio = uploadedLogo.width / uploadedLogo.height;
         var logoW = logoMaxH * logoRatio;
-        cvs.drawImage(uploadedLogo, width - logoW - 50, 25, logoW, logoMaxH);
+        cvs.drawImage(uploadedLogo, width - logoW - 20, 20, logoW, logoMaxH);
         cvs.restore();
     }
 
@@ -675,15 +675,15 @@ async function generateFootballListBannerModern(canvasEl, games, bannerNum, tota
         cvs.fillRect(0, 0, width, height);
     }
 
-    // Logo
+    // Logo - colada no canto superior direito
     if (uploadedLogo) {
         cvs.save();
         cvs.globalAlpha = 1;
-        var logoSize = 180;
+        var logoSize = 80;
         var logoRatio = uploadedLogo.width / uploadedLogo.height;
         var logoW = logoSize * logoRatio;
         var logoH = logoSize;
-        cvs.drawImage(uploadedLogo, width - logoW - 30, 30, logoW, logoH);
+        cvs.drawImage(uploadedLogo, width - logoW - 20, 20, logoW, logoH);
         cvs.restore();
     }
 

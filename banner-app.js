@@ -887,7 +887,25 @@ var TEAM_FILES = [
     'TSG_1899_Hoffenheim.png','Udinese_Calcio.png','Unione_Sportiva_Salernitana_1919.png',
     'Unione_Sportiva_Sassuolo_Calcio.png','Valencia_Club.png','Vasco_da_Gama.png','VfB_Stuttgart.png',
     'VfL_Bochum.png','VfL_Wolfsburg.png','Vila_Nova.png','Villarreal_Club.png','Vitoria.png',
-    'Volta_Redonda.png','West_Ham_United.png','Wolverhampton_Wanderers_Football.png','Ypiranga_de_Erechim.png'
+    'Volta_Redonda.png','West_Ham_United.png','Wolverhampton_Wanderers_Football.png','Ypiranga_de_Erechim.png',
+    // --- Adicionados ---
+    'AFC_Bournemouth.png','Africa_do_Sul.png','Ajax_Amsterdam.png','AJ_Auxerre.png','Alemanha.png','Always_Ready.png',
+    'Angers_SCO.png','Arabia_Saudita.png','Argelia.png','Argentina.png','Atletico_Boca_Juniors.png','Atletico_Lanus.png',
+    'Atletico_Platense.png','Atletico_Rosario.png','Australia.png','Austria.png','Belgica.png','Benfica.png','Bolivar.png',
+    'Bosnia.png','Brasil.png','Cabo_Verde.png','Canada.png','Cerro_Porteno.png','Club_Brugge_K.V.png','Colombia.png',
+    'coquimbo.png','Coreia.png','Costa_do_Marfim.png','Croacia.png','Curacao.png','cusco.png','Deportes_Tolima.png',
+    'Deportivo_La_Guaira.png','Egito.png','Elche.png','Equador.png','Escocia.png','Espanha.png','Espanyol.png',
+    'Estudiantes.png','FC_Heidenheim_1846.png','FC_Kairat.png','FC_Kobenhavn.png','FC_St_Pauli.png','FK_Bodo_Glimt.png',
+    'Franca.png','Fulham_FC.png','Galatasaray.png','Gana.png','Haiti.png','Hamburger.png','Independiente_del_Valle.png',
+    'Independiente_Medellin.png','Independiente_Rivadavia.png','independiente_Santa_Fe.png','Inglaterra.png','Ira.png',
+    'Iraque.png','Japao.png','Jordania.png','Junior_Barranquilla.png','LDU_Liga_de_Quito.png','Leeds_United.png',
+    'Levante.png','Libertad_PAR.png','Marrocos.png','Mexico.png','Nacional.png','Noruega.png','Nottingham_Forest.png',
+    'Nova_Zelandia.png','Olympiakos.png','Pafos_FC.png','Paises_Baixos.png','Panama.png','Paraguai.png','Parana.png',
+    'Paris_FC.png','Penarol.png','Portugal.png','PSV Eindhoven.png','Qarabag.png','Qatar.png','Real_Oviedo.png',
+    'Republica_Democratica-do_Congo.png','Royale_Union_Saint_Gilloise.png','Senegal.png','Slavia_Praga.png',
+    'Sporting_Cristal.png','Sporting_Portugal.png','Stade_Brestois_29.png','Stade_Rennais.png','Suecia.png','Suica.png',
+    'Sunderland_AFC.png','Tchequia.png','Toulouse_FC.png','Tunísia.png','Turquia.png','UCV_FC.png',
+    'Universidad_Catolica.png','Universitario.png','Uruguai.png','USA.png','Uzbequistao.png','Werder_Bremen.png'
 ];
 var TEAMS_LIST = TEAM_FILES.map(function(f) {
     return { file: f, name: f.replace('.png', '').replace(/_/g, ' ') };

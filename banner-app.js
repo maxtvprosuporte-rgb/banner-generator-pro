@@ -1080,32 +1080,32 @@ function addManualGame() {
     gameDiv.innerHTML =
         '<div class="flex items-center justify-between mb-3"><span class="text-xs text-emerald-400 font-semibold uppercase">Jogo ' + (manualGames.length) + '</span><button onclick="removeManualGame(' + id + ')" class="text-red-500 hover:text-red-400 text-xs font-semibold">&#10005; Remover</button></div>' +
         '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">' +
-        '<div><label class="text-xs text-zinc-400 block mb-1">Time Casa</label>' +
+        '<div class="min-w-0"><label class="text-xs text-zinc-400 block mb-1">Time Casa</label>' +
             '<div class="relative">' +
-                '<div class="flex gap-2 items-center">' +
+                '<div class="flex gap-2 items-center min-w-0">' +
                     '<div class="w-10 h-10 border border-zinc-700 rounded flex items-center justify-center shrink-0 overflow-hidden bg-black" title="Logo">' +
                         '<img id="manualHomeLogo_' + id + '" src="" class="w-full h-full object-contain hidden">' +
                         '<span id="manualHomeLogoIcon_' + id + '" class="text-zinc-600 text-lg">+</span>' +
                     '</div>' +
-                    '<input type="text" id="manualTeamSearch_home_' + id + '" placeholder="Buscar time..." autocomplete="off" class="bg-black border border-zinc-800 p-2 text-white text-sm flex-1 rounded focus:outline-none focus:border-emerald-500 min-w-0" oninput="filterManualTeams(' + id + ',\'home\',this.value)" onfocus="showManualDropdown(' + id + ',\'home\')" onblur="hideManualDropdown(' + id + ',\'home\')" data-testid="manual-home-' + id + '">' +
+                    '<input type="text" id="manualTeamSearch_home_' + id + '" placeholder="Buscar time..." autocomplete="off" class="bg-black border border-zinc-800 p-2 text-white text-sm flex-1 rounded focus:outline-none focus:border-emerald-500 min-w-0 box-border w-full" oninput="filterManualTeams(' + id + ',\'home\',this.value)" onfocus="showManualDropdown(' + id + ',\'home\')" onblur="hideManualDropdown(' + id + ',\'home\')" data-testid="manual-home-' + id + '">' +
                 '</div>' +
                 '<div id="manualTeamDropdown_home_' + id + '" class="absolute left-0 right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded max-h-60 overflow-y-auto z-50 hidden shadow-2xl"></div>' +
             '</div>' +
         '</div>' +
-        '<div><label class="text-xs text-zinc-400 block mb-1">Time Fora</label>' +
+        '<div class="min-w-0"><label class="text-xs text-zinc-400 block mb-1">Time Fora</label>' +
             '<div class="relative">' +
-                '<div class="flex gap-2 items-center">' +
+                '<div class="flex gap-2 items-center min-w-0">' +
                     '<div class="w-10 h-10 border border-zinc-700 rounded flex items-center justify-center shrink-0 overflow-hidden bg-black" title="Logo">' +
                         '<img id="manualAwayLogo_' + id + '" src="" class="w-full h-full object-contain hidden">' +
                         '<span id="manualAwayLogoIcon_' + id + '" class="text-zinc-600 text-lg">+</span>' +
                     '</div>' +
-                    '<input type="text" id="manualTeamSearch_away_' + id + '" placeholder="Buscar time..." autocomplete="off" class="bg-black border border-zinc-800 p-2 text-white text-sm flex-1 rounded focus:outline-none focus:border-emerald-500 min-w-0" oninput="filterManualTeams(' + id + ',\'away\',this.value)" onfocus="showManualDropdown(' + id + ',\'away\')" onblur="hideManualDropdown(' + id + ',\'away\')" data-testid="manual-away-' + id + '">' +
+                    '<input type="text" id="manualTeamSearch_away_' + id + '" placeholder="Buscar time..." autocomplete="off" class="bg-black border border-zinc-800 p-2 text-white text-sm flex-1 rounded focus:outline-none focus:border-emerald-500 min-w-0 box-border w-full" oninput="filterManualTeams(' + id + ',\'away\',this.value)" onfocus="showManualDropdown(' + id + ',\'away\')" onblur="hideManualDropdown(' + id + ',\'away\')" data-testid="manual-away-' + id + '">' +
                 '</div>' +
                 '<div id="manualTeamDropdown_away_' + id + '" class="absolute left-0 right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded max-h-60 overflow-y-auto z-50 hidden shadow-2xl"></div>' +
             '</div>' +
         '</div>' +
         '</div>' +
-        '<div class="mb-3"><label class="text-xs text-zinc-400 block mb-1">Liga</label><select class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer" onchange="onManualLeagueChange(' + id + ',this.value)" data-testid="manual-league-' + id + '">' +
+        '<div class="mb-3 min-w-0"><label class="text-xs text-zinc-400 block mb-1">Liga</label><select class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer box-border min-w-0 truncate" onchange="onManualLeagueChange(' + id + ',this.value)" data-testid="manual-league-' + id + '">' +
         '<option value="Campeonato_Brasileiro_Serie_A">Brasileir\u00E3o S\u00E9rie A</option>' +
         '<option value="Campeonato_Brasileiro_Srrie_B">Brasileir\u00E3o S\u00E9rie B</option>' +
         '<option value="Copa_Libertadores">Copa Libertadores</option>' +
@@ -1117,8 +1117,8 @@ function addManualGame() {
         '<option value="Copa_do_Mundo_FIFA">Copa do Mundo FIFA</option>' +
         '<option value="Amistosos_Internacionais">Amistosos Internacionais</option>' +
         '</select></div>' +
-        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="text-xs text-zinc-400 block mb-1">Horario</label><input type="time" value="20:00" class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500" oninput="updateManualGame(' + id + ',\'time\',this.value)"></div>' +
-        '<div><label class="text-xs text-zinc-400 block mb-1">Transmissao</label><select id="manualBroadcaster_' + id + '" class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer" onchange="updateManualGame(' + id + ',\'broadcaster\',this.value)" data-testid="manual-broadcaster-' + id + '">' + broadcasterOptions + '</select></div></div>';
+        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div class="min-w-0"><label class="text-xs text-zinc-400 block mb-1">Horario</label><input type="time" value="20:00" class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 box-border min-w-0 appearance-none" oninput="updateManualGame(' + id + ',\'time\',this.value)"></div>' +
+        '<div class="min-w-0"><label class="text-xs text-zinc-400 block mb-1">Transmissao</label><select id="manualBroadcaster_' + id + '" class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer box-border min-w-0 truncate" onchange="updateManualGame(' + id + ',\'broadcaster\',this.value)" data-testid="manual-broadcaster-' + id + '">' + broadcasterOptions + '</select></div></div>';
 
     container.appendChild(gameDiv);
 

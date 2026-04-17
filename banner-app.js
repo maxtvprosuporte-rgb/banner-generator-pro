@@ -467,10 +467,31 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
     // Logo top-right - colada no canto superior direito
     if (uploadedLogo) {
         cvs.save();
-        var logoMaxH = isPost ? 90 : 110;
+        var logoMaxH = isPost ? 130 : 160;
         var logoRatio = uploadedLogo.width / uploadedLogo.height;
         var logoW = logoMaxH * logoRatio;
         cvs.drawImage(uploadedLogo, width - logoW - 20, 20, logoW, logoMaxH);
+        cvs.restore();
+    }
+
+    // Marca d'agua em padrao diagonal (10% opacidade)
+    if (uploadedLogo) {
+        cvs.save();
+        cvs.globalAlpha = 0.10;
+        var coverPSize = 90;
+        var coverPRatio = uploadedLogo.width / uploadedLogo.height;
+        var coverPW = coverPSize * coverPRatio;
+        var coverPH = coverPSize;
+        var coverSpX = coverPW + 80;
+        var coverSpY = coverPH + 80;
+        cvs.translate(width / 2, height / 2);
+        cvs.rotate(-30 * Math.PI / 180);
+        cvs.translate(-width / 2, -height / 2);
+        for (var cvWmY = -height; cvWmY < height * 2; cvWmY += coverSpY) {
+            for (var cvWmX = -width; cvWmX < width * 2; cvWmX += coverSpX) {
+                cvs.drawImage(uploadedLogo, cvWmX, cvWmY, coverPW, coverPH);
+            }
+        }
         cvs.restore();
     }
 
@@ -679,11 +700,32 @@ async function generateFootballListBannerModern(canvasEl, games, bannerNum, tota
     if (uploadedLogo) {
         cvs.save();
         cvs.globalAlpha = 1;
-        var logoSize = 80;
+        var logoSize = 130;
         var logoRatio = uploadedLogo.width / uploadedLogo.height;
         var logoW = logoSize * logoRatio;
         var logoH = logoSize;
         cvs.drawImage(uploadedLogo, width - logoW - 20, 20, logoW, logoH);
+        cvs.restore();
+    }
+
+    // Marca d'agua em padrao diagonal (10% opacidade)
+    if (uploadedLogo) {
+        cvs.save();
+        cvs.globalAlpha = 0.10;
+        var pSize = 90;
+        var pRatio = uploadedLogo.width / uploadedLogo.height;
+        var pW = pSize * pRatio;
+        var pH = pSize;
+        var spX = pW + 80;
+        var spY = pH + 80;
+        cvs.translate(width / 2, height / 2);
+        cvs.rotate(-30 * Math.PI / 180);
+        cvs.translate(-width / 2, -height / 2);
+        for (var wmY = -height; wmY < height * 2; wmY += spY) {
+            for (var wmX = -width; wmX < width * 2; wmX += spX) {
+                cvs.drawImage(uploadedLogo, wmX, wmY, pW, pH);
+            }
+        }
         cvs.restore();
     }
 
@@ -1396,7 +1438,7 @@ function generateMovieBanner() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
     if (uploadedLogo) {
-        ctx.save(); ctx.globalAlpha = 0.15;
+        ctx.save(); ctx.globalAlpha = 0.10;
         var pSize = 80; var logoR = uploadedLogo.width / uploadedLogo.height; var pW = pSize * logoR; var pH = pSize; var spX = pW + 60; var spY = pH + 60;
         ctx.translate(width / 2, height / 2); ctx.rotate(-30 * Math.PI / 180); ctx.translate(-width / 2, -height / 2);
         for (var py = -height; py < height * 2; py += spY) { for (var px = -width; px < width * 2; px += spX) { ctx.drawImage(uploadedLogo, px, py, pW, pH); } }

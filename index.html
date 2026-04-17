@@ -31,6 +31,15 @@
         .progress-bar { width: 0%; height: 4px; background: linear-gradient(90deg, #a855f7, #ec4899); transition: width 0.3s ease; }
         .video-preview { max-width: 100%; max-height: 600px; border-radius: 8px; box-shadow: 0 0 40px rgba(168,85,247,0.3); }
         .game-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
+        /* Inputs responsivos: forcar que time/date/select respeitem largura do container */
+        input[type="time"], input[type="date"], select {
+            box-sizing: border-box !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+        }
+        input[type="time"]::-webkit-date-and-time-value { text-align: left; }
+        /* Trunca texto de options longas em selects */
+        select { text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
     </style>
 </head>
 <body class="min-h-screen text-white">

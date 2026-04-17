@@ -1079,7 +1079,7 @@ function addManualGame() {
 
     gameDiv.innerHTML =
         '<div class="flex items-center justify-between mb-3"><span class="text-xs text-emerald-400 font-semibold uppercase">Jogo ' + (manualGames.length) + '</span><button onclick="removeManualGame(' + id + ')" class="text-red-500 hover:text-red-400 text-xs font-semibold">&#10005; Remover</button></div>' +
-        '<div class="grid grid-cols-2 gap-3 mb-3">' +
+        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">' +
         '<div><label class="text-xs text-zinc-400 block mb-1">Time Casa</label>' +
             '<div class="relative">' +
                 '<div class="flex gap-2 items-center">' +
@@ -1117,7 +1117,7 @@ function addManualGame() {
         '<option value="Copa_do_Mundo_FIFA">Copa do Mundo FIFA</option>' +
         '<option value="Amistosos_Internacionais">Amistosos Internacionais</option>' +
         '</select></div>' +
-        '<div class="grid grid-cols-2 gap-3"><div><label class="text-xs text-zinc-400 block mb-1">Horario</label><input type="time" value="20:00" class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500" oninput="updateManualGame(' + id + ',\'time\',this.value)"></div>' +
+        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="text-xs text-zinc-400 block mb-1">Horario</label><input type="time" value="20:00" class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500" oninput="updateManualGame(' + id + ',\'time\',this.value)"></div>' +
         '<div><label class="text-xs text-zinc-400 block mb-1">Transmissao</label><select id="manualBroadcaster_' + id + '" class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer" onchange="updateManualGame(' + id + ',\'broadcaster\',this.value)" data-testid="manual-broadcaster-' + id + '">' + broadcasterOptions + '</select></div></div>';
 
     container.appendChild(gameDiv);

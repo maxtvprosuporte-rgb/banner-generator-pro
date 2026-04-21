@@ -1408,9 +1408,22 @@ function matchPlatform(name) {
 
 window.copyMovieInfo = function() {
     if (!selectedContent) return;
-    var durationText = selectedContent.type === 'movie' ? selectedContent.runtime : (selectedContent.seasons || selectedContent.runtime);
-    var info = '*' + selectedContent.title + '*\n\nAno: ' + selectedContent.year + '\nTipo: ' + (selectedContent.type === 'movie' ? 'Filme' : 'Série') + '\nNota: ' + selectedContent.rating + '\nGêneros: ' + (selectedContent.genres || 'N/A') + '\nDuração: ' + (durationText || 'N/A') + '\n\n' + (selectedContent.overview || 'Sem sinopse');
-    navigator.clipboard.writeText(info).then(function() { alert('Informações copiadas!'); }).catch(function() { alert('Erro ao copiar'); });
+
+    var durationText = selectedContent.type === 'movie'
+        ? selectedContent.runtime
+        : (selectedContent.seasons || selectedContent.runtime);
+
+    var info = '*' + selectedContent.title + '*\n\n' +
+    '📅: ' + selectedContent.year +
+    '\n' + (selectedContent.type === 'movie' ? '🎬 Filme' : '📺 Série') +
+    '\n⭐: ' + selectedContent.rating +
+    '\n🎭: ' + (selectedContent.genres || 'N/A') +
+    '\n⏱️: ' + (durationText || 'N/A') +
+    '\n\n' + (selectedContent.overview || 'Sem sinopse');
+
+    navigator.clipboard.writeText(info)
+        .then(function() { alert('Informações copiadas!'); })
+        .catch(function() { alert('Erro ao copiar'); });
 };
 
 function generateMovieBanner() {

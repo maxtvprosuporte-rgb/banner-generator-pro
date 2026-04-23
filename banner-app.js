@@ -1043,6 +1043,7 @@ function loadFootballManualMode() {
 var leagueToBroadcaster = {
     'Campeonato_Brasileiro_Serie_A': 'globo_sportv_premiere_prime_cazetv',
     'Campeonato_Brasileiro_Srrie_B': 'espn_disney_sportv',
+    'Copa do Brasil'
     'Copa_Libertadores': 'globo_espn_disney_paramount',
     'Premier_League': 'espn_star',
     'La_Liga': 'espn_star',

@@ -27,7 +27,7 @@ const leagueBroadcasters = {
     'Serie A': 'Globo / SporTV / Premiere / Prime Video / CazéTV',
     'Brasileirão Série B': 'ESPN / Disney+ / SporTV',
     'Serie B': 'ESPN / Disney+ / SporTV',
-    'Copa do Brasil': 'Globo / SporTV / Premiere / Prime Video',
+    'Copa do Brasil': 'Globo / SporTV / Premiere',
     'Copa Libertadores': 'Globo / ESPN / Disney+ / Paramount+',
     'Copa Sul-Americana': 'ESPN / Disney+ / Paramount+',
     'Premier League': 'ESPN / Star+',
@@ -565,6 +565,8 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
     y += 75;
 
     // === LEAGUE GRID - ÍCONES LOCAIS DA PASTA /ligue/ ===
+    // Obs.: Copa do Brasil ainda nao tem icone. Quando adicionar o arquivo em /ligue/Copa_do_Brasil.png,
+    // basta incluir: { path: '/ligue/Copa_do_Brasil.png', name: 'Copa do Brasil' }
     var localLeagueIcons = [
         { path: '/ligue/Campeonato_Brasileiro_Serie_A.png', name: 'Brasileirão Série A' },
         { path: '/ligue/Campeonato_Brasileiro_Srrie_B.png', name: 'Brasileirão Série B' },
@@ -1043,7 +1045,7 @@ function loadFootballManualMode() {
 var leagueToBroadcaster = {
     'Campeonato_Brasileiro_Serie_A': 'globo_sportv_premiere_prime_cazetv',
     'Campeonato_Brasileiro_Srrie_B': 'espn_disney_sportv',
-    'Copa_do_Brasil',
+    'Copa_do_Brasil': 'globo_sportv_premiere',
     'Copa_Libertadores': 'globo_espn_disney_paramount',
     'Premier_League': 'espn_star',
     'La_Liga': 'espn_star',
@@ -1065,6 +1067,7 @@ function addManualGame() {
 
     var broadcasterOptions =
         '<option value="globo_sportv_premiere_prime_cazetv">Globo / SporTV / Premiere / Prime / Caz\u00E9TV</option>' +
+        '<option value="globo_sportv_premiere">Globo / SporTV / Premiere</option>' +
         '<option value="espn_disney_sportv">ESPN / Disney+ / SporTV</option>' +
         '<option value="globo_espn_disney_paramount">Globo / ESPN / Disney+ / Paramount+</option>' +
         '<option value="espn_star">ESPN / Star+</option>' +
@@ -1109,7 +1112,7 @@ function addManualGame() {
         '<div class="mb-3 min-w-0"><label class="text-xs text-zinc-400 block mb-1">Liga</label><select class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer box-border min-w-0 truncate" onchange="onManualLeagueChange(' + id + ',this.value)" data-testid="manual-league-' + id + '">' +
         '<option value="Campeonato_Brasileiro_Serie_A">Brasileir\u00E3o S\u00E9rie A</option>' +
         '<option value="Campeonato_Brasileiro_Srrie_B">Brasileir\u00E3o S\u00E9rie B</option>' +
-        '<option value="Copa_do_Brasil">CCopa do Brasils</option>' +
+        '<option value="Copa_do_Brasil">Copa do Brasil</option>' +
         '<option value="Copa_Libertadores">Copa Libertadores</option>' +
         '<option value="Premier_League">Premier League</option>' +
         '<option value="La_Liga">La Liga</option>' +
@@ -1200,7 +1203,7 @@ async function generateManualBanners() {
     var leagueDisplayNames = {
         'Campeonato_Brasileiro_Serie_A': 'Brasileirão Série A',
         'Campeonato_Brasileiro_Srrie_B': 'Brasileirão Série B',
-        'Copa_do_Brasil',
+        'Copa_do_Brasil': 'Copa do Brasil',
         'Copa_Libertadores': 'Copa Libertadores',
         'Premier_League': 'Premier League',
         'La_Liga': 'La Liga',
@@ -1213,6 +1216,7 @@ async function generateManualBanners() {
 
     var broadcasterDisplayNames = {
         'globo_sportv_premiere_prime_cazetv': 'Globo / SporTV / Premiere / Prime / CazéTV',
+        'globo_sportv_premiere': 'Globo / SporTV / Premiere',
         'espn_disney_sportv': 'ESPN / Disney+ / SporTV',
         'globo_espn_disney_paramount': 'Globo / ESPN / Disney+ / Paramount+',
         'espn_star': 'ESPN / Star+',

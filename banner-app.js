@@ -1043,7 +1043,7 @@ function loadFootballManualMode() {
 var leagueToBroadcaster = {
     'Campeonato_Brasileiro_Serie_A': 'globo_sportv_premiere_prime_cazetv',
     'Campeonato_Brasileiro_Srrie_B': 'espn_disney_sportv',
-    'Copa do Brasil',
+    'Copa_do_Brasil',
     'Copa_Libertadores': 'globo_espn_disney_paramount',
     'Premier_League': 'espn_star',
     'La_Liga': 'espn_star',
@@ -1109,6 +1109,7 @@ function addManualGame() {
         '<div class="mb-3 min-w-0"><label class="text-xs text-zinc-400 block mb-1">Liga</label><select class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer box-border min-w-0 truncate" onchange="onManualLeagueChange(' + id + ',this.value)" data-testid="manual-league-' + id + '">' +
         '<option value="Campeonato_Brasileiro_Serie_A">Brasileir\u00E3o S\u00E9rie A</option>' +
         '<option value="Campeonato_Brasileiro_Srrie_B">Brasileir\u00E3o S\u00E9rie B</option>' +
+        '<option value="Copa_do_Brasil">CCopa do Brasils</option>' +
         '<option value="Copa_Libertadores">Copa Libertadores</option>' +
         '<option value="Premier_League">Premier League</option>' +
         '<option value="La_Liga">La Liga</option>' +
@@ -1199,7 +1200,7 @@ async function generateManualBanners() {
     var leagueDisplayNames = {
         'Campeonato_Brasileiro_Serie_A': 'Brasileirão Série A',
         'Campeonato_Brasileiro_Srrie_B': 'Brasileirão Série B',
-        'Copa do Brasil',
+        'Copa_do_Brasil',
         'Copa_Libertadores': 'Copa Libertadores',
         'Premier_League': 'Premier League',
         'La_Liga': 'La Liga',

@@ -1043,7 +1043,7 @@ function loadFootballManualMode() {
 var leagueToBroadcaster = {
     'Campeonato_Brasileiro_Serie_A': 'globo_sportv_premiere_prime_cazetv',
     'Campeonato_Brasileiro_Srrie_B': 'espn_disney_sportv',
-    'Copa do Brasil'
+    'Copa do Brasil',
     'Copa_Libertadores': 'globo_espn_disney_paramount',
     'Premier_League': 'espn_star',
     'La_Liga': 'espn_star',
@@ -1199,6 +1199,7 @@ async function generateManualBanners() {
     var leagueDisplayNames = {
         'Campeonato_Brasileiro_Serie_A': 'Brasileirão Série A',
         'Campeonato_Brasileiro_Srrie_B': 'Brasileirão Série B',
+        'Copa do Brasil',
         'Copa_Libertadores': 'Copa Libertadores',
         'Premier_League': 'Premier League',
         'La_Liga': 'La Liga',

@@ -1708,8 +1708,8 @@ async function selectVideoContent(content) {
         var detailsRes = await fetch(TMDB_BASE_URL + '/' + endpoint + '/' + content.id + '?language=pt-BR');
         var details = await detailsRes.json();
         selectedContent.genres = details.genres ? details.genres.map(function(g) { return g.name; }).join(', ') : 'N/A';
-        if (content.type === 'movie') { selectedContent.runtime = details.runtime ? Math.floor(details.runtime / 60) + 'h ' + (details.runtime % 60) + 'min' : 'N/A'; }
-        else { selectedContent.runtime = details.episode_run_time && details.episode_run_time[0] ? details.episode_run_time[0] + 'min/ep' : 'N/A'; }
+        if (content.type === 'movie') { selectedContent.runtime = details.runtime ? Math.floor(details.runtime / 60) + 'h ' + (details.runtime % 60) + 'min' : 'N/A'; selectedContent.seasons = null; }
+        else { selectedContent.runtime = details.episode_run_time && details.episode_run_time[0] ? details.episode_run_time[0] + 'min/ep' : 'N/A'; selectedContent.seasons = details.number_of_seasons ? details.number_of_seasons + ' temporada' + (details.number_of_seasons > 1 ? 's' : '') : null; }
         var watchRes = await fetch(TMDB_BASE_URL + '/' + endpoint + '/' + content.id + '/watch');
         var watchData = await watchRes.json();
         var brProviders = (watchData.results && watchData.results.BR) ? (watchData.results.BR.flatrate || watchData.results.BR.ads || []) : [];
@@ -1723,13 +1723,14 @@ async function selectVideoContent(content) {
     }
 
     document.getElementById('videoSelectedInfo').innerHTML =
-        '<div class="flex gap-3">' +
+        '<div class="flex gap-3 mb-3">' +
             (content.poster ? '<img src="' + content.poster + '" class="w-20 h-30 object-cover rounded">' : '') +
             '<div class="flex-1"><h3 class="font-oswald text-lg font-bold">' + content.title + '</h3>' +
             '<p class="text-zinc-500 text-sm">' + content.year + ' - ' + (content.type === 'movie' ? 'Filme' : 'Série') + ' - ★ ' + content.rating + '</p>' +
             (selectedContent.genres ? '<p class="text-zinc-400 text-xs mt-1">' + selectedContent.genres + '</p>' : '') +
             (selectedContent.autoProvider ? '<p class="text-green-400 text-xs mt-1">Plataforma: ' + selectedContent.autoProvider + '</p>' : '') +
-            '</div></div>';
+            '</div></div>' +
+        '<button onclick="copyMovieInfo()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2" data-testid="video-copy-info-btn">Copiar Informações</button>';
 
     updateGenerateBtnState();
 }
@@ -1947,25 +1948,24 @@ async function generateTrailerBannerVideo() {
                 try { oc.drawImage(srcVideo, ox, oy, dw, dh); } catch(e) {}
             }
 
-            // === LOGO no canto superior direito (caixa preta) ===
+            // === LOGO no canto superior direito (sem fundo preto) ===
             if (uploadedLogo) {
-                var logoBoxH = 110;
                 var logoR = uploadedLogo.width / uploadedLogo.height;
-                var logoH = 80;
+                var logoH = 140; // aumentada
                 var logoW = logoH * logoR;
-                var boxW = Math.max(140, logoW + 40);
-                oc.fillStyle = '#000';
-                oc.fillRect(W - boxW, 0, boxW, logoBoxH);
-                oc.drawImage(uploadedLogo, W - boxW + (boxW - logoW) / 2, (logoBoxH - logoH) / 2, logoW, logoH);
+                // Limita largura máxima a 320px caso logo seja muito horizontal
+                if (logoW > 320) { logoW = 320; logoH = logoW / logoR; }
+                oc.drawImage(uploadedLogo, W - logoW - 25, 20, logoW, logoH);
             } else {
-                // Caixa preta com texto LOGO se não houver logo
-                var boxW = 160, boxH = 110;
-                oc.fillStyle = '#000';
-                oc.fillRect(W - boxW, 0, boxW, boxH);
-                oc.fillStyle = '#fff';
+                // Placeholder discreto quando não há logo configurada
+                var phW = 180, phH = 130;
+                oc.fillStyle = 'rgba(0,0,0,0.55)';
+                roundRect(oc, W - phW - 25, 20, phW, phH, 12);
+                oc.fill();
+                oc.fillStyle = 'rgba(255,255,255,0.85)';
                 oc.font = '700 22px Manrope, sans-serif';
                 oc.textAlign = 'center';
-                oc.fillText('LOGO', W - boxW / 2, boxH / 2 + 8);
+                oc.fillText('LOGO', W - phW / 2 - 25, 20 + phH / 2 + 8);
             }
 
             // === ÁREA INFERIOR: poster + info ===

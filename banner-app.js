@@ -1767,6 +1767,15 @@ async function generateTrailerBannerVideo() {
     progressLabel.textContent = 'Preparando vídeo...';
     progressFill.style.width = '5%';
 
+    var srcVideo = null;
+    var recorder = null;
+    var failsafeTimer = null;
+    var stopRequested = false;
+
+    function cleanupVideoEl() {
+        try { if (srcVideo && srcVideo.parentNode) srcVideo.parentNode.removeChild(srcVideo); } catch(e) {}
+    }
+
     try {
         // Canvas 1080x1080 (Post 1:1 - alta qualidade)
         var W = 1080, H = 1080;
@@ -1783,24 +1792,48 @@ async function generateTrailerBannerVideo() {
         outCanvas.style.borderRadius = '12px';
         outCanvas.style.boxShadow = '0 0 60px rgba(168,85,247,0.4)';
 
-        // Video escondido para frames + audio
-        var srcVideo = document.createElement('video');
+        // Pinta um frame inicial preto para o canvasStream ter conteúdo válido desde o início
+        oc.fillStyle = '#0a0a0a';
+        oc.fillRect(0, 0, W, H);
+
+        // Video escondido para frames + audio (DEVE estar no DOM em alguns browsers)
+        srcVideo = document.createElement('video');
         srcVideo.src = uploadedVideoUrl;
-        srcVideo.crossOrigin = 'anonymous';
         srcVideo.preload = 'auto';
         srcVideo.playsInline = true;
         srcVideo.muted = false;
         srcVideo.volume = 0; // silencia saída pelos alto-falantes; áudio continua no captureStream
+        srcVideo.style.cssText = 'position:fixed;left:-99999px;top:-99999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+        document.body.appendChild(srcVideo);
 
+        // Aguarda metadados E canplay (readyState >= 3)
         await new Promise(function(res, rej) {
-            srcVideo.onloadedmetadata = function() { res(); };
-            srcVideo.onerror = function(e) { rej(new Error('Erro ao carregar MP4')); };
+            var done = false;
+            var to = setTimeout(function() { if (!done) { done = true; rej(new Error('Timeout ao carregar MP4 (15s)')); } }, 15000);
+            function ok() { if (done) return; done = true; clearTimeout(to); res(); }
+            function fail(e) { if (done) return; done = true; clearTimeout(to); rej(new Error('Erro ao carregar MP4')); }
+            srcVideo.addEventListener('canplay', ok, { once: true });
+            srcVideo.addEventListener('loadeddata', ok, { once: true });
+            srcVideo.addEventListener('error', fail, { once: true });
+            if (srcVideo.readyState >= 3) ok();
         });
 
-        progressLabel.textContent = 'Iniciando gravação...';
+        progressLabel.textContent = 'Iniciando reprodução...';
+        progressFill.style.width = '10%';
+
+        // Posiciona no início e inicia playback ANTES de capturar stream (audio tracks só ficam disponíveis após play)
+        try { srcVideo.currentTime = 0; } catch(e) {}
+        try {
+            await srcVideo.play();
+        } catch(e) {
+            console.error('Erro ao iniciar play():', e);
+            throw new Error('Não foi possível reproduzir o vídeo. Tente outro arquivo.');
+        }
+
+        progressLabel.textContent = 'Configurando gravação...';
         progressFill.style.width = '15%';
 
-        // Captura áudio do video original
+        // Captura áudio do video original (após play, audio tracks existem)
         var audioStream = null;
         try {
             if (typeof srcVideo.captureStream === 'function') audioStream = srcVideo.captureStream();
@@ -1812,6 +1845,7 @@ async function generateTrailerBannerVideo() {
         if (audioStream) {
             audioStream.getAudioTracks().forEach(function(t) { combinedTracks.push(t); });
         }
+        console.log('Tracks combinadas:', combinedTracks.length, 'video:', canvasStream.getVideoTracks().length, 'audio:', audioStream ? audioStream.getAudioTracks().length : 0);
         var combinedStream = new MediaStream(combinedTracks);
 
         // Escolher melhor mimeType
@@ -1828,46 +1862,66 @@ async function generateTrailerBannerVideo() {
             if (window.MediaRecorder && MediaRecorder.isTypeSupported(preferredTypes[mi])) { mimeType = preferredTypes[mi]; break; }
         }
         if (!mimeType) throw new Error('Navegador não suporta MediaRecorder');
+        console.log('Usando mimeType:', mimeType);
 
-        var recorder = new MediaRecorder(combinedStream, {
+        recorder = new MediaRecorder(combinedStream, {
             mimeType: mimeType,
-            videoBitsPerSecond: 12000000, // 12 Mbps - Full HD quality
+            videoBitsPerSecond: 12000000,
             audioBitsPerSecond: 192000
         });
         var chunks = [];
-        recorder.ondataavailable = function(ev) { if (ev.data && ev.data.size > 0) chunks.push(ev.data); };
+        recorder.ondataavailable = function(ev) {
+            if (ev.data && ev.data.size > 0) {
+                chunks.push(ev.data);
+                console.log('chunk recebido:', ev.data.size, 'total chunks:', chunks.length);
+            }
+        };
+        recorder.onerror = function(e) { console.error('MediaRecorder error:', e); };
 
-        var donePromise = new Promise(function(resolve) {
+        var donePromise = new Promise(function(resolve, reject) {
             recorder.onstop = function() {
-                var ext = mimeType.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
-                var blob = new Blob(chunks, { type: mimeType.split(';')[0] });
-                var url = URL.createObjectURL(blob);
-                var safeTitle = selectedContent.title.replace(/[^a-zA-Z0-9]/g, '_');
-                var fileName = safeTitle + '_trailer.' + ext;
+                console.log('recorder.onstop disparado. chunks:', chunks.length);
+                try {
+                    if (chunks.length === 0) {
+                        reject(new Error('Nenhum dado gravado. Tente outro vídeo.'));
+                        return;
+                    }
+                    var ext = mimeType.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
+                    var blob = new Blob(chunks, { type: mimeType.split(';')[0] });
+                    console.log('Blob criado:', blob.size, 'bytes');
+                    var url = URL.createObjectURL(blob);
+                    var safeTitle = (selectedContent.title || 'trailer').replace(/[^a-zA-Z0-9]/g, '_');
+                    var fileName = safeTitle + '_trailer.' + ext;
 
-                videoContainer.innerHTML = '';
-                var infoDiv = document.createElement('div');
-                infoDiv.className = 'text-center mb-4';
-                infoDiv.innerHTML = '<h3 class="font-oswald text-2xl font-bold text-purple-400 mb-2">Banner gerado!</h3>' +
-                    (ext === 'mp4' ? '' : '<p class="text-yellow-400 text-xs mb-2">⚠ Seu navegador exportou em WebM. Para MP4 puro, abra em Chrome desktop atualizado.</p>');
-                videoContainer.appendChild(infoDiv);
+                    videoContainer.innerHTML = '';
+                    var infoDiv = document.createElement('div');
+                    infoDiv.className = 'text-center mb-4';
+                    infoDiv.innerHTML = '<h3 class="font-oswald text-2xl font-bold text-purple-400 mb-2">Banner gerado!</h3>' +
+                        '<p class="text-zinc-400 text-xs mb-2">Tamanho: ' + (blob.size / 1024 / 1024).toFixed(2) + ' MB - Formato: ' + ext.toUpperCase() + '</p>' +
+                        (ext === 'mp4' ? '' : '<p class="text-yellow-400 text-xs mb-2">⚠ Seu navegador exportou em WebM. Para MP4 puro, abra em Chrome desktop atualizado.</p>');
+                    videoContainer.appendChild(infoDiv);
 
-                var vidEl = document.createElement('video');
-                vidEl.src = url;
-                vidEl.controls = true;
-                vidEl.style.maxWidth = '480px';
-                vidEl.style.borderRadius = '12px';
-                vidEl.style.boxShadow = '0 0 60px rgba(168,85,247,0.5)';
-                videoContainer.appendChild(vidEl);
+                    var vidEl = document.createElement('video');
+                    vidEl.src = url;
+                    vidEl.controls = true;
+                    vidEl.style.maxWidth = '480px';
+                    vidEl.style.borderRadius = '12px';
+                    vidEl.style.boxShadow = '0 0 60px rgba(168,85,247,0.5)';
+                    videoContainer.appendChild(vidEl);
 
-                var dlBtn = document.createElement('a');
-                dlBtn.href = url;
-                dlBtn.download = fileName;
-                dlBtn.className = 'inline-block mt-4 bg-purple-500 hover:bg-purple-400 text-white font-bold uppercase tracking-widest py-3 px-8 rounded-lg cursor-pointer';
-                dlBtn.textContent = 'Baixar ' + fileName;
-                videoContainer.appendChild(dlBtn);
+                    var dlBtn = document.createElement('a');
+                    dlBtn.href = url;
+                    dlBtn.download = fileName;
+                    dlBtn.className = 'inline-block mt-4 bg-purple-500 hover:bg-purple-400 text-white font-bold uppercase tracking-widest py-3 px-8 rounded-lg cursor-pointer';
+                    dlBtn.textContent = 'Baixar ' + fileName;
+                    dlBtn.setAttribute('data-testid', 'download-trailer-btn');
+                    videoContainer.appendChild(dlBtn);
 
-                resolve();
+                    resolve();
+                } catch(err) {
+                    console.error('Erro em onstop:', err);
+                    reject(err);
+                }
             };
         });
 
@@ -2033,7 +2087,9 @@ async function generateTrailerBannerVideo() {
             // Marca d'água diagonal opcional sobre área do video (sutil)
             // (não aplicada para não atrapalhar o video)
 
-            if (!srcVideo.ended && !srcVideo.paused) {
+            // Continua o loop de desenho ENQUANTO o recorder estiver gravando
+            // (não depende de srcVideo.paused para evitar parar render no fim)
+            if (recorder && recorder.state === 'recording') {
                 requestAnimationFrame(drawFrame);
             }
 
@@ -2045,21 +2101,54 @@ async function generateTrailerBannerVideo() {
             }
         }
 
-        // Inicia gravação e playback
-        recorder.start(100);
-        srcVideo.currentTime = 0;
-        await srcVideo.play();
+        // Função para parar a gravação (idempotente)
+        function stopRecording(reason) {
+            if (stopRequested) return;
+            stopRequested = true;
+            console.log('Parando gravação. Motivo:', reason);
+            try { srcVideo.pause(); } catch(e) {}
+            // Pequeno delay para garantir que o último frame e o último chunk de audio sejam capturados
+            setTimeout(function() {
+                try {
+                    if (recorder && recorder.state !== 'inactive') {
+                        recorder.requestData(); // força flush do último chunk
+                        setTimeout(function() {
+                            try { if (recorder.state !== 'inactive') recorder.stop(); } catch(e) {}
+                        }, 100);
+                    }
+                } catch(e) { console.error('Erro ao parar recorder:', e); }
+            }, 250);
+        }
+
+        // Detecção de fim do vídeo - múltiplos eventos
+        srcVideo.addEventListener('ended', function() { stopRecording('ended'); });
+        srcVideo.addEventListener('pause', function() {
+            // Pode disparar quando ended também ocorre - só para se chegou no fim
+            if (srcVideo.duration > 0 && srcVideo.currentTime >= srcVideo.duration - 0.2) {
+                stopRecording('pause-near-end');
+            }
+        });
+        srcVideo.addEventListener('timeupdate', function() {
+            if (srcVideo.duration > 0 && srcVideo.currentTime >= srcVideo.duration - 0.05) {
+                stopRecording('timeupdate-end');
+            }
+        });
+
+        // Failsafe: timeout absoluto = duração + 3s (caso eventos não disparem)
+        var maxMs = ((srcVideo.duration || 60) + 3) * 1000;
+        failsafeTimer = setTimeout(function() { stopRecording('failsafe-timeout'); }, maxMs);
+
+        // Inicia gravação (vídeo já está tocando desde o passo anterior)
+        progressLabel.textContent = 'Gravando...';
+        progressFill.style.width = '20%';
+        recorder.start(500); // chunk a cada 500ms
+        console.log('Recorder iniciado. estado:', recorder.state, 'duração:', srcVideo.duration);
+        // Inicia o loop de desenho
         drawFrame();
 
-        srcVideo.onended = function() {
-            // Desenha último frame e para após pequeno delay
-            try { drawFrame(); } catch(e) {}
-            setTimeout(function() {
-                if (recorder.state !== 'inactive') recorder.stop();
-            }, 300);
-        };
-
         await donePromise;
+        clearTimeout(failsafeTimer);
+        cleanupVideoEl();
         progressFill.style.width = '100%';
         progressLabel.textContent = 'Concluído!';
         setTimeout(function() { progressBox.classList.add('hidden'); }, 1500);
@@ -2068,6 +2157,9 @@ async function generateTrailerBannerVideo() {
         btn.innerHTML = 'GERAR BANNER MP4';
     } catch (error) {
         console.error('Erro:', error);
+        clearTimeout(failsafeTimer);
+        cleanupVideoEl();
+        try { if (recorder && recorder.state !== 'inactive') recorder.stop(); } catch(e) {}
         alert('Erro ao gerar banner: ' + error.message);
         btn.disabled = false;
         btn.innerHTML = 'GERAR BANNER MP4';

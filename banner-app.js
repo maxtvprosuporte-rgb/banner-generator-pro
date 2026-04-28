@@ -1776,7 +1776,10 @@ async function generateTrailerBannerVideo() {
 
     function cleanupVideoEl() {
         try { if (srcVideo && srcVideo.parentNode) srcVideo.parentNode.removeChild(srcVideo); } catch(e) {}
+        try { if (audioCtxRef && audioCtxRef.state !== 'closed') audioCtxRef.close(); } catch(e) {}
     }
+
+    var audioCtxRef = null;
 
     try {
         // Canvas 1080x1080 (Post 1:1 - alta qualidade)
@@ -1804,7 +1807,7 @@ async function generateTrailerBannerVideo() {
         srcVideo.preload = 'auto';
         srcVideo.playsInline = true;
         srcVideo.muted = false;
-        srcVideo.volume = 0; // silencia saída pelos alto-falantes; áudio continua no captureStream
+        // Volume: deixar normal — Web Audio controlará a saída via gain=0 (sem som no alto-falante)
         srcVideo.style.cssText = 'position:fixed;left:-99999px;top:-99999px;width:1px;height:1px;opacity:0;pointer-events:none;';
         document.body.appendChild(srcVideo);
 
@@ -1823,7 +1826,33 @@ async function generateTrailerBannerVideo() {
         progressLabel.textContent = 'Iniciando reprodução...';
         progressFill.style.width = '10%';
 
-        // Posiciona no início e inicia playback ANTES de capturar stream (audio tracks só ficam disponíveis após play)
+        // Configura Web Audio API ANTES do play (importante para iOS Safari)
+        var audioStream = null;
+        var audioCtx = null;
+        try {
+            var AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+                audioCtx = new AudioCtx();
+                audioCtxRef = audioCtx;
+                if (audioCtx.state === 'suspended') {
+                    try { await audioCtx.resume(); } catch(e) {}
+                }
+                var sourceNode = audioCtx.createMediaElementSource(srcVideo);
+                var destNode = audioCtx.createMediaStreamDestination();
+                sourceNode.connect(destNode);
+                // Gain=0 conectado ao destination mantém contexto ativo no mobile, sem som no alto-falante
+                var muteGain = audioCtx.createGain();
+                muteGain.gain.value = 0;
+                sourceNode.connect(muteGain);
+                muteGain.connect(audioCtx.destination);
+                audioStream = destNode.stream;
+                console.log('Web Audio: áudio configurado.', audioStream.getAudioTracks().length, 'tracks');
+            }
+        } catch(e) {
+            console.warn('Web Audio API falhou:', e);
+        }
+
+        // Posiciona no início e inicia playback
         try { srcVideo.currentTime = 0; } catch(e) {}
         try {
             await srcVideo.play();
@@ -1835,12 +1864,14 @@ async function generateTrailerBannerVideo() {
         progressLabel.textContent = 'Configurando gravação...';
         progressFill.style.width = '15%';
 
-        // Captura áudio do video original (após play, audio tracks existem)
-        var audioStream = null;
-        try {
-            if (typeof srcVideo.captureStream === 'function') audioStream = srcVideo.captureStream();
-            else if (typeof srcVideo.mozCaptureStream === 'function') audioStream = srcVideo.mozCaptureStream();
-        } catch(e) { console.warn('captureStream falhou:', e); }
+        // Fallback: tenta captureStream se Web Audio falhou (browsers muito antigos)
+        if (!audioStream) {
+            try {
+                if (typeof srcVideo.captureStream === 'function') audioStream = srcVideo.captureStream();
+                else if (typeof srcVideo.mozCaptureStream === 'function') audioStream = srcVideo.mozCaptureStream();
+                if (audioStream) console.log('Fallback captureStream:', audioStream.getAudioTracks().length, 'audio tracks');
+            } catch(e) { console.warn('captureStream também falhou:', e); }
+        }
 
         var canvasStream = outCanvas.captureStream(30);
         var combinedTracks = [].concat(canvasStream.getVideoTracks());

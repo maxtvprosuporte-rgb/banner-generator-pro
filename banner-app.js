@@ -2007,21 +2007,50 @@ async function generateTrailerBannerVideo() {
                 oc.fillText('CAPA', posterX + posterW / 2, posterY + posterH / 2);
             }
 
-            // INFO à direita
-            var infoX = posterX + posterW + 30;
+            // INFO à direita - pré-calcula altura total para centralizar verticalmente com a capa
+            var infoX = posterX + posterW + 40;
             var infoMaxW = W - infoX - 40;
-            var curY = bottomY + 50;
 
-            // Título
+            // 1) Calcula linhas de título
             oc.textAlign = 'left';
             oc.font = '700 50px Oswald, sans-serif';
-            oc.fillStyle = '#fff';
             var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), infoMaxW).slice(0, 2);
+            var titleH = titleLines.length * 56;
+
+            // 2) Meta sempre 1 linha
+            var metaH = 30;
+
+            // 3) Sinopse - calcula linhas (limitadas para caber)
+            oc.font = '400 19px Manrope, sans-serif';
+            var maxSynLines = 8;
+            var synLines = wrapText(oc, selectedContent.overview || '', infoMaxW).slice(0, maxSynLines);
+            var synH = synLines.length * 26;
+
+            // Espaçamentos entre blocos
+            var gapTitleMeta = 18;
+            var gapMetaSyn = 30;
+            var totalTextH = titleH + gapTitleMeta + metaH + gapMetaSyn + synH;
+
+            // Centraliza verticalmente com a capa (poster)
+            var posterCenterY = posterY + posterH / 2;
+            var blockTop = posterCenterY - totalTextH / 2;
+
+            // Garante que não fique sobreposto ao vídeo (mínimo bottomY + 30) nem aos CTAs (máximo fim - 80)
+            var minTop = bottomY + 30;
+            var maxBottom = H - 110;
+            if (blockTop < minTop) blockTop = minTop;
+            if (blockTop + totalTextH > maxBottom) blockTop = maxBottom - totalTextH;
+
+            var curY = blockTop + 42; // 42 = baseline aproximado da primeira linha do título
+
+            // Título
+            oc.font = '700 50px Oswald, sans-serif';
+            oc.fillStyle = '#fff';
             for (var ti2 = 0; ti2 < titleLines.length; ti2++) {
                 oc.fillText(titleLines[ti2], infoX, curY);
                 curY += 56;
             }
-            curY += 8;
+            curY += gapTitleMeta - 8;
 
             // Linha meta: nota • ano • gênero • plataforma
             oc.font = '700 22px Manrope, sans-serif';
@@ -2032,7 +2061,6 @@ async function generateTrailerBannerVideo() {
             var plat = selectedContent.autoProvider;
             if (plat) metaParts.push(plat);
 
-            // Desenha meta com cores diferentes
             var mx = infoX;
             for (var mi2 = 0; mi2 < metaParts.length; mi2++) {
                 var part = metaParts[mi2];
@@ -2048,12 +2076,11 @@ async function generateTrailerBannerVideo() {
                     mx += oc.measureText(sepStr).width;
                 }
             }
-            curY += 35;
+            curY += gapMetaSyn;
 
             // Sinopse
             oc.font = '400 19px Manrope, sans-serif';
             oc.fillStyle = 'rgba(255,255,255,0.85)';
-            var synLines = wrapText(oc, selectedContent.overview || '', infoMaxW).slice(0, 8);
             for (var sj2 = 0; sj2 < synLines.length; sj2++) {
                 oc.fillText(synLines[sj2], infoX, curY);
                 curY += 26;

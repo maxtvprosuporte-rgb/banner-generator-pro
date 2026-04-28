@@ -23,7 +23,7 @@ const editorScreen = document.getElementById('editorScreen');
 const controlPanel = document.getElementById('controlPanel');
 let canvas = document.getElementById('bannerCanvas');
 let ctx = canvas.getContext('2d');
-const videoContainer = document.getElementById('videoContainer');
+let videoContainer = document.getElementById('videoContainer');
 
 let footballBgPost = null;
 let footballBgStory = null;
@@ -203,6 +203,7 @@ function clearPreviousBanners() {
     container.innerHTML = '<canvas id="bannerCanvas" class="canvas-glow max-w-full h-auto rounded-lg mx-auto"></canvas><div id="videoContainer" class="hidden flex flex-col items-center gap-4"></div>';
     canvas = document.getElementById('bannerCanvas');
     ctx = canvas.getContext('2d');
+    videoContainer = document.getElementById('videoContainer');
 }
 
 // ============================================

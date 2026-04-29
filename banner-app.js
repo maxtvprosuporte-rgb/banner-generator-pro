@@ -21,16 +21,87 @@ let bannerBgImg    = null;   // fundo com 5 slots para banner de jogos (Post)
     imgB.src = BANNER_BG_URL;
 })();
 
-// ====== Posições exatas dos 5 slots dentro de fundo.png (1080x1350) ======
+// ====== Layout dos slots (desenhados via código sobre fundo.png limpo) ======
+// fundo.png agora deve vir SEM os retângulos (apenas o fundo decorativo).
+// Os retângulos abaixo são desenhados dinamicamente: 1 por jogo (até 5).
 const POST_BG_W = 1080;
 const POST_BG_H = 1350;
-const POST_SLOTS = [
-    { x: 54, y: 260, w: 972, h: 106 },
-    { x: 54, y: 382, w: 972, h: 106 },
-    { x: 54, y: 504, w: 972, h: 106 },
-    { x: 54, y: 626, w: 972, h: 106 },
-    { x: 54, y: 748, w: 972, h: 106 }
-];
+const POST_SLOTS_AREA = {
+    top: 380,        // y onde a área disponível para slots começa (após título)
+    bottom: 1230,    // y onde termina (antes do footer)
+    leftX: 54,
+    rightX: 1026,
+    slotH: 130,
+    slotGap: 18,
+    maxSlots: 5
+};
+
+function computeSlotPositions(numGames) {
+    var n = Math.min(numGames, POST_SLOTS_AREA.maxSlots);
+    if (n <= 0) return [];
+    var areaH = POST_SLOTS_AREA.bottom - POST_SLOTS_AREA.top;
+    var blockH = n * POST_SLOTS_AREA.slotH + (n - 1) * POST_SLOTS_AREA.slotGap;
+    var startY = POST_SLOTS_AREA.top + (areaH - blockH) / 2;
+    var w = POST_SLOTS_AREA.rightX - POST_SLOTS_AREA.leftX;
+    var slots = [];
+    for (var i = 0; i < n; i++) {
+        slots.push({
+            x: POST_SLOTS_AREA.leftX,
+            y: Math.round(startY + i * (POST_SLOTS_AREA.slotH + POST_SLOTS_AREA.slotGap)),
+            w: w,
+            h: POST_SLOTS_AREA.slotH
+        });
+    }
+    return slots;
+}
+
+// Desenha o retângulo decorativo do slot (estilo neon verde, igual ao template)
+function drawSlotFrame(c, slot) {
+    var x = slot.x, y = slot.y, w = slot.w, h = slot.h;
+    var r = 16;
+    var neonColor = '#d4ff4f';
+
+    c.save();
+
+    // Fill preto semi-transparente para destacar do fundo
+    c.fillStyle = 'rgba(0, 0, 0, 0.88)';
+    roundRect(c, x, y, w, h, r);
+    c.fill();
+
+    // Borda neon com glow
+    c.shadowColor = 'rgba(212, 255, 79, 0.55)';
+    c.shadowBlur = 16;
+    c.strokeStyle = neonColor;
+    c.lineWidth = 3;
+    roundRect(c, x, y, w, h, r);
+    c.stroke();
+    c.shadowBlur = 0;
+
+    // Abinha (tab) verde no topo central
+    var tabW = 90;
+    var tabH = 14;
+    var tabX = x + (w - tabW) / 2;
+    var tabY = y - tabH / 2 + 1;
+    c.fillStyle = neonColor;
+    roundRect(c, tabX, tabY, tabW, tabH, 7);
+    c.fill();
+
+    // Chevron decorativo na base (linha que abaixa no centro)
+    var chevHalfW = 110;
+    var chevCx = x + w / 2;
+    var chevY = y + h - 6;
+    c.strokeStyle = neonColor;
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(chevCx - chevHalfW, chevY);
+    c.lineTo(chevCx - 24, chevY);
+    c.lineTo(chevCx, chevY + 8);
+    c.lineTo(chevCx + 24, chevY);
+    c.lineTo(chevCx + chevHalfW, chevY);
+    c.stroke();
+
+    c.restore();
+}
 
 let currentMode = null;
 let selectedContent = null;
@@ -763,10 +834,11 @@ async function generateFootballListBannerModern(canvasEl, games, bannerNum, tota
             c.fillText('FUNDO INDISPONÍVEL', width/2, height/2);
         }
 
-        // Mapeia até 5 jogos nos slots
-        var slotsToFill = Math.min(games.length, POST_SLOTS.length);
-        for (var si = 0; si < slotsToFill; si++) {
-            drawGameInSlot(c, games[si], POST_SLOTS[si]);
+        // Mapeia jogos: desenha 1 retângulo decorativo + dados por jogo (até 5)
+        var slots = computeSlotPositions(games.length);
+        for (var si = 0; si < slots.length; si++) {
+            drawSlotFrame(c, slots[si]);
+            drawGameInSlot(c, games[si], slots[si]);
         }
         return;
     }
@@ -977,6 +1049,7 @@ async function generateFootballListBannerModern(canvasEl, games, bannerNum, tota
 // ============================================
 // DESENHA UM JOGO DENTRO DE UM SLOT (template fundo.png)
 // Layout: [logo][nome casa] [LIGA / HORA / TRANSMISSÃO] [nome fora][logo]
+// Slot esperado: 972 x 130
 // ============================================
 function drawGameInSlot(c, game, slot) {
     var league = (game.league && game.league.name) ? game.league.name : '';
@@ -989,9 +1062,9 @@ function drawGameInSlot(c, game, slot) {
     var sx = slot.x, sy = slot.y, sw = slot.w, sh = slot.h;
     var cy = sy + sh / 2;
 
-    // Logos: 70x70 nas pontas (com pequena margem interna)
-    var logoSize = 70;
-    var sideMargin = 22;
+    // Logos: 80x80 nas pontas
+    var logoSize = 80;
+    var sideMargin = 26;
     var homeLogoX = sx + sideMargin;
     var awayLogoX = sx + sw - sideMargin - logoSize;
     var logoY = cy - logoSize / 2;
@@ -1003,57 +1076,53 @@ function drawGameInSlot(c, game, slot) {
         try { c.drawImage(game.awayLogoImg, awayLogoX, logoY, logoSize, logoSize); } catch(e) {}
     }
 
-    // Nomes dos times: ao lado dos logos
-    var nameMaxW = 220;
-    var nameFontSize = 22;
-    c.textAlign = 'left';
-    c.font = '700 ' + nameFontSize + 'px Manrope, sans-serif';
+    // Nomes dos times (centralizados verticalmente ao lado dos logos)
+    var nameMaxW = 230;
+    c.font = '700 22px Manrope, sans-serif';
     c.fillStyle = '#ffffff';
     c.shadowColor = 'rgba(0,0,0,0.85)';
     c.shadowBlur = 4;
 
-    // Home name (esquerda do logo casa)
+    // Home name (à direita do logo casa)
     var homeNameX = homeLogoX + logoSize + 14;
-    var homeShown = fitTextToWidth(c, homeName, nameMaxW);
     c.textAlign = 'left';
-    c.fillText(homeShown, homeNameX, cy + 8);
+    c.textBaseline = 'middle';
+    c.fillText(fitTextToWidth(c, homeName, nameMaxW), homeNameX, cy);
 
-    // Away name (direita do logo fora -> alinha à direita)
+    // Away name (à esquerda do logo fora, alinhado à direita)
     var awayNameRightX = awayLogoX - 14;
-    var awayShown = fitTextToWidth(c, awayName, nameMaxW);
     c.textAlign = 'right';
-    c.fillText(awayShown, awayNameRightX, cy + 8);
+    c.fillText(fitTextToWidth(c, awayName, nameMaxW), awayNameRightX, cy);
 
     c.shadowBlur = 0;
+    c.textBaseline = 'alphabetic';
 
     // ÁREA CENTRAL: liga (topo), hora (meio), transmissão (base)
     var centerX = sx + sw / 2;
-    var centerMaxW = sw - (logoSize + 14 + nameMaxW + 30) * 2; // espaço útil entre os nomes
-    if (centerMaxW < 220) centerMaxW = 220;
+    var centerMaxW = sw - 2 * (sideMargin + logoSize + 14 + nameMaxW + 12);
+    if (centerMaxW < 240) centerMaxW = 240;
 
     // Liga
     c.textAlign = 'center';
     c.font = '700 16px Manrope, sans-serif';
-    c.fillStyle = '#bef264'; // verde clarinho (combina com o template)
+    c.fillStyle = '#bef264';
     c.shadowColor = 'rgba(0,0,0,0.85)';
     c.shadowBlur = 3;
-    var leagueShown = fitTextToWidth(c, league.toUpperCase(), centerMaxW);
-    c.fillText(leagueShown, centerX, sy + 30);
+    c.fillText(fitTextToWidth(c, league.toUpperCase(), centerMaxW), centerX, sy + 32);
 
     // Hora
-    c.font = '700 36px Oswald, sans-serif';
+    c.font = '700 38px Oswald, sans-serif';
     c.fillStyle = '#ffffff';
     c.shadowColor = 'rgba(0,0,0,0.9)';
     c.shadowBlur = 4;
-    c.fillText(time, centerX, sy + 70);
+    c.fillText(time, centerX, sy + 80);
 
     // Transmissão
     c.font = '600 14px Manrope, sans-serif';
     c.fillStyle = '#e4e4e7';
     c.shadowColor = 'rgba(0,0,0,0.8)';
     c.shadowBlur = 3;
-    var bcShown = fitTextToWidth(c, broadcaster, centerMaxW);
-    c.fillText(bcShown, centerX, sy + 95);
+    c.fillText(fitTextToWidth(c, broadcaster, centerMaxW), centerX, sy + 113);
 
     c.shadowBlur = 0;
 }

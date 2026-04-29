@@ -55,6 +55,20 @@ function computeSlotPositions(numGames) {
     return slots;
 }
 
+// Desenha a logotipo no canto superior direito do banner (se carregada)
+function drawTopRightLogo(c, width) {
+    if (!uploadedLogo) return;
+    var maxH = 130;
+    var ratio = uploadedLogo.width / uploadedLogo.height;
+    var logoW = maxH * ratio;
+    if (logoW > 280) { logoW = 280; maxH = logoW / ratio; }
+    c.save();
+    c.shadowColor = 'rgba(0,0,0,0.6)';
+    c.shadowBlur = 12;
+    c.drawImage(uploadedLogo, width - logoW - 28, 24, logoW, maxH);
+    c.restore();
+}
+
 // Desenha o retângulo decorativo do slot (estilo neon verde, igual ao template)
 function drawSlotFrame(c, slot) {
     var x = slot.x, y = slot.y, w = slot.w, h = slot.h;
@@ -160,26 +174,17 @@ function loadGlobalSettings() {
                 var img = new Image();
                 img.onload = function() { uploadedLogo = img; };
                 img.src = globalSettings.logo;
-                document.getElementById('settingsLogoText').textContent = 'Logo carregada';
-                document.getElementById('settingsRemoveLogo').classList.remove('hidden');
+                var slt = document.getElementById('settingsLogoText');
+                var slr = document.getElementById('settingsRemoveLogo');
+                if (slt) slt.textContent = 'Logo carregada';
+                if (slr) slr.classList.remove('hidden');
             }
-            if (globalSettings.bgPost) {
-                var imgP = new Image();
-                imgP.onload = function() { footballBgPost = imgP; };
-                imgP.src = globalSettings.bgPost;
-                document.getElementById('settingsBgPostText').textContent = 'Fundo Post carregado';
-                document.getElementById('settingsRemoveBgPost').classList.remove('hidden');
-            }
-            if (globalSettings.bgStory) {
-                var imgS = new Image();
-                imgS.onload = function() { footballBgStory = imgS; };
-                imgS.src = globalSettings.bgStory;
-                document.getElementById('settingsBgStoryText').textContent = 'Fundo Story carregado';
-                document.getElementById('settingsRemoveBgStory').classList.remove('hidden');
-            }
-            document.getElementById('settingsWhatsappNumber').value = globalSettings.whatsappNumber || '';
-            document.getElementById('settingsWhatsappText').value = globalSettings.whatsappText || 'Grupo VIP';
-            document.getElementById('settingsCtaText').value = globalSettings.ctaText || 'ASSINA JÁ';
+            var w1 = document.getElementById('settingsWhatsappNumber');
+            var w2 = document.getElementById('settingsWhatsappText');
+            var w3 = document.getElementById('settingsCtaText');
+            if (w1) w1.value = globalSettings.whatsappNumber || '';
+            if (w2) w2.value = globalSettings.whatsappText || 'Grupo VIP';
+            if (w3) w3.value = globalSettings.ctaText || 'ASSINA JÁ';
         }
     } catch (e) { console.error('Erro:', e); }
 }
@@ -223,52 +228,6 @@ document.getElementById('settingsRemoveLogo').addEventListener('click', function
     document.getElementById('settingsRemoveLogo').classList.add('hidden');
 });
 
-// Fundo Post
-document.getElementById('settingsBgPostInput').addEventListener('change', function(e) {
-    var file = e.target.files[0];
-    if (file) {
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-            globalSettings.bgPost = ev.target.result;
-            var img = new Image();
-            img.onload = function() { footballBgPost = img; };
-            img.src = ev.target.result;
-            document.getElementById('settingsBgPostText').textContent = file.name;
-            document.getElementById('settingsRemoveBgPost').classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-    }
-});
-document.getElementById('settingsRemoveBgPost').addEventListener('click', function() {
-    globalSettings.bgPost = null; footballBgPost = null;
-    document.getElementById('settingsBgPostInput').value = '';
-    document.getElementById('settingsBgPostText').textContent = 'Carregar fundo Post';
-    document.getElementById('settingsRemoveBgPost').classList.add('hidden');
-});
-
-// Fundo Story
-document.getElementById('settingsBgStoryInput').addEventListener('change', function(e) {
-    var file = e.target.files[0];
-    if (file) {
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-            globalSettings.bgStory = ev.target.result;
-            var img = new Image();
-            img.onload = function() { footballBgStory = img; };
-            img.src = ev.target.result;
-            document.getElementById('settingsBgStoryText').textContent = file.name;
-            document.getElementById('settingsRemoveBgStory').classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-    }
-});
-document.getElementById('settingsRemoveBgStory').addEventListener('click', function() {
-    globalSettings.bgStory = null; footballBgStory = null;
-    document.getElementById('settingsBgStoryInput').value = '';
-    document.getElementById('settingsBgStoryText').textContent = 'Carregar fundo Story';
-    document.getElementById('settingsRemoveBgStory').classList.add('hidden');
-});
-
 // ============================================
 // NAVIGATION
 // ============================================
@@ -280,7 +239,6 @@ function selectMode(mode) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     selectedContent = null;
     if (mode === 'movies') loadMoviesMode();
-    else if (mode === 'football') loadFootballMode();
     else if (mode === 'footballManual') loadFootballManualMode();
     else if (mode === 'video') loadVideoMode();
 }
@@ -308,210 +266,10 @@ function clearPreviousBanners() {
 }
 
 // ============================================
-// FOOTBALL MODE
+// FOOTBALL UTILS (compartilhados pelo modo Manual)
 // ============================================
-function loadFootballMode() {
-    canvas.classList.add('hidden');
-    videoContainer.classList.add('hidden');
-    clearPreviousBanners();
-
-    controlPanel.innerHTML = '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-green-400">&#9917; Futebol do Dia</h2><p class="text-zinc-500 text-sm mt-2">Banners com lista de jogos</p></header>' +
-        '<section class="mt-5"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Selecionar Data</label><input type="date" id="footballDate" value="' + getTodayDate() + '" class="bg-black border-2 border-zinc-800 p-4 text-white focus:outline-none focus:border-green-500 w-full rounded-lg" data-testid="football-date-input">' +
-        '<button id="footballSearchBtn" class="w-full mt-3 bg-green-500 hover:bg-green-400 text-white font-bold py-3 rounded-lg transition-all" data-testid="football-search-btn">BUSCAR JOGOS</button><div id="footballResults" class="mt-4"></div></section>' +
-        '<section id="footballControls" class="hidden flex flex-col gap-5 mt-5"><section class="flex flex-col gap-3"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label><div class="flex gap-2">' +
-        '<button id="footballFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white" data-testid="football-format-post">Post</button>' +
-        '<button id="footballFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800" data-testid="football-format-story">Story</button></div></section>' +
-        '<div class="flex gap-2"><button id="footballGenerateBtn" class="flex-1 bg-green-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-green-400 transition-all rounded-lg" data-testid="football-generate-btn">GERAR BANNERS</button>' +
-        '<button id="footballCopyBtn" class="flex-1 bg-purple-600 text-white font-bold uppercase tracking-widest py-4 hover:bg-purple-500 transition-all rounded-lg" data-testid="football-copy-btn">COPIAR INFO</button></div></section>';
-
-    setTimeout(function() {
-        document.getElementById('footballSearchBtn').addEventListener('click', searchFootballGames);
-        document.getElementById('footballDate').addEventListener('change', function() { document.getElementById('footballResults').innerHTML = ''; document.getElementById('footballControls').classList.add('hidden'); });
-    }, 100);
-
-    showPlaceholder('&#9917;', 'FUTEBOL', 'Selecione uma data e busque jogos', '#0a4d0a', '#001a00');
-}
-
 function getTodayDate() {
     return new Date().toISOString().split('T')[0];
-}
-
-async function searchFootballGames() {
-    var date = document.getElementById('footballDate').value;
-    var btn = document.getElementById('footballSearchBtn');
-    var resultsDiv = document.getElementById('footballResults');
-    if (!date) { alert('Selecione uma data'); return; }
-
-    var cacheKey = 'football_cache_' + date;
-    var cached = localStorage.getItem(cacheKey);
-    if (cached) {
-        try {
-            var cachedData = JSON.parse(cached);
-            var cacheAge = Date.now() - cachedData.timestamp;
-            if (cacheAge < 24 * 60 * 60 * 1000) {
-                var cacheHours = Math.floor(cacheAge / (1000 * 60 * 60));
-                resultsDiv.innerHTML = '<p class="text-green-400 text-sm p-3">Dados do cache local (salvo há ' + cacheHours + 'h)</p>';
-                displayFootballResults(cachedData.data, true);
-                return;
-            } else { localStorage.removeItem(cacheKey); }
-        } catch (e) { localStorage.removeItem(cacheKey); }
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner mx-auto"></div>';
-    resultsDiv.innerHTML = '<p class="text-zinc-500 text-sm p-3">Buscando jogos na API...</p>';
-
-    try {
-        var response = await fetch(API_BASE_URL + '/api/football/fixtures?date=' + date);
-        var data = await response.json();
-        btn.disabled = false;
-        btn.innerHTML = 'BUSCAR JOGOS';
-        if (!data.response || data.response.length === 0) {
-            resultsDiv.innerHTML = '<div class="border border-zinc-800 p-4 rounded-lg text-center"><p class="text-zinc-400 text-sm">Nenhum jogo encontrado para esta data</p></div>';
-            document.getElementById('footballControls').classList.add('hidden');
-            return;
-        }
-        localStorage.setItem(cacheKey, JSON.stringify({ data: data.response, timestamp: Date.now(), date: date }));
-        displayFootballResults(data.response, data.fromCache);
-    } catch (error) {
-        btn.disabled = false;
-        btn.innerHTML = 'BUSCAR JOGOS';
-        resultsDiv.innerHTML = '<div class="border border-red-500/30 bg-red-900/20 p-4 rounded-lg"><p class="text-red-400 text-sm">Erro ao buscar jogos</p><p class="text-xs text-zinc-500 mt-2">' + error.message + '</p></div>';
-        document.getElementById('footballControls').classList.add('hidden');
-    }
-}
-
-function displayFootballResults(games, fromCache) {
-    var resultsDiv = document.getElementById('footballResults');
-    var allowedLeagues = ['Brasileirão Série A','Serie A','Brasileirão Série B','Serie B','Copa do Brasil','Copa Libertadores','Copa Sul-Americana','Premier League','La Liga','Ligue 1','Bundesliga','UEFA Champions League','FIFA World Cup','World Cup'];
-
-    var filteredGames = games.filter(function(game) {
-        var ln = game.league.name;
-        if (ln.toLowerCase().includes('women') || ln.toLowerCase().includes('feminino') || ln.toLowerCase().includes('femenino')) return false;
-        if (ln.match(/u(\d+)|sub[\s-]?(\d+)|under[\s-]?(\d+)|youth/i)) return false;
-        return allowedLeagues.some(function(a) { return ln.includes(a) || a.includes(ln); });
-    });
-
-    filteredGames.sort(function(a, b) { return new Date(a.fixture.date).getTime() - new Date(b.fixture.date).getTime(); });
-
-    var cacheInfo = fromCache ? '<div class="bg-green-900/20 border border-green-500/30 p-2 rounded mb-3"><p class="text-green-400 text-xs text-center">Dados do cache (24h)</p></div>' : '<div class="bg-blue-900/20 border border-blue-500/30 p-2 rounded mb-3"><p class="text-blue-400 text-xs text-center">Dados atualizados da API</p></div>';
-
-    if (filteredGames.length === 0) {
-        resultsDiv.innerHTML = cacheInfo + '<div class="border border-zinc-800 p-4 rounded-lg text-center"><p class="text-zinc-400 text-sm">Nenhum jogo encontrado</p></div>';
-        return;
-    }
-
-    allFootballGames = filteredGames;
-    selectedDate = document.getElementById('footballDate').value;
-
-    resultsDiv.innerHTML = cacheInfo + '<div class="border border-green-500/30 bg-green-900/10 p-4 rounded-lg"><p class="text-green-400 text-sm font-semibold mb-2">' + filteredGames.length + ' jogo' + (filteredGames.length > 1 ? 's' : '') + ' encontrado' + (filteredGames.length > 1 ? 's' : '') + '!</p><ul class="text-zinc-300 text-xs space-y-1">' +
-        filteredGames.slice(0, 5).map(function(game) {
-            var time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            return '<li>- ' + game.teams.home.name + ' x ' + game.teams.away.name + ' - ' + time + '</li>';
-        }).join('') +
-        (filteredGames.length > 5 ? '<li class="text-zinc-500">... e mais ' + (filteredGames.length - 5) + ' jogo' + (filteredGames.length - 5 > 1 ? 's' : '') + '</li>' : '') +
-        '</ul></div>';
-
-    document.getElementById('footballControls').classList.remove('hidden');
-
-    setTimeout(function() {
-        document.getElementById('footballFormatPost').addEventListener('click', function() { currentFormat = 'post'; updateFootballFormatButtons(); });
-        document.getElementById('footballFormatStory').addEventListener('click', function() { currentFormat = 'story'; updateFootballFormatButtons(); });
-        document.getElementById('footballGenerateBtn').addEventListener('click', generateAllFootballBanners);
-        document.getElementById('footballCopyBtn').addEventListener('click', copyAllFootballGames);
-    }, 100);
-}
-
-function updateFootballFormatButtons() {
-    var postBtn = document.getElementById('footballFormatPost');
-    var storyBtn = document.getElementById('footballFormatStory');
-    if (currentFormat === 'post') {
-        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
-        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
-    } else {
-        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
-        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
-    }
-}
-
-// ============================================
-// GENERATE ALL BANNERS - MODIFIED: COVER FIRST
-// ============================================
-async function generateAllFootballBanners() {
-    if (!allFootballGames || allFootballGames.length === 0) { alert('Nenhum jogo encontrado!'); return; }
-
-    var btn = document.getElementById('footballGenerateBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner mx-auto"></div>';
-
-    try {
-        var isPost = currentFormat === 'post';
-        var gamesPerBanner = isPost ? 5 : 8;
-
-        clearPreviousBanners();
-        var container = document.getElementById('bannersContainer');
-
-        // Load all logos
-        var gamesWithLogos = await Promise.all(allFootballGames.map(async function(game) {
-            try {
-                var results = await Promise.all([loadImage(game.teams.home.logo), loadImage(game.teams.away.logo)]);
-                return Object.assign({}, game, { homeLogoImg: results[0], awayLogoImg: results[1] });
-            } catch (e) { return game; }
-        }));
-
-        // Extract unique leagues for cover
-        var uniqueLeagues = [];
-        var seenLeagues = {};
-        for (var g = 0; g < allFootballGames.length; g++) {
-            var lid = allFootballGames[g].league.id;
-            if (!seenLeagues[lid]) {
-                seenLeagues[lid] = true;
-                uniqueLeagues.push({ name: allFootballGames[g].league.name, logo: allFootballGames[g].league.logo, country: allFootballGames[g].league.country });
-            }
-        }
-
-        var totalGameBanners = Math.ceil(gamesWithLogos.length / gamesPerBanner);
-        var totalBanners = 1 + totalGameBanners;
-
-        // BANNER 1: COVER (no games, just info)
-        var coverCanvas = document.createElement('canvas');
-        coverCanvas.className = 'canvas-glow max-w-full h-auto rounded-lg mx-auto mb-4';
-        coverCanvas.id = 'footballBannerCover';
-        var coverDlBtn = document.createElement('button');
-        coverDlBtn.className = 'w-full max-w-md mx-auto bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-6 rounded-lg mb-8 flex items-center justify-center gap-2';
-        coverDlBtn.innerHTML = 'BAIXAR CAPA (1 de ' + totalBanners + ')';
-        coverDlBtn.onclick = function() { downloadBanner(coverCanvas, 'capa'); };
-        container.appendChild(coverCanvas);
-        container.appendChild(coverDlBtn);
-        await generateFootballCoverBanner(coverCanvas, uniqueLeagues, totalBanners);
-
-        // BANNERS 2+: GAMES
-        for (var i = 0; i < totalGameBanners; i++) {
-            var startIdx = i * gamesPerBanner;
-            var endIdx = Math.min(startIdx + gamesPerBanner, gamesWithLogos.length);
-            var bannerGames = gamesWithLogos.slice(startIdx, endIdx);
-
-            var canvasEl = document.createElement('canvas');
-            canvasEl.className = 'canvas-glow max-w-full h-auto rounded-lg mx-auto mb-4';
-            canvasEl.id = 'footballBanner' + (i + 2);
-            var dlBtn = document.createElement('button');
-            dlBtn.className = 'w-full max-w-md mx-auto bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-6 rounded-lg mb-8 flex items-center justify-center gap-2';
-            dlBtn.innerHTML = 'BAIXAR BANNER ' + (i + 2) + ' de ' + totalBanners;
-            (function(ce, idx) { dlBtn.onclick = function() { downloadBanner(ce, idx + 2); }; })(canvasEl, i);
-            container.appendChild(canvasEl);
-            container.appendChild(dlBtn);
-            await generateFootballListBannerModern(canvasEl, bannerGames, i + 2, totalBanners);
-        }
-
-        btn.disabled = false;
-        btn.innerHTML = 'GERAR BANNERS';
-        alert(totalBanners + ' banner' + (totalBanners > 1 ? 's' : '') + ' gerado' + (totalBanners > 1 ? 's' : '') + ' com sucesso!');
-    } catch (error) {
-        console.error('Erro ao gerar banners:', error);
-        alert('Erro ao gerar banners: ' + error.message);
-        btn.disabled = false;
-        btn.innerHTML = 'GERAR BANNERS';
-    }
 }
 
 // ============================================
@@ -558,6 +316,8 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
             cvsP.textAlign = 'center';
             cvsP.fillText('CAPA INDISPONÍVEL', width/2, height/2);
         }
+        // Logo no canto superior direito
+        drawTopRightLogo(cvsP, width);
         return;
     }
 
@@ -833,6 +593,9 @@ async function generateFootballListBannerModern(canvasEl, games, bannerNum, tota
             c.textAlign = 'center';
             c.fillText('FUNDO INDISPONÍVEL', width/2, height/2);
         }
+
+        // Logo no canto superior direito
+        drawTopRightLogo(c, width);
 
         // Mapeia jogos: desenha 1 retângulo decorativo + dados por jogo (até 5)
         var slots = computeSlotPositions(games.length);
@@ -1267,7 +1030,8 @@ function loadFootballManualMode() {
         '<section class="flex flex-col gap-3 mt-5"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label><div class="flex gap-2">' +
         '<button id="manualFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white" data-testid="manual-format-post">Post</button>' +
         '<button id="manualFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800" data-testid="manual-format-story">Story</button></div></section>' +
-        '<button id="manualGenerateBtn" class="w-full mt-4 bg-green-500 hover:bg-green-400 text-white font-bold uppercase tracking-widest py-4 rounded-lg transition-all" data-testid="manual-generate-btn">GERAR BANNERS</button>';
+        '<button id="manualGenerateBtn" class="w-full mt-4 bg-green-500 hover:bg-green-400 text-white font-bold uppercase tracking-widest py-4 rounded-lg transition-all" data-testid="manual-generate-btn">GERAR BANNERS</button>' +
+        '<button id="manualCopyBtn" class="w-full mt-2 bg-purple-600 hover:bg-purple-500 text-white font-bold uppercase tracking-widest py-3 rounded-lg transition-all" data-testid="manual-copy-btn">COPIAR INFORMAÇÕES</button>';
 
     manualGames = [];
     manualGameIdCounter = 0;
@@ -1275,6 +1039,7 @@ function loadFootballManualMode() {
     setTimeout(function() {
         document.getElementById('manualAddGameBtn').addEventListener('click', addManualGame);
         document.getElementById('manualGenerateBtn').addEventListener('click', generateManualBanners);
+        document.getElementById('manualCopyBtn').addEventListener('click', copyAllFootballGames);
         document.getElementById('manualFormatPost').addEventListener('click', function() { currentFormat = 'post'; updateManualFormatButtons(); });
         document.getElementById('manualFormatStory').addEventListener('click', function() { currentFormat = 'story'; updateManualFormatButtons(); });
         addManualGame();
@@ -1546,14 +1311,14 @@ function downloadBanner(canvasEl, num) {
 }
 
 function copyAllFootballGames() {
-    if (!allFootballGames || allFootballGames.length === 0) { alert('Nenhum jogo encontrado!'); return; }
+    if (!allFootballGames || allFootballGames.length === 0) { alert('Nenhum jogo para copiar! Gere os banners primeiro.'); return; }
     var dateFormatted = new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
     var text = '*JOGOS DE ' + dateFormatted.toUpperCase() + '*\n\n';
     allFootballGames.forEach(function(game) {
         var league = game.league.name;
         var emoji = getLeagueEmoji(league);
         var time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        var broadcaster = getBroadcaster(league);
+        var broadcaster = game.manualBroadcaster || getBroadcaster(league);
         text += emoji + ' *' + league + '* - ' + time + '\n' + game.teams.home.name + ' x ' + game.teams.away.name + '\n' + broadcaster + '\n\n';
     });
     text += 'Total: ' + allFootballGames.length + ' jogo' + (allFootballGames.length > 1 ? 's' : '') + '\nOs canais podem sofrer altera\u00E7\u00E3o de \u00FAltima hora';

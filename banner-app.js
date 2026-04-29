@@ -967,7 +967,7 @@ var TEAM_FILES = [
     'Atletico_River_Plate.png','Audax.png','Barracas_Central.png','Boston_River.png','Carabobo_FC.png','Caracas.png',
     'Cienciano.png','Club_Blooming.png','Club_Deportivo_Cuenca.png','CSD_Macara.png','Deportivo_Palestino.png',
     'Deportivo_Riestra.png','Higgins_F.C..png','Independiente.png','Juventud_de_Las_Piedras.png','Millonarios_F.C..png',
-    'Montevideo_City_Torque.png','Olimpia.png','Recoleta.png','San_Lorenzo.png','Tigre.png','Racing_Club.png'
+    'Montevideo_City_Torque.png','Olimpia.png','Recoleta.png','San_Lorenzo.png','Tigre.png','Racing_Club.png','C.D._Tondela.png'
 ];
 var TEAMS_LIST = TEAM_FILES.map(function(f) {
     return { file: f, name: f.replace('.png', '').replace(/_/g, ' ') };

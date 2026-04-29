@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="Banner Generator Pro - Futebol, Filmes e Vídeos" />
     <title>Banner Generator Pro</title>
-    <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
+    <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()},true);</script>
     <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,22 +64,6 @@
                     <button id="settingsRemoveLogo" class="mt-2 text-xs text-red-500 hover:text-red-400 transition-colors hidden">✕ Remover logo</button>
                 </section>
                 <section class="border border-zinc-800 rounded-lg p-5">
-                    <label class="text-sm font-semibold text-zinc-300 mb-3 block">Fundo Banner Futebol - Post (1030x1350)</label>
-                    <label class="border border-dashed border-zinc-700 p-4 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg">
-                        <span id="settingsBgPostText" class="text-sm text-zinc-400">Carregar fundo Post</span>
-                        <input type="file" id="settingsBgPostInput" accept="image/*" class="hidden" data-testid="settings-bg-post-input">
-                    </label>
-                    <button id="settingsRemoveBgPost" class="mt-2 text-xs text-red-500 hover:text-red-400 transition-colors hidden">✕ Remover</button>
-                </section>
-                <section class="border border-zinc-800 rounded-lg p-5">
-                    <label class="text-sm font-semibold text-zinc-300 mb-3 block">Fundo Banner Futebol - Story (1080x1920)</label>
-                    <label class="border border-dashed border-zinc-700 p-4 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg">
-                        <span id="settingsBgStoryText" class="text-sm text-zinc-400">Carregar fundo Story</span>
-                        <input type="file" id="settingsBgStoryInput" accept="image/*" class="hidden" data-testid="settings-bg-story-input">
-                    </label>
-                    <button id="settingsRemoveBgStory" class="mt-2 text-xs text-red-500 hover:text-red-400 transition-colors hidden">✕ Remover</button>
-                </section>
-                <section class="border border-zinc-800 rounded-lg p-5">
                     <label class="text-sm font-semibold text-zinc-300 mb-3 block">Número do WhatsApp</label>
                     <input type="tel" id="settingsWhatsappNumber" placeholder="(00) 00000-0000" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-green-500 w-full rounded-lg" data-testid="settings-whatsapp-input">
                 </section>
@@ -108,19 +92,12 @@
                 </h1>
                 <p class="text-zinc-500 text-xl">Escolha o tipo de banner que deseja criar</p>
             </header>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <div class="box-selector bg-gradient-to-br from-green-900/20 to-zinc-900 border-2 border-green-500/30 rounded-2xl p-8 hover:border-green-500" onclick="selectMode('football')" data-testid="football-mode-btn">
-                    <div class="text-center">
-                        <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">&#9917;</div>
-                        <h3 class="font-oswald text-2xl font-bold mb-3">Futebol do Dia</h3>
-                        <p class="text-zinc-400 text-sm mb-6">Gere banners para jogos de futebol</p>
-                    </div>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="box-selector bg-gradient-to-br from-emerald-900/20 to-zinc-900 border-2 border-emerald-500/30 rounded-2xl p-8 hover:border-emerald-500" onclick="selectMode('footballManual')" data-testid="football-manual-mode-btn">
                     <div class="text-center">
-                        <div class="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">&#9997;</div>
-                        <h3 class="font-oswald text-2xl font-bold mb-3">Futebol Manual</h3>
-                        <p class="text-zinc-400 text-sm mb-6">Adicione jogos manualmente</p>
+                        <div class="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">&#9917;</div>
+                        <h3 class="font-oswald text-2xl font-bold mb-3">Futebol</h3>
+                        <p class="text-zinc-400 text-sm mb-6">Adicione jogos manualmente e gere os banners</p>
                     </div>
                 </div>
                 <div class="box-selector bg-gradient-to-br from-red-900/20 to-zinc-900 border-2 border-red-500/30 rounded-2xl p-8 hover:border-red-500" onclick="selectMode('movies')" data-testid="movies-mode-btn">

@@ -145,21 +145,26 @@ let footballBgStory = null;
 let allFootballGames = [];
 let selectedDate = '';
 
+// ============================================
+// LIGAS E TRANSMISSÕES (ATUALIZADAS)
+// ============================================
+// Mapa nome-de-exibição -> transmissão (usado pelo modo automático/fallback)
 const leagueBroadcasters = {
-    'Brasileirão Série A': 'Globo / SporTV / Premiere / Prime Video / CazéTV',
-    'Serie A': 'Globo / SporTV / Premiere / Prime Video / CazéTV',
-    'Brasileirão Série B': 'ESPN / Disney+ / SporTV',
-    'Serie B': 'ESPN / Disney+ / SporTV',
-    'Copa do Brasil': 'Globo / SporTV / Premiere',
-    'Copa Libertadores': 'Globo / ESPN / Disney+ / Paramount+',
-    'Copa Sul-Americana': 'ESPN / Disney+ / Paramount+',
+    'Brasileirão Betano': 'Globo / SporTV / Premiere / Prime Video / CazéTV',
+    'Brasileirão Série B Superbet': 'ESPN / Disney+ / SporTV',
+    'Copa Betano do Brasil': 'Globo / SporTV / Premiere / Prime Video',
+    'CONMEBOL Libertadores': 'Globo / ESPN / Disney+ / Paramount+',
+    'CONMEBOL Sudamericana': 'ESPN / Disney+ / Paramount+',
+    'Copa do Mundo FIFA': 'Globo / SporTV / CazéTV',
+    'UEFA Liga dos Campeões': 'SBT / TNT Sports / HBO Max',
+    'UEFA Liga Europa': 'ESPN / Star+',
     'Premier League': 'ESPN / Star+',
-    'La Liga': 'ESPN / Star+',
+    'LaLiga': 'ESPN / Star+',
+    'Bundesliga': 'OneFootball / YouTube / SporTV',
     'Ligue 1': 'CazéTV / Prime Video',
-    'Bundesliga': 'OneFootball / YouTube',
-    'UEFA Champions League': 'SBT / TNT Sports / HBO Max',
-    'FIFA World Cup': 'Globo / SporTV / CazéTV',
-    'World Cup': 'Globo / SporTV / CazéTV'
+    'Serie A': 'ESPN / Star+',
+    'Liga Portugal': 'ESPN / Star+',
+    'Supercopa do Brasil': 'Globo'
 };
 
 // ============================================
@@ -464,17 +469,23 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
 
     y += 75;
 
+    // Ícones de ligas (mantemos arquivos existentes em /ligue/, mas com nomes atualizados)
     var localLeagueIcons = [
-        { path: '/ligue/Campeonato_Brasileiro_Serie_A.png', name: 'Brasileirão Série A' },
-        { path: '/ligue/Campeonato_Brasileiro_Srrie_B.png', name: 'Brasileirão Série B' },
-        { path: '/ligue/Copa_Libertadores.png', name: 'Copa Libertadores' },
-        { path: '/ligue/Premier_League.png', name: 'Premier League' },
-        { path: '/ligue/La_Liga.png', name: 'La Liga' },
-        { path: '/ligue/Bundesliga.png', name: 'Bundesliga' },
-        { path: '/ligue/Ligue_1.png', name: 'Ligue 1' },
-        { path: '/ligue/UEFA_Champions_League.png', name: 'Champions League' },
-        { path: '/ligue/Copa_do_Mundo_FIFA.png', name: 'Copa do Mundo' },
-        { path: '/ligue/Amistosos_Internacionais.png', name: 'Amistosos' }
+        { path: '/ligue/Campeonato_Brasileiro_Serie_A.png', name: 'Brasileirão Betano' },
+        { path: '/ligue/Campeonato_Brasileiro_Srrie_B.png', name: 'Brasileirão Série B Superbet' },
+        { path: '/ligue/Copa_do_Brasil.png',                name: 'Copa Betano do Brasil' },
+        { path: '/ligue/Copa_Libertadores.png',             name: 'CONMEBOL Libertadores' },
+        { path: '/ligue/Copa_Sul_Americana.png',            name: 'CONMEBOL Sudamericana' },
+        { path: '/ligue/Premier_League.png',                name: 'Premier League' },
+        { path: '/ligue/La_Liga.png',                       name: 'LaLiga' },
+        { path: '/ligue/Bundesliga.png',                    name: 'Bundesliga' },
+        { path: '/ligue/Ligue_1.png',                       name: 'Ligue 1' },
+        { path: '/ligue/Serie_A.png',                       name: 'Serie A' },
+        { path: '/ligue/Liga_Portugal.png',                 name: 'Liga Portugal' },
+        { path: '/ligue/UEFA_Champions_League.png',         name: 'UEFA Liga dos Campeões' },
+        { path: '/ligue/UEFA_Europa_League.png',            name: 'UEFA Liga Europa' },
+        { path: '/ligue/Copa_do_Mundo_FIFA.png',            name: 'Copa do Mundo FIFA' },
+        { path: '/ligue/Supercopa_do_Brasil.png',           name: 'Supercopa do Brasil' }
     ];
 
     var leagueLogos = await Promise.all(localLeagueIcons.map(async function(item) {
@@ -1044,42 +1055,50 @@ function loadFootballManualMode() {
     showPlaceholder('&#9997;', 'MANUAL', 'Adicione jogos manualmente', '#0a4d0a', '#001a00');
 }
 
+// ============================================
+// MAPEAMENTOS DE LIGA -> TRANSMISSÃO PADRÃO (modo manual)
+// chave da liga (key interna) -> chave da transmissão (key interna)
+// ============================================
 var leagueToBroadcaster = {
-    'Campeonato_Brasileiro_Serie_A': 'globo_sportv_premiere_prime_cazetv',
-    'Campeonato_Brasileiro_Srrie_B': 'espn_disney_sportv',
-    'Copa_do_Brasil': 'globo_sportv_premiere',
-    'Copa_Libertadores': 'globo_espn_disney_paramount',
-    'Premier_League': 'espn_star',
-    'La_Liga': 'espn_star',
-    'Bundesliga': 'onefootball_youtube',
-    'Ligue_1': 'cazetv_prime',
-    'UEFA_Champions_League': 'sbt_tnt_hbo',
-    'Copa_do_Mundo_FIFA': 'globo_sportv_cazetv',
-    'Amistosos_Internacionais': 'sportv'
+    'Brasileirao_Betano':            'globo_sportv_premiere_prime_cazetv',
+    'Brasileirao_Serie_B_Superbet':  'espn_disney_sportv',
+    'Copa_Betano_do_Brasil':         'globo_sportv_premiere_prime',
+    'CONMEBOL_Libertadores':         'globo_espn_disney_paramount',
+    'CONMEBOL_Sudamericana':         'espn_disney_paramount',
+    'Copa_do_Mundo_FIFA':            'globo_sportv_cazetv',
+    'UEFA_Liga_dos_Campeoes':        'sbt_tnt_hbo',
+    'UEFA_Liga_Europa':              'espn_star',
+    'Premier_League':                'espn_star',
+    'LaLiga':                        'espn_star',
+    'Bundesliga':                    'onefootball_youtube_sportv',
+    'Ligue_1':                       'cazetv_prime',
+    'Serie_A':                       'espn_star',
+    'Liga_Portugal':                 'espn_star',
+    'Supercopa_do_Brasil':           'globo'
 };
 
 function addManualGame() {
     var id = manualGameIdCounter++;
-    var defaultBroadcaster = leagueToBroadcaster['Campeonato_Brasileiro_Serie_A'];
-    manualGames.push({ id: id, homeName: '', awayName: '', homeLogo: null, awayLogo: null, league: 'Campeonato_Brasileiro_Serie_A', time: '20:00', broadcaster: defaultBroadcaster });
+    var defaultBroadcaster = leagueToBroadcaster['Brasileirao_Betano'];
+    manualGames.push({ id: id, homeName: '', awayName: '', homeLogo: null, awayLogo: null, league: 'Brasileirao_Betano', time: '20:00', broadcaster: defaultBroadcaster });
     var container = document.getElementById('manualGamesList');
     var gameDiv = document.createElement('div');
     gameDiv.id = 'manualGame_' + id;
     gameDiv.className = 'border border-zinc-800 rounded-lg p-4 bg-black/30';
 
     var broadcasterOptions =
-        '<option value="globo_sportv_premiere_prime_cazetv">Globo / SporTV / Premiere / Prime / Caz\u00E9TV</option>' +
-        '<option value="globo_sportv_premiere">Globo / SporTV / Premiere</option>' +
+        '<option value="globo_sportv_premiere_prime_cazetv">Globo / SporTV / Premiere / Prime Video / Caz\u00E9TV</option>' +
+        '<option value="globo_sportv_premiere_prime">Globo / SporTV / Premiere / Prime Video</option>' +
         '<option value="espn_disney_sportv">ESPN / Disney+ / SporTV</option>' +
         '<option value="globo_espn_disney_paramount">Globo / ESPN / Disney+ / Paramount+</option>' +
-        '<option value="espn_star">ESPN / Star+</option>' +
         '<option value="espn_disney_paramount">ESPN / Disney+ / Paramount+</option>' +
-        '<option value="onefootball_youtube">OneFootball / YouTube</option>' +
+        '<option value="espn_star">ESPN / Star+</option>' +
+        '<option value="onefootball_youtube_sportv">OneFootball / YouTube / SporTV</option>' +
         '<option value="cazetv_prime">Caz\u00E9TV / Prime Video</option>' +
         '<option value="sbt_tnt_hbo">SBT / TNT Sports / HBO Max</option>' +
         '<option value="globo_sportv_cazetv">Globo / SporTV / Caz\u00E9TV</option>' +
+        '<option value="globo">Globo</option>' +
         '<option value="sportv">SporTV</option>' +
-        '<option value="globo_premiere">Globo / Premiere</option>' +
         '<option value="band">Band</option>' +
         '<option value="record">Record</option>';
 
@@ -1112,17 +1131,21 @@ function addManualGame() {
         '</div>' +
         '</div>' +
         '<div class="mb-3 min-w-0"><label class="text-xs text-zinc-400 block mb-1">Liga</label><select class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer box-border min-w-0 truncate" onchange="onManualLeagueChange(' + id + ',this.value)" data-testid="manual-league-' + id + '">' +
-        '<option value="Campeonato_Brasileiro_Serie_A">Brasileir\u00E3o S\u00E9rie A</option>' +
-        '<option value="Campeonato_Brasileiro_Srrie_B">Brasileir\u00E3o S\u00E9rie B</option>' +
-        '<option value="Copa_do_Brasil">Copa do Brasil</option>' +
-        '<option value="Copa_Libertadores">Copa Libertadores</option>' +
+        '<option value="Brasileirao_Betano">Brasileir\u00E3o Betano</option>' +
+        '<option value="Brasileirao_Serie_B_Superbet">Brasileir\u00E3o S\u00E9rie B Superbet</option>' +
+        '<option value="Copa_Betano_do_Brasil">Copa Betano do Brasil</option>' +
+        '<option value="CONMEBOL_Libertadores">CONMEBOL Libertadores</option>' +
+        '<option value="CONMEBOL_Sudamericana">CONMEBOL Sudamericana</option>' +
+        '<option value="Copa_do_Mundo_FIFA">Copa do Mundo FIFA</option>' +
+        '<option value="UEFA_Liga_dos_Campeoes">UEFA Liga dos Campe\u00F5es</option>' +
+        '<option value="UEFA_Liga_Europa">UEFA Liga Europa</option>' +
         '<option value="Premier_League">Premier League</option>' +
-        '<option value="La_Liga">La Liga</option>' +
+        '<option value="LaLiga">LaLiga</option>' +
         '<option value="Bundesliga">Bundesliga</option>' +
         '<option value="Ligue_1">Ligue 1</option>' +
-        '<option value="UEFA_Champions_League">UEFA Champions League</option>' +
-        '<option value="Copa_do_Mundo_FIFA">Copa do Mundo FIFA</option>' +
-        '<option value="Amistosos_Internacionais">Amistosos Internacionais</option>' +
+        '<option value="Serie_A">Serie A</option>' +
+        '<option value="Liga_Portugal">Liga Portugal</option>' +
+        '<option value="Supercopa_do_Brasil">Supercopa do Brasil</option>' +
         '</select></div>' +
         '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div class="min-w-0"><label class="text-xs text-zinc-400 block mb-1">Horario</label><input type="time" value="20:00" class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 box-border min-w-0 appearance-none" oninput="updateManualGame(' + id + ',\'time\',this.value)"></div>' +
         '<div class="min-w-0"><label class="text-xs text-zinc-400 block mb-1">Transmissao</label><select id="manualBroadcaster_' + id + '" class="bg-black border border-zinc-800 p-2 text-white text-sm w-full rounded focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer box-border min-w-0 truncate" onchange="updateManualGame(' + id + ',\'broadcaster\',this.value)" data-testid="manual-broadcaster-' + id + '">' + broadcasterOptions + '</select></div></div>';
@@ -1199,35 +1222,42 @@ async function generateManualBanners() {
     var isPost = currentFormat === 'post';
     var gamesPerBanner = isPost ? 5 : 8;
 
+    // ============================================
+    // NOMES DE EXIBIÇÃO ATUALIZADOS
+    // ============================================
     var leagueDisplayNames = {
-        'Campeonato_Brasileiro_Serie_A': 'Brasileirão Série A',
-        'Campeonato_Brasileiro_Srrie_B': 'Brasileirão Série B',
-        'Copa_do_Brasil': 'Copa do Brasil',
-        'Copa_Libertadores': 'Copa Libertadores',
-        'Premier_League': 'Premier League',
-        'La_Liga': 'La Liga',
-        'Bundesliga': 'Bundesliga',
-        'Ligue_1': 'Ligue 1',
-        'UEFA_Champions_League': 'UEFA Champions League',
-        'Copa_do_Mundo_FIFA': 'Copa do Mundo FIFA',
-        'Amistosos_Internacionais': 'Amistosos Internacionais'
+        'Brasileirao_Betano':            'Brasileirão Betano',
+        'Brasileirao_Serie_B_Superbet':  'Brasileirão Série B Superbet',
+        'Copa_Betano_do_Brasil':         'Copa Betano do Brasil',
+        'CONMEBOL_Libertadores':         'CONMEBOL Libertadores',
+        'CONMEBOL_Sudamericana':         'CONMEBOL Sudamericana',
+        'Copa_do_Mundo_FIFA':            'Copa do Mundo FIFA',
+        'UEFA_Liga_dos_Campeoes':        'UEFA Liga dos Campeões',
+        'UEFA_Liga_Europa':              'UEFA Liga Europa',
+        'Premier_League':                'Premier League',
+        'LaLiga':                        'LaLiga',
+        'Bundesliga':                    'Bundesliga',
+        'Ligue_1':                       'Ligue 1',
+        'Serie_A':                       'Serie A',
+        'Liga_Portugal':                 'Liga Portugal',
+        'Supercopa_do_Brasil':           'Supercopa do Brasil'
     };
 
     var broadcasterDisplayNames = {
-        'globo_sportv_premiere_prime_cazetv': 'Globo / SporTV / Premiere / Prime / CazéTV',
-        'globo_sportv_premiere': 'Globo / SporTV / Premiere',
-        'espn_disney_sportv': 'ESPN / Disney+ / SporTV',
-        'globo_espn_disney_paramount': 'Globo / ESPN / Disney+ / Paramount+',
-        'espn_star': 'ESPN / Star+',
-        'espn_disney_paramount': 'ESPN / Disney+ / Paramount+',
-        'onefootball_youtube': 'OneFootball / YouTube',
-        'cazetv_prime': 'CazéTV / Prime Video',
-        'sbt_tnt_hbo': 'SBT / TNT Sports / HBO Max',
-        'globo_sportv_cazetv': 'Globo / SporTV / CazéTV',
-        'sportv': 'SporTV',
-        'globo_premiere': 'Globo / Premiere',
-        'band': 'Band',
-        'record': 'Record'
+        'globo_sportv_premiere_prime_cazetv': 'Globo / SporTV / Premiere / Prime Video / CazéTV',
+        'globo_sportv_premiere_prime':        'Globo / SporTV / Premiere / Prime Video',
+        'espn_disney_sportv':                 'ESPN / Disney+ / SporTV',
+        'globo_espn_disney_paramount':        'Globo / ESPN / Disney+ / Paramount+',
+        'espn_disney_paramount':              'ESPN / Disney+ / Paramount+',
+        'espn_star':                          'ESPN / Star+',
+        'onefootball_youtube_sportv':         'OneFootball / YouTube / SporTV',
+        'cazetv_prime':                       'CazéTV / Prime Video',
+        'sbt_tnt_hbo':                        'SBT / TNT Sports / HBO Max',
+        'globo_sportv_cazetv':                'Globo / SporTV / CazéTV',
+        'globo':                              'Globo',
+        'sportv':                             'SporTV',
+        'band':                               'Band',
+        'record':                             'Record'
     };
 
     var gamesForBanner = validGames.map(function(g) {
@@ -1287,8 +1317,12 @@ async function generateManualBanners() {
 }
 
 function getBroadcaster(leagueName) {
+    if (!leagueName) return 'Verifique a programa\u00E7\u00E3o';
+    // tenta match exato primeiro
+    if (leagueBroadcasters[leagueName]) return leagueBroadcasters[leagueName];
+    // depois tenta match parcial (inclui)
     for (var key in leagueBroadcasters) {
-        if (leagueName.includes(key)) return leagueBroadcasters[key];
+        if (leagueName.indexOf(key) !== -1) return leagueBroadcasters[key];
     }
     return 'Verifique a programa\u00E7\u00E3o';
 }
@@ -1322,8 +1356,25 @@ function copyAllFootballGames() {
 }
 
 function getLeagueEmoji(leagueName) {
-    var map = { 'Premier League': '👑', 'Copa Libertadores': '🏆', 'Copa Sul-Americana': '🥉', 'Copa do Brasil': '🏅', 'Brasileirão Série A': '🇧🇷', 'Serie A': '🇧🇷', 'Brasileirão Série B': '📈', 'Serie B': '📈', 'La Liga': '🇪🇸', 'Ligue 1': '🇫🇷', 'Bundesliga': '🇩🇪', 'UEFA Champions League': '⭐', 'FIFA World Cup': '🌍', 'World Cup': '🌍' };
-    for (var key in map) { if (leagueName.includes(key)) return map[key]; }
+    var map = {
+        'Brasileirão Betano': '🇧🇷',
+        'Brasileirão Série B Superbet': '📈',
+        'Copa Betano do Brasil': '🏅',
+        'CONMEBOL Libertadores': '🏆',
+        'CONMEBOL Sudamericana': '🥉',
+        'Copa do Mundo FIFA': '🌍',
+        'UEFA Liga dos Campeões': '⭐',
+        'UEFA Liga Europa': '🟠',
+        'Premier League': '👑',
+        'LaLiga': '🇪🇸',
+        'Bundesliga': '🇩🇪',
+        'Ligue 1': '🇫🇷',
+        'Serie A': '🇮🇹',
+        'Liga Portugal': '🇵🇹',
+        'Supercopa do Brasil': '🏆'
+    };
+    if (map[leagueName]) return map[leagueName];
+    for (var key in map) { if (leagueName.indexOf(key) !== -1) return map[key]; }
     return '⚽';
 }
 

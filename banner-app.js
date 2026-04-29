@@ -962,7 +962,7 @@ var TEAM_FILES = [
     'Republica_Democratica-do_Congo.png','Royale_Union_Saint_Gilloise.png','Senegal.png','Slavia_Praga.png',
     'Sporting_Cristal.png','Sporting_Portugal.png','Stade_Brestois_29.png','Stade_Rennais.png','Suecia.png','Suica.png',
     'Sunderland_AFC.png','Tchequia.png','Toulouse_FC.png','Tunísia.png','Turquia.png','UCV_FC.png',
-    'Universidad_Catolica.png','Universitario.png','Uruguai.png','USA.png','Uzbequistao.png','Werder_Bremen.png'
+    'Universidad_Catolica.png','Universitario.png','Uruguai.png','USA.png','Uzbequistao.png','Werder_Bremen.png','Club_Nacional_de_Football.png'
 ];
 var TEAMS_LIST = TEAM_FILES.map(function(f) {
     return { file: f, name: f.replace('.png', '').replace(/_/g, ' ') };

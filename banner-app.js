@@ -811,7 +811,10 @@ async function generateFootballListBannerModern(canvasEl, games, bannerNum, tota
 
 // ============================================
 // DESENHA UM JOGO DENTRO DE UM SLOT (template fundo.png)
-// Layout: [logo][nome casa] [LIGA / HORA / TRANSMISSÃO] [nome fora][logo]
+// Layout (por bloco lateral):
+//   [LOGO]
+//   [NOME DO TIME]
+// Centro: [LIGA / HORA / TRANSMISSÃO]
 // Slot esperado: 972 x 130
 // ============================================
 function drawGameInSlot(c, game, slot) {
@@ -823,47 +826,41 @@ function drawGameInSlot(c, game, slot) {
     var awayName = (game.teams && game.teams.away && game.teams.away.name) ? game.teams.away.name.toUpperCase() : '';
 
     var sx = slot.x, sy = slot.y, sw = slot.w, sh = slot.h;
-    var cy = sy + sh / 2;
 
-    // Logos: 80x80 nas pontas
-    var logoSize = 80;
-    var sideMargin = 26;
-    var homeLogoX = sx + sideMargin;
-    var awayLogoX = sx + sw - sideMargin - logoSize;
-    var logoY = cy - logoSize / 2;
+    // Áreas laterais (bloco home / away) e central
+    var sideBlockW = 280;        // largura do bloco lateral (logo + nome)
+    var sideMargin = 20;         // margem lateral interna
+    var logoSize = 58;
+    var logoTopY = sy + 10;
 
+    // Centros horizontais dos blocos laterais
+    var homeBlockCx = sx + sideMargin + sideBlockW / 2;
+    var awayBlockCx = sx + sw - sideMargin - sideBlockW / 2;
+
+    // Logos no TOPO, centralizadas no bloco
     if (game.homeLogoImg) {
-        try { c.drawImage(game.homeLogoImg, homeLogoX, logoY, logoSize, logoSize); } catch(e) {}
+        try { c.drawImage(game.homeLogoImg, homeBlockCx - logoSize / 2, logoTopY, logoSize, logoSize); } catch(e) {}
     }
     if (game.awayLogoImg) {
-        try { c.drawImage(game.awayLogoImg, awayLogoX, logoY, logoSize, logoSize); } catch(e) {}
+        try { c.drawImage(game.awayLogoImg, awayBlockCx - logoSize / 2, logoTopY, logoSize, logoSize); } catch(e) {}
     }
 
-    // Nomes dos times (centralizados verticalmente ao lado dos logos)
-    var nameMaxW = 230;
-    c.font = '700 22px Manrope, sans-serif';
+    // Nomes dos times EMBAIXO da logo, centralizados (largura total do bloco disponível)
+    var nameMaxW = sideBlockW - 12;
+    var nameBaselineY = sy + sh - 16;
+    c.textAlign = 'center';
+    c.font = '700 18px Manrope, sans-serif';
     c.fillStyle = '#ffffff';
-    c.shadowColor = 'rgba(0,0,0,0.85)';
+    c.shadowColor = 'rgba(0,0,0,0.9)';
     c.shadowBlur = 4;
-
-    // Home name (à direita do logo casa)
-    var homeNameX = homeLogoX + logoSize + 14;
-    c.textAlign = 'left';
-    c.textBaseline = 'middle';
-    c.fillText(fitTextToWidth(c, homeName, nameMaxW), homeNameX, cy);
-
-    // Away name (à esquerda do logo fora, alinhado à direita)
-    var awayNameRightX = awayLogoX - 14;
-    c.textAlign = 'right';
-    c.fillText(fitTextToWidth(c, awayName, nameMaxW), awayNameRightX, cy);
-
+    c.fillText(fitTextToWidth(c, homeName, nameMaxW), homeBlockCx, nameBaselineY);
+    c.fillText(fitTextToWidth(c, awayName, nameMaxW), awayBlockCx, nameBaselineY);
     c.shadowBlur = 0;
-    c.textBaseline = 'alphabetic';
 
     // ÁREA CENTRAL: liga (topo), hora (meio), transmissão (base)
     var centerX = sx + sw / 2;
-    var centerMaxW = sw - 2 * (sideMargin + logoSize + 14 + nameMaxW + 12);
-    if (centerMaxW < 240) centerMaxW = 240;
+    var centerMaxW = sw - 2 * (sideMargin + sideBlockW + 8);
+    if (centerMaxW < 280) centerMaxW = 280;
 
     // Liga
     c.textAlign = 'center';
@@ -871,14 +868,14 @@ function drawGameInSlot(c, game, slot) {
     c.fillStyle = '#bef264';
     c.shadowColor = 'rgba(0,0,0,0.85)';
     c.shadowBlur = 3;
-    c.fillText(fitTextToWidth(c, league.toUpperCase(), centerMaxW), centerX, sy + 32);
+    c.fillText(fitTextToWidth(c, league.toUpperCase(), centerMaxW), centerX, sy + 30);
 
     // Hora
     c.font = '700 38px Oswald, sans-serif';
     c.fillStyle = '#ffffff';
     c.shadowColor = 'rgba(0,0,0,0.9)';
     c.shadowBlur = 4;
-    c.fillText(time, centerX, sy + 80);
+    c.fillText(time, centerX, sy + 78);
 
     // Transmissão
     c.font = '600 14px Manrope, sans-serif';
@@ -1023,8 +1020,7 @@ function loadFootballManualMode() {
     videoContainer.classList.add('hidden');
     clearPreviousBanners();
 
-    controlPanel.innerHTML = '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-emerald-400">&#9997; Futebol Manual</h2><p class="text-zinc-500 text-sm mt-2">Adicione jogos manualmente</p></header>' +
-        '<section class="mt-5"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Data dos Jogos</label><input type="date" id="manualDate" value="' + getTodayDate() + '" class="bg-black border-2 border-zinc-800 p-3 text-white focus:outline-none focus:border-emerald-500 w-full rounded-lg" data-testid="manual-date-input"></section>' +
+    controlPanel.innerHTML = '<section><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Data dos Jogos</label><input type="date" id="manualDate" value="' + getTodayDate() + '" class="bg-black border-2 border-zinc-800 p-3 text-white focus:outline-none focus:border-emerald-500 w-full rounded-lg" data-testid="manual-date-input"></section>' +
         '<div id="manualGamesList" class="mt-5 flex flex-col gap-3"></div>' +
         '<button id="manualAddGameBtn" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition-all" data-testid="manual-add-game-btn">+ ADICIONAR JOGO</button>' +
         '<section class="flex flex-col gap-3 mt-5"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label><div class="flex gap-2">' +

@@ -962,7 +962,12 @@ var TEAM_FILES = [
     'Republica_Democratica-do_Congo.png','Royale_Union_Saint_Gilloise.png','Senegal.png','Slavia_Praga.png',
     'Sporting_Cristal.png','Sporting_Portugal.png','Stade_Brestois_29.png','Stade_Rennais.png','Suecia.png','Suica.png',
     'Sunderland_AFC.png','Tchequia.png','Toulouse_FC.png','Tunísia.png','Turquia.png','UCV_FC.png',
-    'Universidad_Catolica.png','Universitario.png','Uruguai.png','USA.png','Uzbequistao.png','Werder_Bremen.png','Club_Nacional_de_Football.png'
+    'Universidad_Catolica.png','Universitario.png','Uruguai.png','USA.png','Uzbequistao.png','Werder_Bremen.png',
+    'Club_Nacional_de_Football.png','Academia_Puerto_Cabello.png','Alianza_Atletico.png','America_de_Cali.png',
+    'Atletico_River_Plate.png','Audax.png','Barracas_Central.png','Boston_River.png','Carabobo_FC.png','Caracas.png',
+    'Cienciano.png','Club_Blooming.png','Club_Deportivo_Cuenca.png','CSD_Macara.png','Deportivo_Palestino.png',
+    'Deportivo_Riestra.png','Higgins_F.C..png','Independiente.png','Juventud_de_Las_Piedras.png','Millonarios_F.C..png',
+    'Montevideo_City_Torque.png','Olimpia.png','Recoleta.png','San_Lorenzo.png','Tigre.png'
 ];
 var TEAMS_LIST = TEAM_FILES.map(function(f) {
     return { file: f, name: f.replace('.png', '').replace(/_/g, ' ') };

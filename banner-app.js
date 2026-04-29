@@ -2,6 +2,36 @@ const API_BASE_URL = window.location.origin;
 const TMDB_BASE_URL = API_BASE_URL + '/api/tmdb';
 const TMDB_IMG_BASE = 'https://image.tmdb.org/t/p';
 
+// ====== NOVOS ASSETS DA PASTA /banner/ ======
+const BANNER_COVER_URL = '/banner/capa.png';
+const BANNER_BG_URL    = '/banner/fundo.png';
+let bannerCoverImg = null;   // capa para o banner de capa (Post)
+let bannerBgImg    = null;   // fundo com 5 slots para banner de jogos (Post)
+
+// Pré-carrega imagens da pasta /banner (sem bloquear)
+(function preloadBannerAssets() {
+    var imgC = new Image();
+    imgC.onload = function() { bannerCoverImg = imgC; };
+    imgC.onerror = function() { console.warn('Falha ao carregar', BANNER_COVER_URL); };
+    imgC.src = BANNER_COVER_URL;
+
+    var imgB = new Image();
+    imgB.onload = function() { bannerBgImg = imgB; };
+    imgB.onerror = function() { console.warn('Falha ao carregar', BANNER_BG_URL); };
+    imgB.src = BANNER_BG_URL;
+})();
+
+// ====== Posições exatas dos 5 slots dentro de fundo.png (1080x1350) ======
+const POST_BG_W = 1080;
+const POST_BG_H = 1350;
+const POST_SLOTS = [
+    { x: 54, y: 260, w: 972, h: 106 },
+    { x: 54, y: 382, w: 972, h: 106 },
+    { x: 54, y: 504, w: 972, h: 106 },
+    { x: 54, y: 626, w: 972, h: 106 },
+    { x: 54, y: 748, w: 972, h: 106 }
+];
+
 let currentMode = null;
 let selectedContent = null;
 let currentFormat = 'post';
@@ -414,18 +444,61 @@ async function generateAllFootballBanners() {
 }
 
 // ============================================
-// PROFESSIONAL COVER BANNER (Dark Premium)
+// COVER BANNER
+// - POST: usa /banner/capa.png como imagem única (sem overlays)
+// - STORY: mantém o design original (premium dark + grid de ligas)
 // ============================================
 async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners) {
-    var cvs = canvasEl.getContext('2d');
     var isPost = currentFormat === 'post';
-    var width = isPost ? 1030 : 1080;
-    var height = isPost ? 1350 : 1920;
+
+    // ====== POST: usa capa.png pronta ======
+    if (isPost) {
+        var width = POST_BG_W;   // 1080
+        var height = POST_BG_H;  // 1350
+        canvasEl.width = width;
+        canvasEl.height = height;
+        canvasEl.style.maxWidth = '500px';
+        var cvsP = canvasEl.getContext('2d');
+        cvsP.imageSmoothingEnabled = true;
+        cvsP.imageSmoothingQuality = 'high';
+
+        // Garante imagem carregada
+        var coverImg = bannerCoverImg;
+        if (!coverImg) {
+            try { coverImg = await loadImage(BANNER_COVER_URL); bannerCoverImg = coverImg; }
+            catch(e) {
+                console.warn('capa.png indisponível, usando fallback:', e);
+                coverImg = null;
+            }
+        }
+        if (coverImg) {
+            // Cover-fit (preenche todo o canvas, recortando se necessário)
+            var iR = coverImg.width / coverImg.height;
+            var cR = width / height;
+            var dw, dh, ox, oy;
+            if (iR > cR) { dh = height; dw = height * iR; ox = (width - dw) / 2; oy = 0; }
+            else { dw = width; dh = width / iR; ox = 0; oy = (height - dh) / 2; }
+            cvsP.drawImage(coverImg, ox, oy, dw, dh);
+        } else {
+            cvsP.fillStyle = '#0a0a0a';
+            cvsP.fillRect(0, 0, width, height);
+            cvsP.fillStyle = '#fff';
+            cvsP.font = '700 48px Oswald, sans-serif';
+            cvsP.textAlign = 'center';
+            cvsP.fillText('CAPA INDISPONÍVEL', width/2, height/2);
+        }
+        return;
+    }
+
+    // ====== STORY: mantém o design original ======
+    var cvs = canvasEl.getContext('2d');
+    var width = 1080;
+    var height = 1920;
     canvasEl.width = width;
     canvasEl.height = height;
-    canvasEl.style.maxWidth = isPost ? '500px' : '300px';
+    canvasEl.style.maxWidth = '300px';
 
-    var bgImage = isPost ? footballBgPost : footballBgStory;
+    var bgImage = footballBgStory;
     if (bgImage) {
         var imgR = bgImage.width / bgImage.height;
         var canR = width / height;
@@ -472,7 +545,7 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
 
     if (uploadedLogo) {
         cvs.save();
-        var logoMaxH = isPost ? 130 : 160;
+        var logoMaxH = 160;
         var logoRatio = uploadedLogo.width / uploadedLogo.height;
         var logoW = logoMaxH * logoRatio;
         cvs.drawImage(uploadedLogo, width - logoW - 20, 20, logoW, logoMaxH);
@@ -499,7 +572,7 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
         cvs.restore();
     }
 
-    var y = isPost ? 200 : 380;
+    var y = 380;
 
     cvs.textAlign = 'center';
     cvs.font = '600 20px Manrope, sans-serif';
@@ -509,7 +582,7 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
     y += 85;
 
     cvs.save();
-    cvs.font = '700 ' + (isPost ? '100' : '110') + 'px Oswald, sans-serif';
+    cvs.font = '700 110px Oswald, sans-serif';
     cvs.textAlign = 'center';
     cvs.shadowColor = 'rgba(34, 197, 94, 0.5)';
     cvs.shadowBlur = 50;
@@ -581,10 +654,10 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
     }));
     leagueLogos = leagueLogos.filter(function(l) { return l.logoImg !== null; });
 
-    var cols = isPost ? 5 : 5;
+    var cols = 5;
     var rows = Math.ceil(leagueLogos.length / cols);
     var cellW = (width - 100) / cols;
-    var cellH = isPost ? 115 : 135;
+    var cellH = 135;
     var gridStartX = 50;
 
     for (var li = 0; li < leagueLogos.length; li++) {
@@ -605,12 +678,12 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
         cvs.restore();
 
         if (league.logoImg) {
-            var ls = isPost ? 48 : 56;
+            var ls = 56;
             cvs.drawImage(league.logoImg, cx + cellW / 2 - ls / 2, cy + 10, ls, ls);
         }
 
         cvs.textAlign = 'center';
-        cvs.font = '600 ' + (isPost ? '11' : '13') + 'px Manrope, sans-serif';
+        cvs.font = '600 13px Manrope, sans-serif';
         cvs.fillStyle = 'rgba(255,255,255,0.78)';
         var lname = league.name;
         var maxNW = cellW - 16;
@@ -655,17 +728,58 @@ async function generateFootballCoverBanner(canvasEl, uniqueLeagues, totalBanners
 
 // ============================================
 // GAME BANNERS
+// - POST: usa /banner/fundo.png como template, mapeia dados nos 5 slots
+// - STORY: mantém o design original (cards customizados sobre fundo opcional)
 // ============================================
 async function generateFootballListBannerModern(canvasEl, games, bannerNum, totalBanners) {
-    var cvs = canvasEl.getContext('2d');
     var isPost = currentFormat === 'post';
-    var width = isPost ? 1030 : 1080;
-    var height = isPost ? 1350 : 1920;
+
+    // ====== POST: novo template com fundo.png + slots ======
+    if (isPost) {
+        var width = POST_BG_W;   // 1080
+        var height = POST_BG_H;  // 1350
+        canvasEl.width = width;
+        canvasEl.height = height;
+        canvasEl.style.maxWidth = '500px';
+        var c = canvasEl.getContext('2d');
+        c.imageSmoothingEnabled = true;
+        c.imageSmoothingQuality = 'high';
+
+        // Carrega fundo
+        var bgImg = bannerBgImg;
+        if (!bgImg) {
+            try { bgImg = await loadImage(BANNER_BG_URL); bannerBgImg = bgImg; }
+            catch(e) { console.warn('fundo.png indisponível:', e); bgImg = null; }
+        }
+        if (bgImg) {
+            // Stretch exato (a imagem foi medida em 1080x1350)
+            c.drawImage(bgImg, 0, 0, width, height);
+        } else {
+            c.fillStyle = '#0a0a0a';
+            c.fillRect(0, 0, width, height);
+            c.fillStyle = '#fff';
+            c.font = '700 48px Oswald, sans-serif';
+            c.textAlign = 'center';
+            c.fillText('FUNDO INDISPONÍVEL', width/2, height/2);
+        }
+
+        // Mapeia até 5 jogos nos slots
+        var slotsToFill = Math.min(games.length, POST_SLOTS.length);
+        for (var si = 0; si < slotsToFill; si++) {
+            drawGameInSlot(c, games[si], POST_SLOTS[si]);
+        }
+        return;
+    }
+
+    // ====== STORY: mantém o design original ======
+    var cvs = canvasEl.getContext('2d');
+    var width = 1080;
+    var height = 1920;
     canvasEl.width = width;
     canvasEl.height = height;
-    canvasEl.style.maxWidth = isPost ? '500px' : '300px';
+    canvasEl.style.maxWidth = '300px';
 
-    var bgImage = isPost ? footballBgPost : footballBgStory;
+    var bgImage = footballBgStory;
     if (bgImage) {
         var imgR = bgImage.width / bgImage.height;
         var canR = width / height;
@@ -858,6 +972,101 @@ async function generateFootballListBannerModern(canvasEl, games, bannerNum, tota
     cvs.fillStyle = '#fff';
     cvs.font = '700 18px Manrope, sans-serif';
     cvs.fillText(globalSettings.ctaText, padding + 285, btnY - boxH / 2 + 6);
+}
+
+// ============================================
+// DESENHA UM JOGO DENTRO DE UM SLOT (template fundo.png)
+// Layout: [logo][nome casa] [LIGA / HORA / TRANSMISSÃO] [nome fora][logo]
+// ============================================
+function drawGameInSlot(c, game, slot) {
+    var league = (game.league && game.league.name) ? game.league.name : '';
+    var time = '';
+    try { time = new Date(game.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); } catch(e) {}
+    var broadcaster = game.manualBroadcaster || getBroadcaster(league);
+    var homeName = (game.teams && game.teams.home && game.teams.home.name) ? game.teams.home.name.toUpperCase() : '';
+    var awayName = (game.teams && game.teams.away && game.teams.away.name) ? game.teams.away.name.toUpperCase() : '';
+
+    var sx = slot.x, sy = slot.y, sw = slot.w, sh = slot.h;
+    var cy = sy + sh / 2;
+
+    // Logos: 70x70 nas pontas (com pequena margem interna)
+    var logoSize = 70;
+    var sideMargin = 22;
+    var homeLogoX = sx + sideMargin;
+    var awayLogoX = sx + sw - sideMargin - logoSize;
+    var logoY = cy - logoSize / 2;
+
+    if (game.homeLogoImg) {
+        try { c.drawImage(game.homeLogoImg, homeLogoX, logoY, logoSize, logoSize); } catch(e) {}
+    }
+    if (game.awayLogoImg) {
+        try { c.drawImage(game.awayLogoImg, awayLogoX, logoY, logoSize, logoSize); } catch(e) {}
+    }
+
+    // Nomes dos times: ao lado dos logos
+    var nameMaxW = 220;
+    var nameFontSize = 22;
+    c.textAlign = 'left';
+    c.font = '700 ' + nameFontSize + 'px Manrope, sans-serif';
+    c.fillStyle = '#ffffff';
+    c.shadowColor = 'rgba(0,0,0,0.85)';
+    c.shadowBlur = 4;
+
+    // Home name (esquerda do logo casa)
+    var homeNameX = homeLogoX + logoSize + 14;
+    var homeShown = fitTextToWidth(c, homeName, nameMaxW);
+    c.textAlign = 'left';
+    c.fillText(homeShown, homeNameX, cy + 8);
+
+    // Away name (direita do logo fora -> alinha à direita)
+    var awayNameRightX = awayLogoX - 14;
+    var awayShown = fitTextToWidth(c, awayName, nameMaxW);
+    c.textAlign = 'right';
+    c.fillText(awayShown, awayNameRightX, cy + 8);
+
+    c.shadowBlur = 0;
+
+    // ÁREA CENTRAL: liga (topo), hora (meio), transmissão (base)
+    var centerX = sx + sw / 2;
+    var centerMaxW = sw - (logoSize + 14 + nameMaxW + 30) * 2; // espaço útil entre os nomes
+    if (centerMaxW < 220) centerMaxW = 220;
+
+    // Liga
+    c.textAlign = 'center';
+    c.font = '700 16px Manrope, sans-serif';
+    c.fillStyle = '#bef264'; // verde clarinho (combina com o template)
+    c.shadowColor = 'rgba(0,0,0,0.85)';
+    c.shadowBlur = 3;
+    var leagueShown = fitTextToWidth(c, league.toUpperCase(), centerMaxW);
+    c.fillText(leagueShown, centerX, sy + 30);
+
+    // Hora
+    c.font = '700 36px Oswald, sans-serif';
+    c.fillStyle = '#ffffff';
+    c.shadowColor = 'rgba(0,0,0,0.9)';
+    c.shadowBlur = 4;
+    c.fillText(time, centerX, sy + 70);
+
+    // Transmissão
+    c.font = '600 14px Manrope, sans-serif';
+    c.fillStyle = '#e4e4e7';
+    c.shadowColor = 'rgba(0,0,0,0.8)';
+    c.shadowBlur = 3;
+    var bcShown = fitTextToWidth(c, broadcaster, centerMaxW);
+    c.fillText(bcShown, centerX, sy + 95);
+
+    c.shadowBlur = 0;
+}
+
+// Ajusta texto para caber na largura, truncando com "..."
+function fitTextToWidth(c, text, maxWidth) {
+    if (!text) return '';
+    var t = String(text);
+    if (c.measureText(t).width <= maxWidth) return t;
+    while (t.length > 3 && c.measureText(t + '...').width > maxWidth) {
+        t = t.slice(0, -1);
+    }
+    return t + '...';
 }
 
 // ============================================
@@ -1298,7 +1507,6 @@ async function loadMoviesMode() {
 
     controlPanel.innerHTML =
         '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-red-400">Filmes e Séries</h2></header>' +
-        // FILTRO DE TIPO (Filme / Série / Ambos)
         '<section class="mt-5">' +
             '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Tipo de Conteúdo</label>' +
             '<div class="flex gap-2">' +
@@ -1330,7 +1538,6 @@ async function loadMoviesMode() {
         document.getElementById('moviePlatform').addEventListener('change', generateMovieBanner);
         document.getElementById('movieDownloadBtn').addEventListener('click', downloadMovieBanner);
 
-        // Filtro de tipo
         document.getElementById('movieTypeBoth').addEventListener('click', function() { setMovieTypeFilter('both'); });
         document.getElementById('movieTypeMovie').addEventListener('click', function() { setMovieTypeFilter('movie'); });
         document.getElementById('movieTypeTv').addEventListener('click', function() { setMovieTypeFilter('tv'); });
@@ -1347,7 +1554,6 @@ function setMovieTypeFilter(type) {
             ? 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white'
             : 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
     });
-    // Re-busca se ja tem texto digitado
     var inp = document.getElementById('movieSearch');
     if (inp && inp.value.trim()) searchMovies(inp.value);
 }
@@ -1435,7 +1641,6 @@ window.copyMovieInfo = function() {
 function generateMovieBanner() {
     if (!selectedContent || currentMode !== 'movies') return;
     var isPost = currentFormat === 'post';
-    // Resolução base IG (post 4:5 / story 9:16)
     var width = isPost ? 1080 : 1080;
     var height = isPost ? 1350 : 1920;
     canvas.width = width;
@@ -1511,12 +1716,11 @@ function updateMovieFormatButtons() {
 
 function downloadMovieBanner() {
     if (!selectedContent) { alert('Selecione um filme ou série primeiro!'); return; }
-    // Renderiza versão Full HD em canvas oculto (2x) para máxima qualidade
     var hdCanvas = document.createElement('canvas');
     var isPost = currentFormat === 'post';
     var baseW = isPost ? 1080 : 1080;
     var baseH = isPost ? 1350 : 1920;
-    var scale = 2; // upscale 2x para arquivo final
+    var scale = 2;
     hdCanvas.width = baseW * scale;
     hdCanvas.height = baseH * scale;
     var hdCtx = hdCanvas.getContext('2d');
@@ -1524,7 +1728,6 @@ function downloadMovieBanner() {
     hdCtx.imageSmoothingQuality = 'high';
     hdCtx.scale(scale, scale);
 
-    // Re-renderiza no canvas HD
     renderMovieBannerToCtx(hdCtx, baseW, baseH, isPost);
 
     var dataUrl = hdCanvas.toDataURL('image/png');
@@ -1618,7 +1821,6 @@ async function loadVideoMode() {
         '</section>' +
         '<section id="videoControls" class="hidden flex flex-col gap-5 mt-5">' +
             '<div id="videoSelectedInfo" class="border border-zinc-800 p-4 bg-black/30 rounded-lg"></div>' +
-            // Upload do MP4
             '<div class="border-2 border-dashed border-purple-500/40 rounded-lg p-5 bg-purple-900/10">' +
                 '<label class="text-xs uppercase tracking-widest text-purple-300 font-semibold block mb-3">Vídeo MP4 (do dispositivo)</label>' +
                 '<label class="cursor-pointer flex flex-col items-center gap-2 hover:bg-purple-900/20 transition-colors p-4 rounded">' +
@@ -1702,7 +1904,6 @@ async function selectVideoContent(content) {
     document.getElementById('videoSearch').value = '';
     document.getElementById('videoControls').classList.remove('hidden');
 
-    // Buscar detalhes (gêneros, runtime) e plataforma
     var endpoint = content.type === 'movie' ? 'movie' : 'tv';
     try {
         var detailsRes = await fetch(TMDB_BASE_URL + '/' + endpoint + '/' + content.id + '?language=pt-BR');
@@ -1716,7 +1917,6 @@ async function selectVideoContent(content) {
         selectedContent.autoProvider = brProviders.length > 0 ? brProviders[0].provider_name : null;
     } catch (e) { console.error('Erro detalhes:', e); }
 
-    // Carregar poster
     posterImage = null;
     if (content.poster) {
         try { posterImage = await loadImage(API_BASE_URL + '/api/image-proxy?url=' + encodeURIComponent(content.poster)); } catch (e) { posterImage = null; }
@@ -1782,7 +1982,6 @@ async function generateTrailerBannerVideo() {
     var audioCtxRef = null;
 
     try {
-        // Canvas 1080x1080 (Post 1:1 - alta qualidade)
         var W = 1080, H = 1080;
         var outCanvas = document.createElement('canvas');
         outCanvas.width = W; outCanvas.height = H;
@@ -1790,28 +1989,23 @@ async function generateTrailerBannerVideo() {
         oc.imageSmoothingEnabled = true;
         oc.imageSmoothingQuality = 'high';
 
-        // Preview no container
         videoContainer.innerHTML = '<div class="text-center"><p class="text-purple-300 mb-3 font-semibold">Gerando banner vídeo...</p></div>';
         videoContainer.appendChild(outCanvas);
         outCanvas.style.maxWidth = '480px';
         outCanvas.style.borderRadius = '12px';
         outCanvas.style.boxShadow = '0 0 60px rgba(168,85,247,0.4)';
 
-        // Pinta um frame inicial preto para o canvasStream ter conteúdo válido desde o início
         oc.fillStyle = '#0a0a0a';
         oc.fillRect(0, 0, W, H);
 
-        // Video escondido para frames + audio (DEVE estar no DOM em alguns browsers)
         srcVideo = document.createElement('video');
         srcVideo.src = uploadedVideoUrl;
         srcVideo.preload = 'auto';
         srcVideo.playsInline = true;
         srcVideo.muted = false;
-        // Volume: deixar normal — Web Audio controlará a saída via gain=0 (sem som no alto-falante)
         srcVideo.style.cssText = 'position:fixed;left:-99999px;top:-99999px;width:1px;height:1px;opacity:0;pointer-events:none;';
         document.body.appendChild(srcVideo);
 
-        // Aguarda metadados E canplay (readyState >= 3)
         await new Promise(function(res, rej) {
             var done = false;
             var to = setTimeout(function() { if (!done) { done = true; rej(new Error('Timeout ao carregar MP4 (15s)')); } }, 15000);
@@ -1826,7 +2020,6 @@ async function generateTrailerBannerVideo() {
         progressLabel.textContent = 'Iniciando reprodução...';
         progressFill.style.width = '10%';
 
-        // Configura Web Audio API ANTES do play (importante para iOS Safari)
         var audioStream = null;
         var audioCtx = null;
         try {
@@ -1840,7 +2033,6 @@ async function generateTrailerBannerVideo() {
                 var sourceNode = audioCtx.createMediaElementSource(srcVideo);
                 var destNode = audioCtx.createMediaStreamDestination();
                 sourceNode.connect(destNode);
-                // Gain=0 conectado ao destination mantém contexto ativo no mobile, sem som no alto-falante
                 var muteGain = audioCtx.createGain();
                 muteGain.gain.value = 0;
                 sourceNode.connect(muteGain);
@@ -1852,7 +2044,6 @@ async function generateTrailerBannerVideo() {
             console.warn('Web Audio API falhou:', e);
         }
 
-        // Posiciona no início e inicia playback
         try { srcVideo.currentTime = 0; } catch(e) {}
         try {
             await srcVideo.play();
@@ -1864,7 +2055,6 @@ async function generateTrailerBannerVideo() {
         progressLabel.textContent = 'Configurando gravação...';
         progressFill.style.width = '15%';
 
-        // Fallback: tenta captureStream se Web Audio falhou (browsers muito antigos)
         if (!audioStream) {
             try {
                 if (typeof srcVideo.captureStream === 'function') audioStream = srcVideo.captureStream();
@@ -1881,7 +2071,6 @@ async function generateTrailerBannerVideo() {
         console.log('Tracks combinadas:', combinedTracks.length, 'video:', canvasStream.getVideoTracks().length, 'audio:', audioStream ? audioStream.getAudioTracks().length : 0);
         var combinedStream = new MediaStream(combinedTracks);
 
-        // Escolher melhor mimeType
         var preferredTypes = [
             'video/mp4;codecs=avc1.640033,mp4a.40.2',
             'video/mp4;codecs=avc1,mp4a',
@@ -1958,16 +2147,11 @@ async function generateTrailerBannerVideo() {
             };
         });
 
-        // Função de desenho do frame
         function drawFrame() {
-            // Fundo escuro
             oc.fillStyle = '#0a0a0a';
             oc.fillRect(0, 0, W, H);
 
-            // === ÁREA SUPERIOR: vídeo 16:9 ===
-            // 1080 / (16/9) = 607.5 -> usaremos 608
-            var videoAreaH = Math.round(W * 9 / 16); // 608
-            // Fundo do video area
+            var videoAreaH = Math.round(W * 9 / 16);
             oc.fillStyle = '#000';
             oc.fillRect(0, 0, W, videoAreaH);
             if (!srcVideo.paused && !srcVideo.ended && srcVideo.readyState >= 2) {
@@ -1979,16 +2163,13 @@ async function generateTrailerBannerVideo() {
                 try { oc.drawImage(srcVideo, ox, oy, dw, dh); } catch(e) {}
             }
 
-            // === LOGO no canto superior direito (sem fundo preto) ===
             if (uploadedLogo) {
                 var logoR = uploadedLogo.width / uploadedLogo.height;
-                var logoH = 140; // aumentada
+                var logoH = 140;
                 var logoW = logoH * logoR;
-                // Limita largura máxima a 320px caso logo seja muito horizontal
                 if (logoW > 320) { logoW = 320; logoH = logoW / logoR; }
                 oc.drawImage(uploadedLogo, W - logoW - 25, 20, logoW, logoH);
             } else {
-                // Placeholder discreto quando não há logo configurada
                 var phW = 180, phH = 130;
                 oc.fillStyle = 'rgba(0,0,0,0.55)';
                 roundRect(oc, W - phW - 25, 20, phW, phH, 12);
@@ -1999,21 +2180,17 @@ async function generateTrailerBannerVideo() {
                 oc.fillText('LOGO', W - phW / 2 - 25, 20 + phH / 2 + 8);
             }
 
-            // === ÁREA INFERIOR: poster + info ===
             var bottomY = videoAreaH;
-            var bottomH = H - bottomY; // 472
-            // Fundo da área inferior - gradiente sutil
+            var bottomH = H - bottomY;
             var bgGrad = oc.createLinearGradient(0, bottomY, 0, H);
             bgGrad.addColorStop(0, '#0f0f12');
             bgGrad.addColorStop(1, '#050507');
             oc.fillStyle = bgGrad;
             oc.fillRect(0, bottomY, W, bottomH);
 
-            // POSTER à esquerda
             var posterX = 40, posterY = bottomY + 20;
             var posterW = 280, posterH = 400;
             if (posterImage) {
-                // letterbox/cover
                 var pR = posterImage.width / posterImage.height;
                 var aR2 = posterW / posterH;
                 oc.save();
@@ -2038,43 +2215,35 @@ async function generateTrailerBannerVideo() {
                 oc.fillText('CAPA', posterX + posterW / 2, posterY + posterH / 2);
             }
 
-            // INFO à direita - pré-calcula altura total para centralizar verticalmente com a capa
             var infoX = posterX + posterW + 40;
             var infoMaxW = W - infoX - 40;
 
-            // 1) Calcula linhas de título
             oc.textAlign = 'left';
             oc.font = '700 50px Oswald, sans-serif';
             var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), infoMaxW).slice(0, 2);
             var titleH = titleLines.length * 56;
 
-            // 2) Meta sempre 1 linha
             var metaH = 30;
 
-            // 3) Sinopse - calcula linhas (limitadas para caber)
             oc.font = '400 19px Manrope, sans-serif';
             var maxSynLines = 8;
             var synLines = wrapText(oc, selectedContent.overview || '', infoMaxW).slice(0, maxSynLines);
             var synH = synLines.length * 26;
 
-            // Espaçamentos entre blocos
             var gapTitleMeta = 18;
             var gapMetaSyn = 30;
             var totalTextH = titleH + gapTitleMeta + metaH + gapMetaSyn + synH;
 
-            // Centraliza verticalmente com a capa (poster)
             var posterCenterY = posterY + posterH / 2;
             var blockTop = posterCenterY - totalTextH / 2;
 
-            // Garante que não fique sobreposto ao vídeo (mínimo bottomY + 30) nem aos CTAs (máximo fim - 80)
             var minTop = bottomY + 30;
             var maxBottom = H - 110;
             if (blockTop < minTop) blockTop = minTop;
             if (blockTop + totalTextH > maxBottom) blockTop = maxBottom - totalTextH;
 
-            var curY = blockTop + 42; // 42 = baseline aproximado da primeira linha do título
+            var curY = blockTop + 42;
 
-            // Título
             oc.font = '700 50px Oswald, sans-serif';
             oc.fillStyle = '#fff';
             for (var ti2 = 0; ti2 < titleLines.length; ti2++) {
@@ -2083,7 +2252,6 @@ async function generateTrailerBannerVideo() {
             }
             curY += gapTitleMeta - 8;
 
-            // Linha meta: nota • ano • gênero • plataforma
             oc.font = '700 22px Manrope, sans-serif';
             var metaParts = [];
             if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push('★ ' + selectedContent.rating);
@@ -2109,7 +2277,6 @@ async function generateTrailerBannerVideo() {
             }
             curY += gapMetaSyn;
 
-            // Sinopse
             oc.font = '400 19px Manrope, sans-serif';
             oc.fillStyle = 'rgba(255,255,255,0.85)';
             for (var sj2 = 0; sj2 < synLines.length; sj2++) {
@@ -2118,7 +2285,6 @@ async function generateTrailerBannerVideo() {
                 if (curY > H - 90) break;
             }
 
-            // === RODAPÉ: WhatsApp + CTA (canto inferior direito) ===
             var fY = H - 25;
             var fBoxH = 50;
             var fBoxW = 200;
@@ -2126,7 +2292,6 @@ async function generateTrailerBannerVideo() {
             var totalW = fBoxW * 2 + spacing;
             var startX = W - totalW - 40;
 
-            // WhatsApp
             oc.fillStyle = '#25D366';
             roundRect(oc, startX, fY - fBoxH, fBoxW, fBoxH, 8);
             oc.fill();
@@ -2135,7 +2300,6 @@ async function generateTrailerBannerVideo() {
             oc.textAlign = 'center';
             oc.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, startX + fBoxW / 2, fY - fBoxH / 2 + 6);
 
-            // CTA
             oc.fillStyle = '#ef4444';
             roundRect(oc, startX + fBoxW + spacing, fY - fBoxH, fBoxW, fBoxH, 8);
             oc.fill();
@@ -2143,16 +2307,10 @@ async function generateTrailerBannerVideo() {
             oc.font = '700 19px Manrope, sans-serif';
             oc.fillText(globalSettings.ctaText, startX + fBoxW + spacing + fBoxW / 2, fY - fBoxH / 2 + 6);
 
-            // Marca d'água diagonal opcional sobre área do video (sutil)
-            // (não aplicada para não atrapalhar o video)
-
-            // Continua o loop de desenho ENQUANTO o recorder estiver gravando
-            // (não depende de srcVideo.paused para evitar parar render no fim)
             if (recorder && recorder.state === 'recording') {
                 requestAnimationFrame(drawFrame);
             }
 
-            // Atualiza progresso
             if (srcVideo.duration > 0) {
                 var pct = Math.min(95, 15 + (srcVideo.currentTime / srcVideo.duration) * 80);
                 progressFill.style.width = pct + '%';
@@ -2160,17 +2318,15 @@ async function generateTrailerBannerVideo() {
             }
         }
 
-        // Função para parar a gravação (idempotente)
         function stopRecording(reason) {
             if (stopRequested) return;
             stopRequested = true;
             console.log('Parando gravação. Motivo:', reason);
             try { srcVideo.pause(); } catch(e) {}
-            // Pequeno delay para garantir que o último frame e o último chunk de audio sejam capturados
             setTimeout(function() {
                 try {
                     if (recorder && recorder.state !== 'inactive') {
-                        recorder.requestData(); // força flush do último chunk
+                        recorder.requestData();
                         setTimeout(function() {
                             try { if (recorder.state !== 'inactive') recorder.stop(); } catch(e) {}
                         }, 100);
@@ -2179,10 +2335,8 @@ async function generateTrailerBannerVideo() {
             }, 250);
         }
 
-        // Detecção de fim do vídeo - múltiplos eventos
         srcVideo.addEventListener('ended', function() { stopRecording('ended'); });
         srcVideo.addEventListener('pause', function() {
-            // Pode disparar quando ended também ocorre - só para se chegou no fim
             if (srcVideo.duration > 0 && srcVideo.currentTime >= srcVideo.duration - 0.2) {
                 stopRecording('pause-near-end');
             }
@@ -2193,16 +2347,13 @@ async function generateTrailerBannerVideo() {
             }
         });
 
-        // Failsafe: timeout absoluto = duração + 3s (caso eventos não disparem)
         var maxMs = ((srcVideo.duration || 60) + 3) * 1000;
         failsafeTimer = setTimeout(function() { stopRecording('failsafe-timeout'); }, maxMs);
 
-        // Inicia gravação (vídeo já está tocando desde o passo anterior)
         progressLabel.textContent = 'Gravando...';
         progressFill.style.width = '20%';
-        recorder.start(500); // chunk a cada 500ms
+        recorder.start(500);
         console.log('Recorder iniciado. estado:', recorder.state, 'duração:', srcVideo.duration);
-        // Inicia o loop de desenho
         drawFrame();
 
         await donePromise;

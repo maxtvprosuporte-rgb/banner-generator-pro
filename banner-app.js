@@ -968,7 +968,10 @@ var TEAM_FILES = [
     'Cienciano.png','Club_Blooming.png','Club_Deportivo_Cuenca.png','CSD_Macara.png','Deportivo_Palestino.png',
     'Deportivo_Riestra.png','Higgins_F.C..png','Independiente.png','Juventud_de_Las_Piedras.png','Millonarios_F.C..png',
     'Montevideo_City_Torque.png','Olimpia.png','Recoleta.png','San_Lorenzo.png','Tigre.png','Racing_Club.png','C.D._Tondela.png',
-    'Barcelona_SC'
+    'Barcelona_SC.png','FC_Steaua_Bucuresti.png','FC_Utrecht.png','Fenerbahce.png','Ferencvaros.png','Feyenoord.png','GNK_Dinamo.png',
+    'Go_Ahead_Eagles.png','KRC_Genk.png','Lecce.png','Maccabi.png','Malmo.png','Midtjylland.png','Nice.png','Panathinaikos.png',
+    'PAOK.png','Parma.png','Pisa.png','Rangers.png','Red_Star_Belgrade.png','Salzburg.png','SC_Braga.png','Sturm_Graz.png',
+    'Viktoria_Plzen.png','Young_Boys.png'
 ];
 var TEAMS_LIST = TEAM_FILES.map(function(f) {
     return { file: f, name: f.replace('.png', '').replace(/_/g, ' ') };

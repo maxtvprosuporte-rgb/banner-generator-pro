@@ -963,7 +963,7 @@ var TEAM_FILES = [
     'Sporting_Cristal.png','Sporting_Portugal.png','Stade_Brestois_29.png','Stade_Rennais.png','Suecia.png','Suica.png',
     'Sunderland_AFC.png','Tchequia.png','Toulouse_FC.png','Tunísia.png','Turquia.png','UCV_FC.png',
     'Universidad_Catolica.png','Universitario.png','Uruguai.png','USA.png','Uzbequistao.png','Werder_Bremen.png',
-    'Club_Nacional_de_Football.png','Academia_Puerto_Cabello.png','Alianza_Atletico.png','America_de_Cali.png',
+    'Academia_Puerto_Cabello.png','Alianza_Atletico.png','America_de_Cali.png',
     'Atletico_River_Plate.png','Audax.png','Barracas_Central.png','Boston_River.png','Carabobo_FC.png','Caracas.png',
     'Cienciano.png','Club_Blooming.png','Club_Deportivo_Cuenca.png','CSD_Macara.png','Deportivo_Palestino.png',
     'Deportivo_Riestra.png','Higgins_F.C..png','Independiente.png','Juventud_de_Las_Piedras.png','Millonarios_F.C..png',
@@ -972,7 +972,7 @@ var TEAM_FILES = [
     'Go_Ahead_Eagles.png','KRC_Genk.png','Lecce.png','Maccabi.png','Malmo.png','Midtjylland.png','Nice.png','Panathinaikos.png',
     'PAOK.png','Parma.png','Pisa.png','Rangers.png','Red_Star_Belgrade.png','Salzburg.png','SC_Braga.png','Sturm_Graz.png',
     'Viktoria_Plzen.png','Young_Boys.png','Nacional_da_Madeira.png','AVS_Futebol_SAD.png','Moreirense.png','Estrela_da_Amadora.png',
-    'Arouca.png','Santa_Clara.png','Famalicao.png','Alverca.png'
+    'Arouca.png','Santa_Clara.png','Famalicao.png','Alverca.png','Le_Havre_AC.png'
 ];
 var TEAMS_LIST = TEAM_FILES.map(function(f) {
     return { file: f, name: f.replace('.png', '').replace(/_/g, ' ') };

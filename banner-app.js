@@ -1513,13 +1513,14 @@ async function generateTrailerBannerVideo() {
         return;
     }
 
-    // Bitrates por qualidade:
+     // Bitrates por qualidade:
     // - MP4 nativo: grava direto no bitrate final (rápido, sem recompressão)
     // - WebM: grava em bitrate maior; FFmpeg comprime depois
+    // OBS: "Alta" sobe para 6 Mbps + áudio 192k para WhatsApp marcar como HD em canal/status
     var recVideoBitrate, recAudioBitrate;
-    if (quality === 'high')      { recVideoBitrate = nativeMp4 ? 3500000 : 6000000; recAudioBitrate = 128000; }
-    else if (quality === 'low')  { recVideoBitrate = nativeMp4 ? 1200000 : 4000000; recAudioBitrate = 96000;  }
-    else                         { recVideoBitrate = nativeMp4 ? 2200000 : 5000000; recAudioBitrate = 128000; }
+    if (quality === 'high')      { recVideoBitrate = nativeMp4 ? 6000000 : 8000000; recAudioBitrate = 192000; }
+    else if (quality === 'low')  { recVideoBitrate = nativeMp4 ? 1800000 : 4000000; recAudioBitrate = 96000;  }
+    else                         { recVideoBitrate = nativeMp4 ? 3500000 : 6000000; recAudioBitrate = 128000; }
 
     var srcVideo = null;
     var recorder = null;
@@ -1842,24 +1843,25 @@ async function generateTrailerBannerVideo() {
                 var fetchFile = window.FFmpeg.fetchFile;
                 ffmpeg.FS('writeFile', inputName, await fetchFile(rawResult.blob));
 
-                var crf, maxrate, bufsize, audioBr;
-                if (quality === 'high')      { crf = '24'; maxrate = '3500k'; bufsize = '7000k'; audioBr = '128k'; }
-                else if (quality === 'low')  { crf = '30'; maxrate = '1200k'; bufsize = '2400k'; audioBr = '96k';  }
-                else                         { crf = '26'; maxrate = '2200k'; bufsize = '4400k'; audioBr = '128k'; }
+                // CRF, bitrate e RESOLUÇÃO ajustados para WhatsApp HD em canais
+                var crf, maxrate, bufsize, audioBr, scaleFilter;
+                if (quality === 'high')      { crf = '21'; maxrate = '6000k'; bufsize = '12000k'; audioBr = '192k'; scaleFilter = 'scale=1080:1080:flags=fast_bilinear'; }
+                else if (quality === 'low')  { crf = '28'; maxrate = '1800k'; bufsize = '3600k';  audioBr = '96k';  scaleFilter = 'scale=720:720:flags=fast_bilinear';  }
+                else                         { crf = '24'; maxrate = '3500k'; bufsize = '7000k';  audioBr = '128k'; scaleFilter = 'scale=1080:1080:flags=fast_bilinear'; }
 
-                // ultrafast + fastdecode + fast_bilinear = MUITO mais rápido em wasm
+                // ultrafast + fastdecode = MUITO mais rápido em wasm
                 await ffmpeg.run(
                     '-i', inputName,
                     '-c:v', 'libx264',
                     '-preset', 'ultrafast',
                     '-tune', 'fastdecode',
-                    '-profile:v', 'main',
+                    '-profile:v', 'high',
                     '-level', '4.0',
                     '-pix_fmt', 'yuv420p',
                     '-crf', crf,
                     '-maxrate', maxrate,
                     '-bufsize', bufsize,
-                    '-vf', 'scale=720:720:flags=fast_bilinear',
+                    '-vf', scaleFilter,
                     '-r', '30',
                     '-c:a', 'aac',
                     '-b:a', audioBr,

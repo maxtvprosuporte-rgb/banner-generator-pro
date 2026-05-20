@@ -1295,6 +1295,7 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
 // VIDEO MODE (TRAILER MANUAL) - OTIMIZADO
 // - Chrome/Edge (MP4 nativo) → grava direto, pula FFmpeg (RÁPIDO)
 // - Firefox/Safari (só WebM) → FFmpeg ultrafast + fastdecode
+// - Camada estática cacheada + drawFrame travado em 30fps (sem travamentos)
 // ============================================
 async function loadVideoMode() {
     videoTypeFilter = 'both';
@@ -1343,9 +1344,9 @@ async function loadVideoMode() {
             '<section class="flex flex-col gap-2">' +
                 '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Qualidade Final (WhatsApp)</label>' +
                 '<select id="videoQuality" class="bg-black border border-zinc-800 p-3 text-white text-sm w-full rounded focus:outline-none focus:border-purple-500 appearance-none cursor-pointer">' +
-                    '<option value="high">Alta (HD ~3 Mbps, ideal WhatsApp)</option>' +
-                    '<option value="medium" selected>M\u00E9dia (~2 Mbps, recomendado)</option>' +
-                    '<option value="low">Baixa (~1 Mbps, m\u00E1xima economia)</option>' +
+                    '<option value="high">Alta (HD ~6 Mbps, WhatsApp HD)</option>' +
+                    '<option value="medium" selected>M\u00E9dia (~3.5 Mbps, recomendado)</option>' +
+                    '<option value="low">Baixa (~1.8 Mbps, m\u00E1xima economia)</option>' +
                 '</select>' +
             '</section>' +
             '<button id="videoGenerateBtn" class="w-full bg-purple-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-purple-400 transition-all flex items-center justify-center gap-3 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled data-testid="video-generate-btn">GERAR BANNER MP4</button>' +
@@ -1475,6 +1476,145 @@ function updateGenerateBtnState() {
 }
 
 // ============================================
+// RENDER ESTÁTICO (cache) — só desenhado UMA vez
+// Inclui: fundo escuro inferior, poster do filme, título, meta, sinopse, rodapé WhatsApp/CTA
+// Só a área do vídeo (topo 16:9) é redesenhada a cada frame.
+// ============================================
+function renderStaticBannerLayer(oc, W, H, videoAreaH) {
+    // fundo total
+    oc.fillStyle = '#0a0a0a';
+    oc.fillRect(0, 0, W, H);
+    // moldura preta atrás do vídeo
+    oc.fillStyle = '#000';
+    oc.fillRect(0, 0, W, videoAreaH);
+
+    // logo top-right
+    if (uploadedLogo) {
+        var logoR = uploadedLogo.width / uploadedLogo.height;
+        var logoH = 140;
+        var logoW = logoH * logoR;
+        if (logoW > 320) { logoW = 320; logoH = logoW / logoR; }
+        oc.drawImage(uploadedLogo, W - logoW - 25, 20, logoW, logoH);
+    }
+
+    // fundo inferior (gradient)
+    var bottomY = videoAreaH;
+    var bottomH = H - bottomY;
+    var bgGrad = oc.createLinearGradient(0, bottomY, 0, H);
+    bgGrad.addColorStop(0, '#0f0f12');
+    bgGrad.addColorStop(1, '#050507');
+    oc.fillStyle = bgGrad;
+    oc.fillRect(0, bottomY, W, bottomH);
+
+    // poster do filme
+    var posterX = 40, posterY = bottomY + 20;
+    var posterW = 280, posterH = 400;
+    if (posterImage) {
+        var pR = posterImage.width / posterImage.height;
+        var aR2 = posterW / posterH;
+        oc.save();
+        oc.beginPath();
+        roundRect(oc, posterX, posterY, posterW, posterH, 12);
+        oc.clip();
+        if (pR > aR2) {
+            var dh2 = posterH; var dw2 = posterH * pR;
+            oc.drawImage(posterImage, posterX - (dw2 - posterW) / 2, posterY, dw2, dh2);
+        } else {
+            var dw3 = posterW; var dh3 = posterW / pR;
+            oc.drawImage(posterImage, posterX, posterY - (dh3 - posterH) / 2, dw3, dh3);
+        }
+        oc.restore();
+    } else {
+        oc.fillStyle = '#27272a';
+        roundRect(oc, posterX, posterY, posterW, posterH, 12);
+        oc.fill();
+    }
+
+    // bloco de texto à direita do poster
+    var infoX = posterX + posterW + 40;
+    var infoMaxW = W - infoX - 40;
+
+    oc.textAlign = 'left';
+    oc.font = '700 50px Oswald, sans-serif';
+    var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), infoMaxW).slice(0, 2);
+    var titleH = titleLines.length * 56;
+    oc.font = '400 19px Manrope, sans-serif';
+    var synLines = wrapText(oc, selectedContent.overview || '', infoMaxW).slice(0, 8);
+    var synH = synLines.length * 26;
+    var gapTitleMeta = 18, gapMetaSyn = 30, metaH = 30;
+    var totalTextH = titleH + gapTitleMeta + metaH + gapMetaSyn + synH;
+    var posterCenterY = posterY + posterH / 2;
+    var blockTop = posterCenterY - totalTextH / 2;
+    var minTop = bottomY + 30;
+    var maxBottom = H - 110;
+    if (blockTop < minTop) blockTop = minTop;
+    if (blockTop + totalTextH > maxBottom) blockTop = maxBottom - totalTextH;
+    var curY = blockTop + 42;
+
+    // título
+    oc.font = '700 50px Oswald, sans-serif';
+    oc.fillStyle = '#fff';
+    for (var ti2 = 0; ti2 < titleLines.length; ti2++) {
+        oc.fillText(titleLines[ti2], infoX, curY);
+        curY += 56;
+    }
+    curY += gapTitleMeta - 8;
+
+    // meta (rating, ano, gênero, plataforma)
+    oc.font = '700 22px Manrope, sans-serif';
+    var metaParts = [];
+    if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push('\u2605 ' + selectedContent.rating);
+    if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push(selectedContent.year);
+    if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push(selectedContent.genres.split(',')[0].trim());
+    var plat = selectedContent.autoProvider;
+    if (plat) metaParts.push(plat);
+    var mx = infoX;
+    for (var mi2 = 0; mi2 < metaParts.length; mi2++) {
+        var part = metaParts[mi2];
+        if (mi2 === 0 && part.indexOf('\u2605') === 0) oc.fillStyle = '#eab308';
+        else if (mi2 === metaParts.length - 1 && plat) oc.fillStyle = '#a855f7';
+        else oc.fillStyle = '#fff';
+        oc.fillText(part, mx, curY);
+        mx += oc.measureText(part).width;
+        if (mi2 < metaParts.length - 1) {
+            oc.fillStyle = 'rgba(255,255,255,0.4)';
+            var sepStr = '  \u2022  ';
+            oc.fillText(sepStr, mx, curY);
+            mx += oc.measureText(sepStr).width;
+        }
+    }
+    curY += gapMetaSyn;
+
+    // sinopse
+    oc.font = '400 19px Manrope, sans-serif';
+    oc.fillStyle = 'rgba(255,255,255,0.85)';
+    for (var sj2 = 0; sj2 < synLines.length; sj2++) {
+        oc.fillText(synLines[sj2], infoX, curY);
+        curY += 26;
+        if (curY > H - 90) break;
+    }
+
+    // rodapé (WhatsApp + CTA)
+    var fY = H - 25;
+    var fBoxH = 50, fBoxW = 200, spacing = 12;
+    var totalW = fBoxW * 2 + spacing;
+    var startX = W - totalW - 40;
+    oc.fillStyle = '#25D366';
+    roundRect(oc, startX, fY - fBoxH, fBoxW, fBoxH, 8);
+    oc.fill();
+    oc.fillStyle = '#fff';
+    oc.font = '600 18px Manrope, sans-serif';
+    oc.textAlign = 'center';
+    oc.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, startX + fBoxW / 2, fY - fBoxH / 2 + 6);
+    oc.fillStyle = '#ef4444';
+    roundRect(oc, startX + fBoxW + spacing, fY - fBoxH, fBoxW, fBoxH, 8);
+    oc.fill();
+    oc.fillStyle = '#fff';
+    oc.font = '700 19px Manrope, sans-serif';
+    oc.fillText(globalSettings.ctaText, startX + fBoxW + spacing + fBoxW / 2, fY - fBoxH / 2 + 6);
+}
+
+// ============================================
 // GERA BANNER VIDEO - OTIMIZADO
 // ============================================
 async function generateTrailerBannerVideo() {
@@ -1513,10 +1653,8 @@ async function generateTrailerBannerVideo() {
         return;
     }
 
-     // Bitrates por qualidade:
-    // - MP4 nativo: grava direto no bitrate final (rápido, sem recompressão)
-    // - WebM: grava em bitrate maior; FFmpeg comprime depois
-    // OBS: "Alta" sobe para 6 Mbps + áudio 192k para WhatsApp marcar como HD em canal/status
+    // Bitrates por qualidade
+    // "Alta" sobe para 6 Mbps + áudio 192k para WhatsApp marcar como HD em canal/status
     var recVideoBitrate, recAudioBitrate;
     if (quality === 'high')      { recVideoBitrate = nativeMp4 ? 6000000 : 8000000; recAudioBitrate = 192000; }
     else if (quality === 'low')  { recVideoBitrate = nativeMp4 ? 1800000 : 4000000; recAudioBitrate = 96000;  }
@@ -1527,19 +1665,31 @@ async function generateTrailerBannerVideo() {
     var failsafeTimer = null;
     var stopRequested = false;
     var audioCtxRef = null;
+    var drawIntervalId = null;
 
     function cleanupVideoEl() {
+        try { if (drawIntervalId) clearInterval(drawIntervalId); } catch(e) {}
         try { if (srcVideo && srcVideo.parentNode) srcVideo.parentNode.removeChild(srcVideo); } catch(e) {}
         try { if (audioCtxRef && audioCtxRef.state !== 'closed') audioCtxRef.close(); } catch(e) {}
     }
 
     try {
         var W = 1080, H = 1080;
+        var videoAreaH = Math.round(W * 9 / 16);
+
+        // Canvas final (o que vai pro MediaRecorder)
         var outCanvas = document.createElement('canvas');
         outCanvas.width = W; outCanvas.height = H;
-        var oc = outCanvas.getContext('2d');
+        var oc = outCanvas.getContext('2d', { alpha: false });
         oc.imageSmoothingEnabled = true;
         oc.imageSmoothingQuality = 'high';
+
+        // Canvas offscreen com a camada ESTÁTICA (cache) - só desenhada 1 vez
+        var staticCanvas = document.createElement('canvas');
+        staticCanvas.width = W; staticCanvas.height = H;
+        var sc = staticCanvas.getContext('2d', { alpha: false });
+        sc.imageSmoothingEnabled = true;
+        sc.imageSmoothingQuality = 'high';
 
         videoContainer.innerHTML = '<div class="text-center"><p class="text-purple-300 mb-3 font-semibold">Gerando banner v\u00EDdeo'
             + (nativeMp4 ? ' (modo r\u00E1pido MP4 nativo)' : ' (modo compat\u00EDvel)') + '...</p></div>';
@@ -1547,9 +1697,6 @@ async function generateTrailerBannerVideo() {
         outCanvas.style.maxWidth = '480px';
         outCanvas.style.borderRadius = '12px';
         outCanvas.style.boxShadow = '0 0 60px rgba(168,85,247,0.4)';
-
-        oc.fillStyle = '#0a0a0a';
-        oc.fillRect(0, 0, W, H);
 
         srcVideo = document.createElement('video');
         srcVideo.src = uploadedVideoUrl;
@@ -1569,6 +1716,11 @@ async function generateTrailerBannerVideo() {
             srcVideo.addEventListener('error', fail, { once: true });
             if (srcVideo.readyState >= 3) ok();
         });
+
+        // Renderiza a camada estática UMA VEZ no offscreen
+        renderStaticBannerLayer(sc, W, H, videoAreaH);
+        // Copia já pro canvas final (preview inicial)
+        oc.drawImage(staticCanvas, 0, 0);
 
         progressLabel.textContent = 'Iniciando reprodu\u00E7\u00E3o...';
         progressFill.style.width = '10%';
@@ -1631,12 +1783,17 @@ async function generateTrailerBannerVideo() {
             };
         });
 
+        // ===================================================
+        // drawFrame OTIMIZADO:
+        // 1. Copia a camada estática (1 drawImage) - rápido
+        // 2. Desenha SÓ a área do vídeo
+        // Chamado em 30fps FIXOS (setInterval 33ms), sem RAF.
+        // ===================================================
         function drawFrame() {
-            oc.fillStyle = '#0a0a0a';
-            oc.fillRect(0, 0, W, H);
-            var videoAreaH = Math.round(W * 9 / 16);
-            oc.fillStyle = '#000';
-            oc.fillRect(0, 0, W, videoAreaH);
+            // Copia toda a camada estática (poster, texto, rodapé, logo)
+            oc.drawImage(staticCanvas, 0, 0);
+
+            // Desenha SÓ o frame atual do vídeo na área superior
             if (!srcVideo.paused && !srcVideo.ended && srcVideo.readyState >= 2) {
                 var vR = srcVideo.videoWidth / srcVideo.videoHeight;
                 var aR = W / videoAreaH;
@@ -1646,127 +1803,8 @@ async function generateTrailerBannerVideo() {
                 try { oc.drawImage(srcVideo, ox, oy, dw, dh); } catch(e) {}
             }
 
-            if (uploadedLogo) {
-                var logoR = uploadedLogo.width / uploadedLogo.height;
-                var logoH = 140;
-                var logoW = logoH * logoR;
-                if (logoW > 320) { logoW = 320; logoH = logoW / logoR; }
-                oc.drawImage(uploadedLogo, W - logoW - 25, 20, logoW, logoH);
-            }
-
-            var bottomY = videoAreaH;
-            var bottomH = H - bottomY;
-            var bgGrad = oc.createLinearGradient(0, bottomY, 0, H);
-            bgGrad.addColorStop(0, '#0f0f12');
-            bgGrad.addColorStop(1, '#050507');
-            oc.fillStyle = bgGrad;
-            oc.fillRect(0, bottomY, W, bottomH);
-
-            var posterX = 40, posterY = bottomY + 20;
-            var posterW = 280, posterH = 400;
-            if (posterImage) {
-                var pR = posterImage.width / posterImage.height;
-                var aR2 = posterW / posterH;
-                oc.save();
-                oc.beginPath();
-                roundRect(oc, posterX, posterY, posterW, posterH, 12);
-                oc.clip();
-                if (pR > aR2) {
-                    var dh2 = posterH; var dw2 = posterH * pR;
-                    oc.drawImage(posterImage, posterX - (dw2 - posterW) / 2, posterY, dw2, dh2);
-                } else {
-                    var dw3 = posterW; var dh3 = posterW / pR;
-                    oc.drawImage(posterImage, posterX, posterY - (dh3 - posterH) / 2, dw3, dh3);
-                }
-                oc.restore();
-            } else {
-                oc.fillStyle = '#27272a';
-                roundRect(oc, posterX, posterY, posterW, posterH, 12);
-                oc.fill();
-            }
-
-            var infoX = posterX + posterW + 40;
-            var infoMaxW = W - infoX - 40;
-
-            oc.textAlign = 'left';
-            oc.font = '700 50px Oswald, sans-serif';
-            var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), infoMaxW).slice(0, 2);
-            var titleH = titleLines.length * 56;
-            oc.font = '400 19px Manrope, sans-serif';
-            var synLines = wrapText(oc, selectedContent.overview || '', infoMaxW).slice(0, 8);
-            var synH = synLines.length * 26;
-            var gapTitleMeta = 18, gapMetaSyn = 30, metaH = 30;
-            var totalTextH = titleH + gapTitleMeta + metaH + gapMetaSyn + synH;
-            var posterCenterY = posterY + posterH / 2;
-            var blockTop = posterCenterY - totalTextH / 2;
-            var minTop = bottomY + 30;
-            var maxBottom = H - 110;
-            if (blockTop < minTop) blockTop = minTop;
-            if (blockTop + totalTextH > maxBottom) blockTop = maxBottom - totalTextH;
-            var curY = blockTop + 42;
-
-            oc.font = '700 50px Oswald, sans-serif';
-            oc.fillStyle = '#fff';
-            for (var ti2 = 0; ti2 < titleLines.length; ti2++) {
-                oc.fillText(titleLines[ti2], infoX, curY);
-                curY += 56;
-            }
-            curY += gapTitleMeta - 8;
-
-            oc.font = '700 22px Manrope, sans-serif';
-            var metaParts = [];
-            if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push('\u2605 ' + selectedContent.rating);
-            if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push(selectedContent.year);
-            if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push(selectedContent.genres.split(',')[0].trim());
-            var plat = selectedContent.autoProvider;
-            if (plat) metaParts.push(plat);
-            var mx = infoX;
-            for (var mi2 = 0; mi2 < metaParts.length; mi2++) {
-                var part = metaParts[mi2];
-                if (mi2 === 0 && part.indexOf('\u2605') === 0) oc.fillStyle = '#eab308';
-                else if (mi2 === metaParts.length - 1 && plat) oc.fillStyle = '#a855f7';
-                else oc.fillStyle = '#fff';
-                oc.fillText(part, mx, curY);
-                mx += oc.measureText(part).width;
-                if (mi2 < metaParts.length - 1) {
-                    oc.fillStyle = 'rgba(255,255,255,0.4)';
-                    var sepStr = '  \u2022  ';
-                    oc.fillText(sepStr, mx, curY);
-                    mx += oc.measureText(sepStr).width;
-                }
-            }
-            curY += gapMetaSyn;
-
-            oc.font = '400 19px Manrope, sans-serif';
-            oc.fillStyle = 'rgba(255,255,255,0.85)';
-            for (var sj2 = 0; sj2 < synLines.length; sj2++) {
-                oc.fillText(synLines[sj2], infoX, curY);
-                curY += 26;
-                if (curY > H - 90) break;
-            }
-
-            var fY = H - 25;
-            var fBoxH = 50, fBoxW = 200, spacing = 12;
-            var totalW = fBoxW * 2 + spacing;
-            var startX = W - totalW - 40;
-            oc.fillStyle = '#25D366';
-            roundRect(oc, startX, fY - fBoxH, fBoxW, fBoxH, 8);
-            oc.fill();
-            oc.fillStyle = '#fff';
-            oc.font = '600 18px Manrope, sans-serif';
-            oc.textAlign = 'center';
-            oc.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, startX + fBoxW / 2, fY - fBoxH / 2 + 6);
-            oc.fillStyle = '#ef4444';
-            roundRect(oc, startX + fBoxW + spacing, fY - fBoxH, fBoxW, fBoxH, 8);
-            oc.fill();
-            oc.fillStyle = '#fff';
-            oc.font = '700 19px Manrope, sans-serif';
-            oc.fillText(globalSettings.ctaText, startX + fBoxW + spacing + fBoxW / 2, fY - fBoxH / 2 + 6);
-
-            if (recorder && recorder.state === 'recording') requestAnimationFrame(drawFrame);
-
+            // Progresso
             if (srcVideo.duration > 0) {
-                // Modo nativo vai até 95% gravando; modo FFmpeg até 50%, deixa o restante p/ compressão
                 var topPct = nativeMp4 ? 95 : 50;
                 var basePct = 15;
                 var pct = Math.min(topPct, basePct + (srcVideo.currentTime / srcVideo.duration) * (topPct - basePct));
@@ -1778,6 +1816,7 @@ async function generateTrailerBannerVideo() {
         function stopRecording(reason) {
             if (stopRequested) return;
             stopRequested = true;
+            try { if (drawIntervalId) { clearInterval(drawIntervalId); drawIntervalId = null; } } catch(e) {}
             try { srcVideo.pause(); } catch(e) {}
             setTimeout(function() {
                 try {
@@ -1803,7 +1842,10 @@ async function generateTrailerBannerVideo() {
         progressLabel.textContent = 'Gravando...';
         progressFill.style.width = '20%';
         recorder.start(500);
-        drawFrame();
+
+        // Loop de desenho TRAVADO em 30fps (não usa requestAnimationFrame para evitar
+        // descompasso com a taxa do monitor e travamentos perceptíveis)
+        drawIntervalId = setInterval(drawFrame, 1000 / 30);
 
         var rawResult = await rawBlobPromise;
         clearTimeout(failsafeTimer);
@@ -1811,8 +1853,6 @@ async function generateTrailerBannerVideo() {
 
         // ============================================
         // FINALIZAÇÃO
-        // - MP4 nativo → usa direto (RÁPIDO)
-        // - WebM → FFmpeg ultrafast + tune fastdecode
         // ============================================
         var finalBlob = rawResult.blob;
         var finalExt = rawResult.ext;
@@ -1821,7 +1861,6 @@ async function generateTrailerBannerVideo() {
         var nativeOut = false;
 
         if (nativeMp4 && rawResult.ext === 'mp4') {
-            // Já é MP4 nativo - nada a fazer
             nativeOut = true;
             progressFill.style.width = '100%';
             progressLabel.textContent = 'Finalizando...';

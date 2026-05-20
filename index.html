@@ -2,12 +2,15 @@
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8" />
+    <base href="./">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="Banner Generator Pro - Futebol, Filmes e Vídeos" />
     <title>Banner Generator Pro</title>
-    <!-- Service Worker que habilita Cross-Origin Isolation no GitHub Pages (necessário para FFmpeg.wasm) -->
-    <script src="%PUBLIC_URL%/coi-serviceworker.js"></script>
+
+    <!-- Service Worker que habilita Cross-Origin Isolation (necessário para FFmpeg.wasm/SharedArrayBuffer) -->
+    <script src="coi-serviceworker.js"></script>
+
     <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault();}},true);</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -136,10 +139,11 @@
 
     <div id="root"></div>
 
-    <!-- FFmpeg.wasm 0.11.6 (UMD) - compactação de vídeo para WhatsApp HD (local para evitar email-obfuscation) -->
-    <script src="%PUBLIC_URL%/vendor/ffmpeg.min.js"></script>
+    <!-- FFmpeg.wasm 0.11.6 - compactação WhatsApp HD -->
+    <script src="vendor/ffmpeg.min.js"></script>
 
-    <script src="%PUBLIC_URL%/banner-app.js"></script>
+    <script src="banner-app.js"></script>
 </body>
 </html>
+
 

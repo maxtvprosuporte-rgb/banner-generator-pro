@@ -121,7 +121,8 @@ let allFootballGames = [];
 let selectedDate = '';
 
 // ============================================
-// FFmpeg.wasm - compactação de vídeo
+// FFmpeg.wasm - usado APENAS quando o navegador
+// não consegue gravar MP4 nativamente (Firefox/Safari)
 // ============================================
 let ffmpegInstance = null;
 let ffmpegLoading = null;
@@ -151,6 +152,21 @@ async function loadFFmpegOnce(onProgress) {
         return inst;
     })();
     return ffmpegLoading;
+}
+
+// Detecção de suporte a MP4 nativo no MediaRecorder
+function detectNativeMp4Support() {
+    if (typeof MediaRecorder === 'undefined') return '';
+    var mp4Types = [
+        'video/mp4;codecs=avc1.640033,mp4a.40.2',
+        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+        'video/mp4;codecs=avc1,mp4a',
+        'video/mp4'
+    ];
+    for (var i = 0; i < mp4Types.length; i++) {
+        if (MediaRecorder.isTypeSupported(mp4Types[i])) return mp4Types[i];
+    }
+    return '';
 }
 
 // ============================================
@@ -1032,7 +1048,6 @@ function copyAllFootballGames() {
     navigator.clipboard.writeText(text).then(function() { alert(allFootballGames.length + ' jogo' + (allFootballGames.length > 1 ? 's' : '') + ' copiado' + (allFootballGames.length > 1 ? 's' : '') + '!'); }).catch(function() { alert('Erro ao copiar'); });
 }
 
-
 // ============================================
 // MOVIES MODE
 // ============================================
@@ -1277,7 +1292,9 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
 
 
 // ============================================
-// VIDEO MODE (TRAILER MANUAL) - COM COMPACTAÇÃO FFmpeg
+// VIDEO MODE (TRAILER MANUAL) - OTIMIZADO
+// - Chrome/Edge (MP4 nativo) → grava direto, pula FFmpeg (RÁPIDO)
+// - Firefox/Safari (só WebM) → FFmpeg ultrafast + fastdecode
 // ============================================
 async function loadVideoMode() {
     videoTypeFilter = 'both';
@@ -1285,12 +1302,18 @@ async function loadVideoMode() {
     if (uploadedVideoUrl) { try { URL.revokeObjectURL(uploadedVideoUrl); } catch(e) {} }
     uploadedVideoUrl = null;
 
-    var ffmpegStatus = ffmpegSupported()
-        ? '<span class="text-green-400">\u2713 Compacta\u00E7\u00E3o WhatsApp HD ativada</span>'
-        : '<span class="text-yellow-400">\u26A0 Compacta\u00E7\u00E3o indispon\u00EDvel (use Chrome desktop)</span>';
+    var nativeMp4Type = detectNativeMp4Support();
+    var statusHtml;
+    if (nativeMp4Type) {
+        statusHtml = '<span class="text-green-400">\u26A1 MP4 nativo ativado (modo r\u00E1pido)</span>';
+    } else if (ffmpegSupported()) {
+        statusHtml = '<span class="text-green-400">\u2713 Convers\u00E3o WebM\u2192MP4 ativada</span>';
+    } else {
+        statusHtml = '<span class="text-yellow-400">\u26A0 Sem convers\u00E3o - v\u00EDdeo sair\u00E1 em WebM</span>';
+    }
 
     controlPanel.innerHTML =
-        '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-purple-400">Trailer Manual</h2><p class="text-zinc-500 text-sm mt-2">Carregue um v\u00EDdeo MP4 e gere o banner</p><p class="text-xs mt-2">' + ffmpegStatus + '</p></header>' +
+        '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-purple-400">Trailer Manual</h2><p class="text-zinc-500 text-sm mt-2">Carregue um v\u00EDdeo MP4 e gere o banner</p><p class="text-xs mt-2">' + statusHtml + '</p></header>' +
         '<section class="mt-5">' +
             '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Tipo de Conte\u00FAdo</label>' +
             '<div class="flex gap-2">' +
@@ -1341,7 +1364,7 @@ async function loadVideoMode() {
 
     canvas.classList.add('hidden');
     videoContainer.classList.remove('hidden');
-    videoContainer.innerHTML = '<div class="text-center p-12"><div class="text-8xl mb-6">\uD83C\uDFA5</div><h3 class="font-oswald text-3xl font-bold text-purple-400 mb-3">TRAILER MANUAL</h3><p class="text-zinc-400 max-w-md mx-auto">1. Filtre por Filme/S\u00E9rie<br>2. Busque o t\u00EDtulo<br>3. Selecione o conte\u00FAdo<br>4. Carregue o v\u00EDdeo MP4 do dispositivo<br>5. Escolha qualidade e clique em <b>Gerar Banner MP4</b><br><br><span class="text-purple-400">\u2728 O v\u00EDdeo final ser\u00E1 compactado automaticamente para enviar em alta qualidade no WhatsApp</span></p></div>';
+    videoContainer.innerHTML = '<div class="text-center p-12"><div class="text-8xl mb-6">\uD83C\uDFA5</div><h3 class="font-oswald text-3xl font-bold text-purple-400 mb-3">TRAILER MANUAL</h3><p class="text-zinc-400 max-w-md mx-auto">1. Filtre por Filme/S\u00E9rie<br>2. Busque o t\u00EDtulo<br>3. Selecione o conte\u00FAdo<br>4. Carregue o v\u00EDdeo MP4 do dispositivo<br>5. Escolha qualidade e clique em <b>Gerar Banner MP4</b><br><br><span class="text-purple-400">\u2728 No Chrome/Edge desktop o v\u00EDdeo \u00E9 gerado em MP4 nativo (sem recompress\u00E3o). Em outros navegadores, convertido automaticamente.</span></p></div>';
 }
 
 function setVideoTypeFilter(type) {
@@ -1452,8 +1475,7 @@ function updateGenerateBtnState() {
 }
 
 // ============================================
-// GERA BANNER VIDEO + COMPACTA via FFmpeg.wasm
-// Saída: MP4 H.264 + AAC (compatível com WhatsApp HD)
+// GERA BANNER VIDEO - OTIMIZADO
 // ============================================
 async function generateTrailerBannerVideo() {
     if (!selectedContent || !uploadedVideoFile) { alert('Selecione um conte\u00FAdo e carregue um MP4'); return; }
@@ -1468,8 +1490,36 @@ async function generateTrailerBannerVideo() {
     progressFill.style.width = '5%';
 
     var quality = (document.getElementById('videoQuality') || {}).value || 'medium';
-    // Bitrate alvo do MediaRecorder (intermediário). FFmpeg cuida da compactação final.
-    var recBitrate = 6000000;
+
+    // Detecta suporte a MP4 nativo
+    var nativeMp4Type = detectNativeMp4Support();
+    var nativeMp4 = !!nativeMp4Type;
+    var webmTypes = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm'
+    ];
+    var mimeType = nativeMp4Type;
+    if (!mimeType) {
+        for (var wi = 0; wi < webmTypes.length; wi++) {
+            if (window.MediaRecorder && MediaRecorder.isTypeSupported(webmTypes[wi])) { mimeType = webmTypes[wi]; break; }
+        }
+    }
+    if (!mimeType) {
+        btn.disabled = false;
+        btn.innerHTML = 'GERAR BANNER MP4';
+        progressBox.classList.add('hidden');
+        alert('Navegador n\u00E3o suporta MediaRecorder');
+        return;
+    }
+
+    // Bitrates por qualidade:
+    // - MP4 nativo: grava direto no bitrate final (rápido, sem recompressão)
+    // - WebM: grava em bitrate maior; FFmpeg comprime depois
+    var recVideoBitrate, recAudioBitrate;
+    if (quality === 'high')      { recVideoBitrate = nativeMp4 ? 3500000 : 6000000; recAudioBitrate = 128000; }
+    else if (quality === 'low')  { recVideoBitrate = nativeMp4 ? 1200000 : 4000000; recAudioBitrate = 96000;  }
+    else                         { recVideoBitrate = nativeMp4 ? 2200000 : 5000000; recAudioBitrate = 128000; }
 
     var srcVideo = null;
     var recorder = null;
@@ -1490,7 +1540,8 @@ async function generateTrailerBannerVideo() {
         oc.imageSmoothingEnabled = true;
         oc.imageSmoothingQuality = 'high';
 
-        videoContainer.innerHTML = '<div class="text-center"><p class="text-purple-300 mb-3 font-semibold">Gerando banner v\u00EDdeo...</p></div>';
+        videoContainer.innerHTML = '<div class="text-center"><p class="text-purple-300 mb-3 font-semibold">Gerando banner v\u00EDdeo'
+            + (nativeMp4 ? ' (modo r\u00E1pido MP4 nativo)' : ' (modo compat\u00EDvel)') + '...</p></div>';
         videoContainer.appendChild(outCanvas);
         outCanvas.style.maxWidth = '480px';
         outCanvas.style.borderRadius = '12px';
@@ -1559,24 +1610,10 @@ async function generateTrailerBannerVideo() {
         if (audioStream) audioStream.getAudioTracks().forEach(function(t) { combinedTracks.push(t); });
         var combinedStream = new MediaStream(combinedTracks);
 
-        var preferredTypes = [
-            'video/mp4;codecs=avc1.640033,mp4a.40.2',
-            'video/mp4;codecs=avc1,mp4a',
-            'video/mp4',
-            'video/webm;codecs=vp9,opus',
-            'video/webm;codecs=vp8,opus',
-            'video/webm'
-        ];
-        var mimeType = '';
-        for (var mi = 0; mi < preferredTypes.length; mi++) {
-            if (window.MediaRecorder && MediaRecorder.isTypeSupported(preferredTypes[mi])) { mimeType = preferredTypes[mi]; break; }
-        }
-        if (!mimeType) throw new Error('Navegador n\u00E3o suporta MediaRecorder');
-
         recorder = new MediaRecorder(combinedStream, {
             mimeType: mimeType,
-            videoBitsPerSecond: recBitrate,
-            audioBitsPerSecond: 192000
+            videoBitsPerSecond: recVideoBitrate,
+            audioBitsPerSecond: recAudioBitrate
         });
         var chunks = [];
         recorder.ondataavailable = function(ev) { if (ev.data && ev.data.size > 0) chunks.push(ev.data); };
@@ -1728,7 +1765,10 @@ async function generateTrailerBannerVideo() {
             if (recorder && recorder.state === 'recording') requestAnimationFrame(drawFrame);
 
             if (srcVideo.duration > 0) {
-                var pct = Math.min(50, 15 + (srcVideo.currentTime / srcVideo.duration) * 35);
+                // Modo nativo vai até 95% gravando; modo FFmpeg até 50%, deixa o restante p/ compressão
+                var topPct = nativeMp4 ? 95 : 50;
+                var basePct = 15;
+                var pct = Math.min(topPct, basePct + (srcVideo.currentTime / srcVideo.duration) * (topPct - basePct));
                 progressFill.style.width = pct + '%';
                 progressLabel.textContent = 'Gravando: ' + Math.floor(srcVideo.currentTime) + 's / ' + Math.floor(srcVideo.duration) + 's';
             }
@@ -1769,24 +1809,32 @@ async function generateTrailerBannerVideo() {
         cleanupVideoEl();
 
         // ============================================
-        // ETAPA DE COMPACTAÇÃO via FFmpeg.wasm
+        // FINALIZAÇÃO
+        // - MP4 nativo → usa direto (RÁPIDO)
+        // - WebM → FFmpeg ultrafast + tune fastdecode
         // ============================================
         var finalBlob = rawResult.blob;
         var finalExt = rawResult.ext;
         var rawSizeMB = (rawResult.blob.size / 1024 / 1024).toFixed(2);
         var compressed = false;
+        var nativeOut = false;
 
-        if (ffmpegSupported()) {
+        if (nativeMp4 && rawResult.ext === 'mp4') {
+            // Já é MP4 nativo - nada a fazer
+            nativeOut = true;
+            progressFill.style.width = '100%';
+            progressLabel.textContent = 'Finalizando...';
+        } else if (ffmpegSupported()) {
             try {
                 progressLabel.textContent = 'Carregando compressor FFmpeg...';
                 progressFill.style.width = '55%';
                 var ffmpeg = await loadFFmpegOnce(function(ratio) {
                     var pct = 60 + Math.max(0, Math.min(1, ratio)) * 35;
                     progressFill.style.width = pct + '%';
-                    progressLabel.textContent = 'Compactando para WhatsApp HD... ' + Math.round(ratio * 100) + '%';
+                    progressLabel.textContent = 'Convertendo WebM \u2192 MP4... ' + Math.round(ratio * 100) + '%';
                 });
 
-                progressLabel.textContent = 'Compactando para WhatsApp HD...';
+                progressLabel.textContent = 'Convertendo WebM \u2192 MP4...';
                 progressFill.style.width = '60%';
 
                 var inputName = 'input.' + rawResult.ext;
@@ -1794,29 +1842,31 @@ async function generateTrailerBannerVideo() {
                 var fetchFile = window.FFmpeg.fetchFile;
                 ffmpeg.FS('writeFile', inputName, await fetchFile(rawResult.blob));
 
-                // Configuração WhatsApp-otimizada
                 var crf, maxrate, bufsize, audioBr;
                 if (quality === 'high')      { crf = '24'; maxrate = '3500k'; bufsize = '7000k'; audioBr = '128k'; }
                 else if (quality === 'low')  { crf = '30'; maxrate = '1200k'; bufsize = '2400k'; audioBr = '96k';  }
                 else                         { crf = '26'; maxrate = '2200k'; bufsize = '4400k'; audioBr = '128k'; }
 
+                // ultrafast + fastdecode + fast_bilinear = MUITO mais rápido em wasm
                 await ffmpeg.run(
                     '-i', inputName,
                     '-c:v', 'libx264',
-                    '-preset', 'veryfast',
+                    '-preset', 'ultrafast',
+                    '-tune', 'fastdecode',
                     '-profile:v', 'main',
                     '-level', '4.0',
                     '-pix_fmt', 'yuv420p',
                     '-crf', crf,
                     '-maxrate', maxrate,
                     '-bufsize', bufsize,
-                    '-vf', 'scale=720:720:flags=lanczos',
+                    '-vf', 'scale=720:720:flags=fast_bilinear',
                     '-r', '30',
                     '-c:a', 'aac',
                     '-b:a', audioBr,
                     '-ar', '44100',
                     '-ac', '2',
                     '-movflags', '+faststart',
+                    '-threads', '0',
                     '-y', outputName
                 );
 
@@ -1833,7 +1883,7 @@ async function generateTrailerBannerVideo() {
         progressFill.style.width = '100%';
         progressLabel.textContent = 'Conclu\u00EDdo!';
 
-        var compressedSizeMB = (finalBlob.size / 1024 / 1024).toFixed(2);
+        var finalSizeMB = (finalBlob.size / 1024 / 1024).toFixed(2);
         var savedPct = compressed ? Math.round((1 - finalBlob.size / rawResult.blob.size) * 100) : 0;
         var url = URL.createObjectURL(finalBlob);
         var safeTitle = (selectedContent.title || 'trailer').replace(/[^a-zA-Z0-9]/g, '_');
@@ -1842,13 +1892,19 @@ async function generateTrailerBannerVideo() {
         videoContainer.innerHTML = '';
         var infoDiv = document.createElement('div');
         infoDiv.className = 'text-center mb-4';
-        infoDiv.innerHTML = '<h3 class="font-oswald text-2xl font-bold text-purple-400 mb-2">Banner gerado!</h3>' +
-            (compressed
-                ? '<p class="text-green-400 text-sm mb-1">\u2728 Compactado para WhatsApp HD (H.264 + AAC)</p>' +
-                  '<p class="text-zinc-300 text-xs">Original: ' + rawSizeMB + ' MB \u2192 Final: <b>' + compressedSizeMB + ' MB</b> ' +
-                  '<span class="text-green-400">(-' + savedPct + '%)</span></p>'
-                : '<p class="text-yellow-400 text-xs mb-1">\u26A0 Compacta\u00E7\u00E3o indispon\u00EDvel - v\u00EDdeo original</p>' +
-                  '<p class="text-zinc-400 text-xs">Tamanho: ' + compressedSizeMB + ' MB \u00B7 Formato: ' + finalExt.toUpperCase() + '</p>');
+        var statusHtml2 = '';
+        if (nativeOut) {
+            statusHtml2 = '<p class="text-green-400 text-sm mb-1">\u26A1 MP4 nativo (H.264 + AAC) \u2014 sem recompress\u00E3o</p>' +
+                          '<p class="text-zinc-300 text-xs">Tamanho: <b>' + finalSizeMB + ' MB</b> \u00B7 Qualidade: ' + quality.toUpperCase() + '</p>';
+        } else if (compressed) {
+            statusHtml2 = '<p class="text-green-400 text-sm mb-1">\u2728 Convertido para MP4 (H.264 + AAC)</p>' +
+                          '<p class="text-zinc-300 text-xs">Original: ' + rawSizeMB + ' MB \u2192 Final: <b>' + finalSizeMB + ' MB</b> ' +
+                          '<span class="text-green-400">(-' + savedPct + '%)</span></p>';
+        } else {
+            statusHtml2 = '<p class="text-yellow-400 text-xs mb-1">\u26A0 Sem convers\u00E3o dispon\u00EDvel - v\u00EDdeo original</p>' +
+                          '<p class="text-zinc-400 text-xs">Tamanho: ' + finalSizeMB + ' MB \u00B7 Formato: ' + finalExt.toUpperCase() + '</p>';
+        }
+        infoDiv.innerHTML = '<h3 class="font-oswald text-2xl font-bold text-purple-400 mb-2">Banner gerado!</h3>' + statusHtml2;
         videoContainer.appendChild(infoDiv);
 
         var vidEl = document.createElement('video');

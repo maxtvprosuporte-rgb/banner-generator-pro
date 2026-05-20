@@ -6,6 +6,8 @@
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="Banner Generator Pro - Futebol, Filmes e Vídeos" />
     <title>Banner Generator Pro</title>
+    <!-- Service Worker que habilita Cross-Origin Isolation no GitHub Pages (necessário para FFmpeg.wasm) -->
+    <script src="%PUBLIC_URL%/coi-serviceworker.js"></script>
     <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault();}},true);</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -140,3 +142,4 @@
     <script src="%PUBLIC_URL%/banner-app.js"></script>
 </body>
 </html>
+

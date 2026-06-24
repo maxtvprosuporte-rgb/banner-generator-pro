@@ -15,7 +15,7 @@ let currentFormat = 'post';
 let uploadedLogo = null;
 let posterImage = null;
 let currentTrailer = null;
-let globalSettings = { logo: null, whatsappNumber: '', whatsappText: 'Grupo VIP', ctaText: 'ASSINA JÁ' };
+let globalSettings = { logo: null, whatsappText: '(00) 00000-0000', ctaText: 'ASSINA JÁ' };
 
 let movieTypeFilter = 'both';
 let videoTypeFilter = 'both';
@@ -129,7 +129,7 @@ function loadGlobalSettings() {
             globalSettings = JSON.parse(saved);
             console.log('✅ Configurações carregadas do localStorage:', {
                 logo: globalSettings.logo ? 'Presente (' + globalSettings.logo.length + ' chars)' : 'Ausente',
-                whatsapp: globalSettings.whatsappNumber,
+                whatsapp: globalSettings.whatsappText,
                 cta: globalSettings.ctaText
             });
             if (globalSettings.logo) {
@@ -155,11 +155,9 @@ function loadGlobalSettings() {
                 // Se não há logo salva, tentar carregar logo padrão da raiz
                 loadDefaultLogo();
             }
-            var w1 = document.getElementById('settingsWhatsappNumber');
             var w2 = document.getElementById('settingsWhatsappText');
             var w3 = document.getElementById('settingsCtaText');
-            if (w1) w1.value = globalSettings.whatsappNumber || '';
-            if (w2) w2.value = globalSettings.whatsappText || 'Grupo VIP';
+            if (w2) w2.value = globalSettings.whatsappText || '(00) 00000-0000';
             if (w3) w3.value = globalSettings.ctaText || 'ASSINA JÁ';
         } else {
             console.log('ℹ️ Nenhuma configuração salva encontrada');
@@ -181,14 +179,13 @@ document.getElementById('settingsModal').addEventListener('click', function(e) {
 });
 
 function saveSettings() {
-    globalSettings.whatsappNumber = document.getElementById('settingsWhatsappNumber').value;
     globalSettings.whatsappText = document.getElementById('settingsWhatsappText').value;
     globalSettings.ctaText = document.getElementById('settingsCtaText').value;
     // Logo já foi atribuído a globalSettings.logo no event listener do input
     localStorage.setItem('bannerGeneratorSettings', JSON.stringify(globalSettings));
     console.log('✅ Configurações salvas:', {
         logo: globalSettings.logo ? 'Presente' : 'Ausente',
-        whatsapp: globalSettings.whatsappNumber,
+        whatsapp: globalSettings.whatsappText,
         cta: globalSettings.ctaText
     });
     alert('Configurações salvas!');
@@ -527,7 +524,7 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
     var mPadding = 50; var footerY = height - mPadding; var boxH = 50;
     c.fillStyle = '#25D366'; roundRect(c, mPadding, footerY - boxH, 180, boxH, 8); c.fill();
     c.fillStyle = '#fff'; c.font = '600 20px Manrope, sans-serif'; c.textAlign = 'center';
-    c.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, mPadding + 90, footerY - boxH / 2 + 7);
+    c.fillText(globalSettings.whatsappText, mPadding + 90, footerY - boxH / 2 + 7);
     c.fillStyle = '#ef4444'; roundRect(c, mPadding + 195, footerY - boxH, 180, boxH, 8); c.fill();
     c.fillStyle = '#fff'; c.font = '700 20px Manrope, sans-serif';
     c.fillText(globalSettings.ctaText, mPadding + 285, footerY - boxH / 2 + 7);
@@ -883,7 +880,7 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     oc.fillStyle = '#fff';
     oc.font = '700 22px Manrope, sans-serif';
     oc.textAlign = 'center';
-    oc.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, contentX + btnW2 / 2, btnY + btnH / 2 + 7);
+    oc.fillText(globalSettings.whatsappText, contentX + btnW2 / 2, btnY + btnH / 2 + 7);
 
     // Botão CTA (direita)
     var btnX2 = contentX + btnW2 + btnGap;

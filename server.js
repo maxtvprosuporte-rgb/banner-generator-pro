@@ -9,6 +9,37 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ============================================
+// FETCH ROBUSTO COM RETRY
+// ============================================
+async function fetchWithRetry(url, options = {}, retries = 3, timeout = 10000) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            const response = await fetchWithRetry(url, {
+                ...options,
+                signal: controller.signal,
+                timeout: timeout
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            return response;
+        } catch (error) {
+            console.error(`Tentativa ${i + 1}/${retries} falhou:`, error.message);
+            if (i === retries - 1) throw error;
+            // Espera antes de tentar novamente (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+        }
+    }
+}
+
+// ============================================
 // VALIDAÇÃO DE API KEYS (SEGURANÇA)
 // ============================================
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
@@ -105,13 +136,9 @@ app.get('/api/image-proxy', async (req, res) => {
         const { url } = req.query;
         if (!url) return res.status(400).json({ error: 'URL obrigatoria' });
         
-        const response = await fetch(url, { 
+        const response = await fetchWithRetry(url, { 
             headers: { 'User-Agent': 'Mozilla/5.0' } 
         });
-        
-        if (!response.ok) {
-            return res.status(response.status).json({ error: 'Erro ao carregar imagem' });
-        }
         
         const buffer = await response.buffer();
         res.set({ 
@@ -135,7 +162,7 @@ app.get('/api/tmdb/search/movie', async (req, res) => {
         const lang = language || 'pt-BR';
         if (!query) return res.status(400).json({ error: 'Parametro query obrigatorio' });
         
-        const response = await fetch(
+        const response = await fetchWithRetry(
             `${TMDB_API_URL}/search/movie?api_key=${TMDB_API_KEY}&language=${lang}&query=${encodeURIComponent(query)}`
         );
         const data = await response.json();
@@ -152,7 +179,7 @@ app.get('/api/tmdb/search/tv', async (req, res) => {
         const lang = language || 'pt-BR';
         if (!query) return res.status(400).json({ error: 'Parametro query obrigatorio' });
         
-        const response = await fetch(
+        const response = await fetchWithRetry(
             `${TMDB_API_URL}/search/tv?api_key=${TMDB_API_KEY}&language=${lang}&query=${encodeURIComponent(query)}`
         );
         const data = await response.json();
@@ -170,7 +197,7 @@ app.get('/api/tmdb/movie/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const lang = req.query.language || 'pt-BR';
-        const response = await fetch(
+        const response = await fetchWithRetry(
             `${TMDB_API_URL}/movie/${id}?api_key=${TMDB_API_KEY}&language=${lang}`
         );
         const data = await response.json();
@@ -185,7 +212,7 @@ app.get('/api/tmdb/tv/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const lang = req.query.language || 'pt-BR';
-        const response = await fetch(
+        const response = await fetchWithRetry(
             `${TMDB_API_URL}/tv/${id}?api_key=${TMDB_API_KEY}&language=${lang}`
         );
         const data = await response.json();
@@ -202,7 +229,7 @@ app.get('/api/tmdb/tv/:id', async (req, res) => {
 app.get('/api/tmdb/movie/:id/watch', async (req, res) => {
     try {
         const { id } = req.params;
-        const response = await fetch(
+        const response = await fetchWithRetry(
             `${TMDB_API_URL}/movie/${id}/watch/providers?api_key=${TMDB_API_KEY}`
         );
         const data = await response.json();
@@ -216,7 +243,7 @@ app.get('/api/tmdb/movie/:id/watch', async (req, res) => {
 app.get('/api/tmdb/tv/:id/watch', async (req, res) => {
     try {
         const { id } = req.params;
-        const response = await fetch(
+        const response = await fetchWithRetry(
             `${TMDB_API_URL}/tv/${id}/watch/providers?api_key=${TMDB_API_KEY}`
         );
         const data = await response.json();
@@ -233,7 +260,7 @@ app.get('/api/tmdb/tv/:id/watch', async (req, res) => {
 app.get('/api/tmdb/movie/:id/videos', async (req, res) => {
     try {
         const { id } = req.params;
-        const response = await fetch(
+        const response = await fetchWithRetry(
             `${TMDB_API_URL}/movie/${id}/videos?api_key=${TMDB_API_KEY}&language=pt-BR`
         );
         const data = await response.json();
@@ -247,7 +274,7 @@ app.get('/api/tmdb/movie/:id/videos', async (req, res) => {
 app.get('/api/tmdb/tv/:id/videos', async (req, res) => {
     try {
         const { id } = req.params;
-        const response = await fetch(
+        const response = await fetchWithRetry(
             `${TMDB_API_URL}/tv/${id}/videos?api_key=${TMDB_API_KEY}&language=pt-BR`
         );
         const data = await response.json();
@@ -316,7 +343,7 @@ app.get('/api/video/best-trailer/:type/:id', async (req, res) => {
             return res.status(400).json({ error: 'Tipo deve ser "movie" ou "tv"' });
         }
 
-        const response = await fetch(
+        const response = await fetchWithRetry(
             `${TMDB_API_URL}/${type}/${id}/videos?api_key=${TMDB_API_KEY}&language=pt-BR`
         );
         const data = await response.json();

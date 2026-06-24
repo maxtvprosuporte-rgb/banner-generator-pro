@@ -83,20 +83,30 @@ function detectNativeMp4Support() {
 // CARREGAR LOGO PADRÃO DA RAIZ
 // ============================================
 function loadDefaultLogo() {
-    var defaultLogo = new Image();
-    defaultLogo.crossOrigin = 'anonymous';
-    defaultLogo.onload = function() {
-        uploadedLogo = defaultLogo;
-        console.log('✅ Logo padrão carregada da raiz: logo.PNG (' + defaultLogo.width + 'x' + defaultLogo.height + ')');
-        var slt = document.getElementById('settingsLogoText');
-        var slr = document.getElementById('settingsRemoveLogo');
-        if (slt) slt.textContent = 'Logo padrão (logo.PNG)';
-        if (slr) slr.classList.remove('hidden');
-    };
-    defaultLogo.onerror = function() {
-        console.log('ℹ️ Logo padrão (logo.PNG) não encontrada na raiz');
-    };
-    defaultLogo.src = 'logo.PNG';
+    var variations = ['logo.PNG', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp'];
+    var tried = 0;
+    function tryNext() {
+        if (tried >= variations.length) {
+            console.log('ℹ️ Nenhuma logo padrão encontrada na raiz (tentativas: ' + variations.join(', ') + ')');
+            return;
+        }
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+            uploadedLogo = img;
+            console.log('✅ Logo padrão carregada da raiz: ' + variations[tried - 1] + ' (' + img.width + 'x' + img.height + ')');
+            var slt = document.getElementById('settingsLogoText');
+            var slr = document.getElementById('settingsRemoveLogo');
+            if (slt) slt.textContent = 'Logo padrão (' + variations[tried - 1] + ')';
+            if (slr) slr.classList.remove('hidden');
+        };
+        img.onerror = function() {
+            tryNext();
+        };
+        tried++;
+        img.src = variations[tried - 1];
+    }
+    tryNext();
 }
 
 // ============================================
@@ -502,7 +512,7 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
         c.translate(width / 2, height / 2); c.rotate(-30 * Math.PI / 180); c.translate(-width / 2, -height / 2);
         for (var py = -height; py < height * 2; py += spY) { for (var px = -width; px < width * 2; px += spX) { c.drawImage(uploadedLogo, px, py, pW, pH); } }
         c.restore();
-        var cornerH = 300; var cornerW = cornerH * (uploadedLogo.width / uploadedLogo.height); c.globalAlpha = 1; c.drawImage(uploadedLogo, width - cornerW, 0, cornerW, cornerH);
+        var cornerH = 140; var cornerW = cornerH * (uploadedLogo.width / uploadedLogo.height); c.globalAlpha = 1; c.drawImage(uploadedLogo, width - cornerW - 20, 20, cornerW, cornerH);
     }
     var mPadding = 50; var footerY = height - mPadding; var boxH = 50;
     c.fillStyle = '#25D366'; roundRect(c, mPadding, footerY - boxH, 180, boxH, 8); c.fill();
@@ -791,39 +801,50 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
         oc.fill();
     }
 
-    // Título (à direita do poster, bold, max 2 linhas)
-    oc.textAlign = 'left';
+    // Calcula a altura total do conteúdo para centralizar verticalmente em relação ao poster
     oc.font = '700 48px Oswald, sans-serif';
-    oc.fillStyle = '#fff';
-    oc.shadowColor = 'rgba(0,0,0,0.8)';
-    oc.shadowBlur = 10;
     var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), contentMaxW).slice(0, 2);
-    var curY = posterY + 10;
-    for (var ti2 = 0; ti2 < titleLines.length; ti2++) {
-        oc.fillText(titleLines[ti2], contentX, curY);
-        curY += 55;
-    }
-    oc.shadowBlur = 0;
+    var titleBlockH = titleLines.length * 55;
 
-    // Meta (rating, ano, gênero, plataforma) - à direita do poster, abaixo do título
-    curY += 10;
-    oc.font = '600 22px Manrope, sans-serif';
     var metaParts = [];
     if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push('★ ' + selectedContent.rating);
     if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push(selectedContent.year);
     if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push(selectedContent.genres.split(',')[0].trim());
     var plat = selectedContent.autoProvider;
     if (plat) metaParts.push(plat);
-    
-    var metaText = metaParts.join('  •  ');
-    oc.fillStyle = '#ddd';
-    oc.fillText(metaText, contentX, curY);
+    var metaBlockH = 22;
 
-    // Sinopse (à direita do poster, abaixo da meta)
-    curY += 30;
+    oc.font = '400 20px Manrope, sans-serif';
+    var synLines = wrapText(oc, selectedContent.overview || '', contentMaxW).slice(0, 5);
+    var synBlockH = synLines.length * 28;
+
+    var gap1 = 10, gap2 = 30;
+    var totalContentH = titleBlockH + gap1 + metaBlockH + gap2 + synBlockH;
+    var curY = posterY + Math.max(0, (posterH - totalContentH) / 2);
+
+    // Título
+    oc.textAlign = 'left';
+    oc.font = '700 48px Oswald, sans-serif';
+    oc.fillStyle = '#fff';
+    oc.shadowColor = 'rgba(0,0,0,0.8)';
+    oc.shadowBlur = 10;
+    curY += 48;
+    for (var ti2 = 0; ti2 < titleLines.length; ti2++) {
+        oc.fillText(titleLines[ti2], contentX, curY);
+        curY += 55;
+    }
+    oc.shadowBlur = 0;
+
+    // Meta
+    curY += gap1;
+    oc.font = '600 22px Manrope, sans-serif';
+    oc.fillStyle = '#ddd';
+    oc.fillText(metaParts.join('  •  '), contentX, curY);
+
+    // Sinopse
+    curY += gap2;
     oc.font = '400 20px Manrope, sans-serif';
     oc.fillStyle = 'rgba(255,255,255,0.8)';
-    var synLines = wrapText(oc, selectedContent.overview || '', contentMaxW).slice(0, 5);
     for (var sj2 = 0; sj2 < synLines.length; sj2++) {
         oc.fillText(synLines[sj2], contentX, curY);
         curY += 28;

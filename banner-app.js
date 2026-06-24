@@ -738,10 +738,8 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
         var logoW = logoH * logoR;
         if (logoW > 200) { logoW = 200; logoH = logoW / logoR; }
         oc.save();
-        oc.shadowColor = 'rgba(0,0,0,0.95)';
-        oc.shadowBlur = 20;
-        oc.shadowOffsetX = 2;
-        oc.shadowOffsetY = 2;
+        oc.globalAlpha = 1.0;
+        // Sem shadow para manter transparência do PNG
         oc.drawImage(uploadedLogo, W - logoW - 25, 25, logoW, logoH);
         oc.restore();
     }

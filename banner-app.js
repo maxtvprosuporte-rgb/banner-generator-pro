@@ -80,31 +80,41 @@ function detectNativeMp4Support() {
 }
 
 // ============================================
-// CARREGAR LOGO PADRÃO DA RAIZ
+// CARREGAR LOGO PADRÃO - tenta raiz e subpastas
 // ============================================
 function loadDefaultLogo() {
-    var variations = ['logo.PNG', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp'];
+    var folders = ['', 'img/', 'assets/', 'images/', 'static/', 'public/'];
+    var extensions = ['logo.PNG', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'logo.svg'];
+    var paths = [];
+    folders.forEach(function(folder) {
+        extensions.forEach(function(ext) {
+            paths.push(folder + ext);
+        });
+    });
+    
     var tried = 0;
     function tryNext() {
-        if (tried >= variations.length) {
-            console.log('ℹ️ Nenhuma logo padrão encontrada na raiz (tentativas: ' + variations.join(', ') + ')');
+        if (tried >= paths.length) {
+            console.log('ℹ️ Nenhuma logo padrão encontrada. Tentativas: ' + paths.slice(0, 10).join(', ') + '...');
             return;
         }
+        var path = paths[tried];
         var img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = function() {
             uploadedLogo = img;
-            console.log('✅ Logo padrão carregada da raiz: ' + variations[tried - 1] + ' (' + img.width + 'x' + img.height + ')');
+            console.log('✅ Logo padrão carregada: ' + path + ' (' + img.width + 'x' + img.height + ')');
             var slt = document.getElementById('settingsLogoText');
             var slr = document.getElementById('settingsRemoveLogo');
-            if (slt) slt.textContent = 'Logo padrão (' + variations[tried - 1] + ')';
+            if (slt) slt.textContent = 'Logo padrão (' + path + ')';
             if (slr) slr.classList.remove('hidden');
         };
         img.onerror = function() {
+            tried++;
             tryNext();
         };
+        img.src = path;
         tried++;
-        img.src = variations[tried - 1];
     }
     tryNext();
 }
@@ -1091,6 +1101,18 @@ async function generateTrailerBannerVideo() {
                 } catch(e) {
                     oc.restore();
                 }
+            }
+
+            // Redesenha a logo POR CIMA do vídeo (canto superior direito)
+            if (uploadedLogo) {
+                var logoR2 = uploadedLogo.width / uploadedLogo.height;
+                var logoH2 = 80;
+                var logoW2 = logoH2 * logoR2;
+                if (logoW2 > 200) { logoW2 = 200; logoH2 = logoW2 / logoR2; }
+                oc.save();
+                oc.globalAlpha = 1.0;
+                oc.drawImage(uploadedLogo, W - logoW2 - 25, 25, logoW2, logoH2);
+                oc.restore();
             }
 
             // Progresso

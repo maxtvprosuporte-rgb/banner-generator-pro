@@ -9,37 +9,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ============================================
-// FETCH ROBUSTO COM RETRY
-// ============================================
-async function fetchWithRetry(url, options = {}, retries = 3, timeout = 10000) {
-    for (let i = 0; i < retries; i++) {
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-            
-            const response = await fetchWithRetry(url, {
-                ...options,
-                signal: controller.signal,
-                timeout: timeout
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            return response;
-        } catch (error) {
-            console.error(`Tentativa ${i + 1}/${retries} falhou:`, error.message);
-            if (i === retries - 1) throw error;
-            // Espera antes de tentar novamente (exponential backoff)
-            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
-        }
-    }
-}
-
-// ============================================
 // VALIDAÇÃO DE API KEYS (SEGURANÇA)
 // ============================================
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
@@ -56,11 +25,35 @@ console.log('✅ TMDB API Key carregada com sucesso');
 const TMDB_API_URL = 'https://api.themoviedb.org/3';
 
 // ============================================
+// FETCH SIMPLES COM RETRY
+// ============================================
+async function fetchWithRetry(url, options = {}, retries = 2) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(url, {
+                ...options,
+                timeout: 15000
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            return response;
+        } catch (error) {
+            console.error(`Tentativa ${i + 1}/${retries} falhou para ${url}:`, error.message);
+            if (i === retries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+}
+
+// ============================================
 // RATE LIMITING - PROTEÇÃO CONTRA ABUSO
 // ============================================
 const apiLimiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minuto
-    max: 30, // Máximo 30 requisições por minuto
+    windowMs: 60 * 1000,
+    max: 30,
     message: { 
         error: 'Muitas requisições. Tente novamente em 1 minuto.',
         retryAfter: 60
@@ -69,7 +62,6 @@ const apiLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Aplicar rate limit em todas as rotas da API
 app.use('/api/', apiLimiter);
 
 // ============================================
@@ -77,19 +69,13 @@ app.use('/api/', apiLimiter);
 // ============================================
 app.use(cors());
 app.use(express.json());
-
-// Servir arquivos estáticos da raiz
 app.use(express.static(__dirname));
 
 // ============================================
 // SISTEMA DE CACHE - SERVIDOR
 // ============================================
 const cache = new Map();
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 horas
-
-function getCacheKey(url) {
-    return url;
-}
+const CACHE_DURATION = 24 * 60 * 60 * 1000;
 
 function getCache(key) {
     const cached = cache.get(key);
@@ -113,7 +99,6 @@ function setCache(key, data) {
     console.log('💾 Cache SET (servidor):', key);
 }
 
-// Limpar cache antigo a cada hora
 setInterval(() => {
     const now = Date.now();
     let deleted = 0;

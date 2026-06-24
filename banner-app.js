@@ -817,11 +817,12 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     var titleBlockH = titleLines.length * 55;
 
     var metaParts = [];
-    if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push('★ ' + selectedContent.rating);
-    if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push(selectedContent.year);
-    if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push(selectedContent.genres.split(',')[0].trim());
+    if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push({ text: '\u2605 ' + selectedContent.rating, color: '#eab308' });
+    if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push({ text: selectedContent.year, color: 'rgba(255,255,255,0.9)' });
+    if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push({ text: selectedContent.genres.split(',')[0].trim(), color: 'rgba(255,255,255,0.9)' });
+    if (selectedContent.runtime && selectedContent.runtime !== 'N/A') metaParts.push({ text: selectedContent.runtime, color: 'rgba(255,255,255,0.9)' });
     var plat = selectedContent.autoProvider;
-    if (plat) metaParts.push(plat);
+    if (plat) metaParts.push({ text: plat, color: '#ef4444' });
     var metaBlockH = 22;
 
     oc.font = '400 20px Manrope, sans-serif';
@@ -847,9 +848,19 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
 
     // Meta
     curY += gap1;
-    oc.font = '600 22px Manrope, sans-serif';
-    oc.fillStyle = '#ddd';
-    oc.fillText(metaParts.join('  •  '), contentX, curY);
+    oc.font = '600 24px Manrope, sans-serif';
+    var sep = '  \u2022  ';
+    var metaCursorX = contentX;
+    for (var mi = 0; mi < metaParts.length; mi++) {
+        if (mi > 0) {
+            oc.fillStyle = 'rgba(255,255,255,0.6)';
+            oc.fillText(sep, metaCursorX, curY);
+            metaCursorX += oc.measureText(sep).width;
+        }
+        oc.fillStyle = metaParts[mi].color;
+        oc.fillText(metaParts[mi].text, metaCursorX, curY);
+        metaCursorX += oc.measureText(metaParts[mi].text).width;
+    }
 
     // Sinopse
     curY += gap2;

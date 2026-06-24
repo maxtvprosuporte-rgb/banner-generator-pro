@@ -208,8 +208,19 @@ document.getElementById('settingsLogoInput').addEventListener('change', function
                 var ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Converter para data URL com qualidade reduzida
-                var compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                // Detectar transparência: se algum pixel tiver alpha < 255, usar PNG
+                var hasTransparency = false;
+                try {
+                    var pixelData = ctx.getImageData(0, 0, width, height).data;
+                    for (var px = 3; px < pixelData.length; px += 4) {
+                        if (pixelData[px] < 255) { hasTransparency = true; break; }
+                    }
+                } catch(e) {}
+                
+                // Converter para data URL preservando transparência (PNG) ou comprimindo (JPEG)
+                var compressedDataUrl = hasTransparency
+                    ? canvas.toDataURL('image/png')
+                    : canvas.toDataURL('image/jpeg', 0.8);
                 
                 globalSettings.logo = compressedDataUrl;
                 uploadedLogo = img;
@@ -734,57 +745,30 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     // Logo no canto superior direito (sobre o vídeo)
     if (uploadedLogo) {
         var logoR = uploadedLogo.width / uploadedLogo.height;
-        var logoH = 60;
+        var logoH = 80;
         var logoW = logoH * logoR;
-        if (logoW > 150) { logoW = 150; logoH = logoW / logoR; }
+        if (logoW > 200) { logoW = 200; logoH = logoW / logoR; }
         oc.save();
         oc.globalAlpha = 1.0;
-        oc.drawImage(uploadedLogo, W - logoW - 20, 20, logoW, logoH);
+        oc.drawImage(uploadedLogo, W - logoW - 25, 25, logoW, logoH);
         oc.restore();
     }
 
-    // Título (centralizado, compacto, max 2 linhas)
-    oc.textAlign = 'center';
-    oc.font = '700 44px Oswald, sans-serif';
-    oc.fillStyle = '#fff';
-    oc.shadowColor = 'rgba(0,0,0,0.8)';
-    oc.shadowBlur = 10;
-    var titleMaxW = W - 60;
-    var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), titleMaxW).slice(0, 2);
-    var curY = infoAreaY + 40;
-    for (var ti2 = 0; ti2 < titleLines.length; ti2++) {
-        oc.fillText(titleLines[ti2], W / 2, curY);
-        curY += 50;
-    }
-    oc.shadowBlur = 0;
+    // ======== INFO AREA: poster ESQUERDA + conteúdo DIREITA ========
+    var pad = 40;
+    var posterW = 210, posterH = 315;
+    var posterX = pad;
+    var posterY = infoAreaY + pad;
+    var contentX = posterX + posterW + 30;
+    var contentMaxW = W - contentX - pad;
 
-    // Meta (rating, ano, gênero, plataforma) - centralizado
-    curY += 8;
-    oc.font = '600 20px Manrope, sans-serif';
-    var metaParts = [];
-    if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push('★ ' + selectedContent.rating);
-    if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push(selectedContent.year);
-    if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push(selectedContent.genres.split(',')[0].trim());
-    var plat = selectedContent.autoProvider;
-    if (plat) metaParts.push(plat);
-    
-    var metaText = metaParts.join('  •  ');
-    oc.fillStyle = '#ddd';
-    oc.fillText(metaText, W / 2, curY);
-
-    // Layout com poster à esquerda e sinopse à direita
-    curY += 18;
-    var posterW = 120, posterH = 180;
-    var posterX = 40;
-    var posterY = curY;
-    
     // Poster do filme (à esquerda)
     if (posterImage) {
         var pR = posterImage.width / posterImage.height;
         var aR2 = posterW / posterH;
         oc.save();
         oc.beginPath();
-        roundRect(oc, posterX, posterY, posterW, posterH, 10);
+        roundRect(oc, posterX, posterY, posterW, posterH, 12);
         oc.clip();
         if (pR > aR2) {
             var dh2 = posterH; var dw2 = posterH * pR;
@@ -799,49 +783,76 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
         oc.strokeStyle = 'rgba(255,255,255,0.1)';
         oc.lineWidth = 2;
         oc.beginPath();
-        roundRect(oc, posterX, posterY, posterW, posterH, 10);
+        roundRect(oc, posterX, posterY, posterW, posterH, 12);
         oc.stroke();
     } else {
         oc.fillStyle = '#1a1a1a';
-        roundRect(oc, posterX, posterY, posterW, posterH, 10);
+        roundRect(oc, posterX, posterY, posterW, posterH, 12);
         oc.fill();
     }
 
-    // Sinopse (à direita do poster, max 4 linhas)
-    var synX = posterX + posterW + 25;
-    var synMaxW = W - synX - 40;
-    var synStartY = posterY + 10;
-    oc.font = '400 18px Manrope, sans-serif';
-    oc.fillStyle = 'rgba(255,255,255,0.8)';
+    // Título (à direita do poster, bold, max 2 linhas)
     oc.textAlign = 'left';
-    var synLines = wrapText(oc, selectedContent.overview || '', synMaxW).slice(0, 5);
-    for (var sj2 = 0; sj2 < synLines.length; sj2++) {
-        oc.fillText(synLines[sj2], synX, synStartY);
-        synStartY += 25;
+    oc.font = '700 48px Oswald, sans-serif';
+    oc.fillStyle = '#fff';
+    oc.shadowColor = 'rgba(0,0,0,0.8)';
+    oc.shadowBlur = 10;
+    var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), contentMaxW).slice(0, 2);
+    var curY = posterY + 10;
+    for (var ti2 = 0; ti2 < titleLines.length; ti2++) {
+        oc.fillText(titleLines[ti2], contentX, curY);
+        curY += 55;
     }
-    oc.textAlign = 'center';
+    oc.shadowBlur = 0;
 
-    // Botões WhatsApp + CTA (lado a lado, na parte inferior)
-    var btnH = 52, btnW2 = (W - 40 - 15) / 2, spacing = 15;
-    var btnY = H - btnH - 25;
+    // Meta (rating, ano, gênero, plataforma) - à direita do poster, abaixo do título
+    curY += 10;
+    oc.font = '600 22px Manrope, sans-serif';
+    var metaParts = [];
+    if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push('★ ' + selectedContent.rating);
+    if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push(selectedContent.year);
+    if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push(selectedContent.genres.split(',')[0].trim());
+    var plat = selectedContent.autoProvider;
+    if (plat) metaParts.push(plat);
+    
+    var metaText = metaParts.join('  •  ');
+    oc.fillStyle = '#ddd';
+    oc.fillText(metaText, contentX, curY);
+
+    // Sinopse (à direita do poster, abaixo da meta)
+    curY += 30;
+    oc.font = '400 20px Manrope, sans-serif';
+    oc.fillStyle = 'rgba(255,255,255,0.8)';
+    var synLines = wrapText(oc, selectedContent.overview || '', contentMaxW).slice(0, 5);
+    for (var sj2 = 0; sj2 < synLines.length; sj2++) {
+        oc.fillText(synLines[sj2], contentX, curY);
+        curY += 28;
+    }
+
+    // Botões WhatsApp + CTA (lado a lado, alinhados com o conteúdo à direita do poster)
+    var btnH = 55, btnGap = 15;
+    var btnW2 = Math.floor((contentMaxW - btnGap) / 2);
+    var btnY = H - btnH - 30;
 
     // Botão WhatsApp (esquerda)
     oc.fillStyle = '#25D366';
-    roundRect(oc, 20, btnY, btnW2, btnH, 10);
+    roundRect(oc, contentX, btnY, btnW2, btnH, 10);
     oc.fill();
     oc.fillStyle = '#fff';
-    oc.font = '700 20px Manrope, sans-serif';
+    oc.font = '700 22px Manrope, sans-serif';
     oc.textAlign = 'center';
-    oc.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, 20 + btnW2 / 2, btnY + btnH / 2 + 7);
+    oc.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, contentX + btnW2 / 2, btnY + btnH / 2 + 7);
 
     // Botão CTA (direita)
-    var btnX2 = 20 + btnW2 + spacing;
+    var btnX2 = contentX + btnW2 + btnGap;
     oc.fillStyle = '#ef4444';
     roundRect(oc, btnX2, btnY, btnW2, btnH, 10);
     oc.fill();
     oc.fillStyle = '#fff';
-    oc.font = '800 22px Manrope, sans-serif';
+    oc.font = '800 24px Manrope, sans-serif';
     oc.fillText(globalSettings.ctaText, btnX2 + btnW2 / 2, btnY + btnH / 2 + 7);
+
+    oc.textAlign = 'left';
 }
 
 // ============================================

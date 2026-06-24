@@ -80,6 +80,26 @@ function detectNativeMp4Support() {
 }
 
 // ============================================
+// CARREGAR LOGO PADRÃO DA RAIZ
+// ============================================
+function loadDefaultLogo() {
+    var defaultLogo = new Image();
+    defaultLogo.crossOrigin = 'anonymous';
+    defaultLogo.onload = function() {
+        uploadedLogo = defaultLogo;
+        console.log('✅ Logo padrão carregada da raiz: logo.PNG (' + defaultLogo.width + 'x' + defaultLogo.height + ')');
+        var slt = document.getElementById('settingsLogoText');
+        var slr = document.getElementById('settingsRemoveLogo');
+        if (slt) slt.textContent = 'Logo padrão (logo.PNG)';
+        if (slr) slr.classList.remove('hidden');
+    };
+    defaultLogo.onerror = function() {
+        console.log('ℹ️ Logo padrão (logo.PNG) não encontrada na raiz');
+    };
+    defaultLogo.src = 'logo.PNG';
+}
+
+// ============================================
 // SETTINGS
 // ============================================
 function loadGlobalSettings() {
@@ -103,12 +123,17 @@ function loadGlobalSettings() {
                     // Tentar remover logo corrompida
                     globalSettings.logo = null;
                     localStorage.setItem('bannerGeneratorSettings', JSON.stringify(globalSettings));
+                    // Tentar carregar logo padrão da raiz
+                    loadDefaultLogo();
                 };
                 img.src = globalSettings.logo;
                 var slt = document.getElementById('settingsLogoText');
                 var slr = document.getElementById('settingsRemoveLogo');
                 if (slt) slt.textContent = 'Logo carregada';
                 if (slr) slr.classList.remove('hidden');
+            } else {
+                // Se não há logo salva, tentar carregar logo padrão da raiz
+                loadDefaultLogo();
             }
             var w1 = document.getElementById('settingsWhatsappNumber');
             var w2 = document.getElementById('settingsWhatsappText');
@@ -118,9 +143,13 @@ function loadGlobalSettings() {
             if (w3) w3.value = globalSettings.ctaText || 'ASSINA JÁ';
         } else {
             console.log('ℹ️ Nenhuma configuração salva encontrada');
+            // Tentar carregar logo padrão da raiz
+            loadDefaultLogo();
         }
     } catch (e) { 
         console.error('❌ Erro ao carregar configurações:', e); 
+        // Tentar carregar logo padrão da raiz
+        loadDefaultLogo();
     }
 }
 
@@ -494,9 +523,9 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
     for (var ti = titleLines.length - 1; ti >= 0; ti--) { c.fillText(titleLines[ti], mPadding, currentY); currentY -= 75; }
 }
 // ============================================
-// VIDEO MODE (TRAILER MANUAL) - OTIMIZADO p/ WhatsApp HD
-// - Canvas 1920x1080 (16:9 landscape - formato HD)
-// - Vídeo em tela cheia com overlay de informações
+// VIDEO MODE (TRAILER MANUAL) - OTIMIZADO p/ WhatsApp
+// - Canvas 1080x1920 (9:16 portrait - formato Post/Story)
+// - Área de vídeo: 1080x607 (16:9 no topo)
 // - Chrome/Edge (MP4 nativo) → grava direto, pula FFmpeg (RÁPIDO)
 // - Firefox/Safari (só WebM) → FFmpeg ultrafast + fastdecode
 // - Camada estática cacheada + drawFrame travado em 30fps
@@ -518,7 +547,7 @@ async function loadVideoMode() {
     }
 
     controlPanel.innerHTML =
-        '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-purple-400">Trailer em Vídeo</h2><p class="text-zinc-500 text-sm mt-2">Carregue um vídeo MP4 e gere o banner otimizado para WhatsApp HD (1920x1080)</p><p class="text-xs mt-2">' + statusHtml + '</p></header>' +
+        '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-purple-400">Trailer em Vídeo</h2><p class="text-zinc-500 text-sm mt-2">Carregue um vídeo MP4 e gere o banner otimizado para WhatsApp (1080x1920)</p><p class="text-xs mt-2">' + statusHtml + '</p></header>' +
         '<section class="mt-5">' +
             '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-3">Tipo de Conte\u00FAdo</label>' +
             '<div class="flex gap-2">' +
@@ -553,7 +582,7 @@ async function loadVideoMode() {
                     '<option value="low">Baixa (~2.5 Mbps, m\u00E1xima economia)</option>' +
                 '</select>' +
             '</section>' +
-            '<button id="videoGenerateBtn" class="w-full bg-purple-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-purple-400 transition-all flex items-center justify-center gap-3 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled data-testid="video-generate-btn">GERAR BANNER MP4 (1920x1080 HD)</button>' +
+            '<button id="videoGenerateBtn" class="w-full bg-purple-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-purple-400 transition-all flex items-center justify-center gap-3 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled data-testid="video-generate-btn">GERAR BANNER MP4 (1080x1920)</button>' +
             '<div id="videoProgressBox" class="hidden text-center"><p class="text-xs text-zinc-400 mb-2" id="videoProgressLabel">Gerando v\u00EDdeo...</p><div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div id="videoProgressFill" class="h-full bg-purple-500 transition-all" style="width:0%"></div></div></div>' +
         '</section>';
 
@@ -569,7 +598,7 @@ async function loadVideoMode() {
 
     canvas.classList.add('hidden');
     videoContainer.classList.remove('hidden');
-    videoContainer.innerHTML = '<div class="text-center p-12"><div class="text-8xl mb-6">\uD83C\uDFA5</div><h3 class="font-oswald text-3xl font-bold text-purple-400 mb-3">TRAILER EM V\u00CDEO</h3><p class="text-zinc-400 max-w-md mx-auto">1. Filtre por Filme/S\u00E9rie<br>2. Busque o t\u00EDtulo<br>3. Selecione o conte\u00FAdo<br>4. Carregue o v\u00EDdeo MP4 do dispositivo<br>5. Escolha qualidade e clique em <b>Gerar Banner MP4</b><br><br><span class="text-purple-400">\u2728 Formato 1920x1080 (16:9) otimizado para WhatsApp HD.<br>No Chrome/Edge o v\u00EDdeo \u00E9 gerado em MP4 nativo (sem recompress\u00E3o). Em outros navegadores, convertido automaticamente.</span></p></div>';
+    videoContainer.innerHTML = '<div class="text-center p-12"><div class="text-8xl mb-6">\uD83C\uDFA5</div><h3 class="font-oswald text-3xl font-bold text-purple-400 mb-3">TRAILER EM V\u00CDEO</h3><p class="text-zinc-400 max-w-md mx-auto">1. Filtre por Filme/S\u00E9rie<br>2. Busque o t\u00EDtulo<br>3. Selecione o conte\u00FAdo<br>4. Carregue o v\u00EDdeo MP4 do dispositivo<br>5. Escolha qualidade e clique em <b>Gerar Banner MP4</b><br><br><span class="text-purple-400">\u2728 Formato 1080x1920 (9:16) otimizado para WhatsApp.<br>No Chrome/Edge o v\u00EDdeo \u00E9 gerado em MP4 nativo (sem recompress\u00E3o). Em outros navegadores, convertido automaticamente.</span></p></div>';
 }
 
 function setVideoTypeFilter(type) {
@@ -680,8 +709,8 @@ function updateGenerateBtnState() {
 }
 // ============================================
 // RENDER ESTÁTICO (cache) — só desenhado UMA vez
-// Canvas 1920x1080 (16:9 landscape) - formato HD WhatsApp
-// Layout profissional: Vídeo no topo + Informações organizadas abaixo
+// Canvas 1080x1920 (9:16 portrait) - formato Post/Story
+// Layout: Vídeo no topo (16:9) + Informações organizadas abaixo
 // ============================================
 function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     // Fundo total (preto)
@@ -705,21 +734,52 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     // Logo no canto superior direito (sobre o vídeo)
     if (uploadedLogo) {
         var logoR = uploadedLogo.width / uploadedLogo.height;
-        var logoH = 90;
+        var logoH = 80;
         var logoW = logoH * logoR;
-        if (logoW > 220) { logoW = 220; logoH = logoW / logoR; }
+        if (logoW > 200) { logoW = 200; logoH = logoW / logoR; }
         oc.save();
         oc.shadowColor = 'rgba(0,0,0,0.95)';
-        oc.shadowBlur = 25;
+        oc.shadowBlur = 20;
         oc.shadowOffsetX = 2;
         oc.shadowOffsetY = 2;
-        oc.drawImage(uploadedLogo, W - logoW - 30, 30, logoW, logoH);
+        oc.drawImage(uploadedLogo, W - logoW - 25, 25, logoW, logoH);
         oc.restore();
     }
 
-    // Poster do filme à esquerda (na área de informações)
-    var posterX = 60, posterY = infoAreaY + 50;
-    var posterW = 200, posterH = 300;
+    // Título (grande e centralizado)
+    oc.textAlign = 'center';
+    oc.font = '700 56px Oswald, sans-serif';
+    oc.fillStyle = '#fff';
+    oc.shadowColor = 'rgba(0,0,0,0.8)';
+    oc.shadowBlur = 15;
+    var titleMaxW = W - 80;
+    var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), titleMaxW).slice(0, 3);
+    var curY = infoAreaY + 60;
+    for (var ti2 = 0; ti2 < titleLines.length; ti2++) {
+        oc.fillText(titleLines[ti2], W / 2, curY);
+        curY += 65;
+    }
+    oc.shadowBlur = 0;
+
+    // Meta (rating, ano, gênero, plataforma) - centralizado
+    curY += 15;
+    oc.font = '600 24px Manrope, sans-serif';
+    var metaParts = [];
+    if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push('★ ' + selectedContent.rating);
+    if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push(selectedContent.year);
+    if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push(selectedContent.genres.split(',')[0].trim());
+    var plat = selectedContent.autoProvider;
+    if (plat) metaParts.push(plat);
+    
+    var metaText = metaParts.join('  •  ');
+    oc.fillStyle = '#ddd';
+    oc.fillText(metaText, W / 2, curY);
+
+    // Poster do filme (centralizado)
+    var posterW = 280, posterH = 420;
+    var posterX = (W - posterW) / 2;
+    var posterY = curY + 40;
+    
     if (posterImage) {
         var pR = posterImage.width / posterImage.height;
         var aR2 = posterW / posterH;
@@ -748,89 +808,46 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
         oc.fill();
     }
 
-    // Informações do filme à direita do poster
-    var infoX = posterX + posterW + 50;
-    var infoMaxW = W - infoX - 80;
-
-    oc.textAlign = 'left';
-    
-    // Título (grande e destacado)
-    oc.font = '700 64px Oswald, sans-serif';
-    oc.fillStyle = '#fff';
-    oc.shadowColor = 'rgba(0,0,0,0.8)';
-    oc.shadowBlur = 15;
-    var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), infoMaxW).slice(0, 2);
-    var curY = posterY + 50;
-    for (var ti2 = 0; ti2 < titleLines.length; ti2++) {
-        oc.fillText(titleLines[ti2], infoX, curY);
-        curY += 70;
-    }
-    oc.shadowBlur = 0;
-
-    // Meta (rating, ano, gênero, plataforma) - em linha
-    curY += 20;
-    oc.font = '600 28px Manrope, sans-serif';
-    var metaParts = [];
-    if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push('★ ' + selectedContent.rating);
-    if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push(selectedContent.year);
-    if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push(selectedContent.genres.split(',')[0].trim());
-    var plat = selectedContent.autoProvider;
-    if (plat) metaParts.push(plat);
-    
-    var mx = infoX;
-    for (var mi2 = 0; mi2 < metaParts.length; mi2++) {
-        var part = metaParts[mi2];
-        if (mi2 === 0 && part.indexOf('★') === 0) oc.fillStyle = '#eab308';
-        else if (mi2 === metaParts.length - 1 && plat) oc.fillStyle = '#a855f7';
-        else oc.fillStyle = '#ddd';
-        oc.fillText(part, mx, curY);
-        mx += oc.measureText(part).width;
-        if (mi2 < metaParts.length - 1) {
-            oc.fillStyle = 'rgba(255,255,255,0.3)';
-            var sepStr = '  •  ';
-            oc.fillText(sepStr, mx, curY);
-            mx += oc.measureText(sepStr).width;
-        }
-    }
-
-    // Sinopse (limitada a 3 linhas)
-    curY += 40;
-    oc.font = '400 24px Manrope, sans-serif';
+    // Sinopse (limitada a 4 linhas, centralizada)
+    curY = posterY + posterH + 30;
+    oc.font = '400 20px Manrope, sans-serif';
     oc.fillStyle = 'rgba(255,255,255,0.8)';
-    var synLines = wrapText(oc, selectedContent.overview || '', infoMaxW).slice(0, 3);
+    oc.textAlign = 'center';
+    var synMaxW = W - 100;
+    var synLines = wrapText(oc, selectedContent.overview || '', synMaxW).slice(0, 4);
     for (var sj2 = 0; sj2 < synLines.length; sj2++) {
-        oc.fillText(synLines[sj2], infoX, curY);
-        curY += 32;
+        oc.fillText(synLines[sj2], W / 2, curY);
+        curY += 28;
     }
 
-    // Botões WhatsApp + CTA no canto inferior direito
-    var btnY = H - 80;
-    var btnH = 70, btnW = 260, spacing = 20;
-    var totalBtnW = btnW * 2 + spacing;
-    var btnX = W - totalBtnW - 60;
+    // Botões WhatsApp + CTA (empilhados verticalmente, centralizados)
+    var btnH = 60, btnW = 320, spacing = 15;
+    var btnX = (W - btnW) / 2;
+    var btnY = H - 180;
 
     // Botão WhatsApp
     oc.fillStyle = '#25D366';
-    roundRect(oc, btnX, btnY - btnH, btnW, btnH, 12);
+    roundRect(oc, btnX, btnY, btnW, btnH, 12);
     oc.fill();
     oc.fillStyle = '#fff';
-    oc.font = '700 26px Manrope, sans-serif';
+    oc.font = '700 24px Manrope, sans-serif';
     oc.textAlign = 'center';
-    oc.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, btnX + btnW / 2, btnY - btnH / 2 + 8);
+    oc.fillText(globalSettings.whatsappNumber || globalSettings.whatsappText, W / 2, btnY + btnH / 2 + 8);
 
     // Botão CTA
+    btnY += btnH + spacing;
     oc.fillStyle = '#ef4444';
-    roundRect(oc, btnX + btnW + spacing, btnY - btnH, btnW, btnH, 12);
+    roundRect(oc, btnX, btnY, btnW, btnH, 12);
     oc.fill();
     oc.fillStyle = '#fff';
-    oc.font = '800 28px Manrope, sans-serif';
-    oc.fillText(globalSettings.ctaText, btnX + btnW + spacing + btnW / 2, btnY - btnH / 2 + 8);
+    oc.font = '800 26px Manrope, sans-serif';
+    oc.fillText(globalSettings.ctaText, W / 2, btnY + btnH / 2 + 8);
 }
 
 // ============================================
-// GERA BANNER VIDEO - OTIMIZADO p/ WhatsApp HD
-// Canvas: 1920x1080 (16:9 landscape) - formato HD reconhecido pelo WhatsApp
-// Vídeo em tela cheia com overlay de informações no rodapé
+// GERA BANNER VIDEO - OTIMIZADO p/ WhatsApp
+// Canvas: 1080x1920 (9:16 portrait) - formato Post/Story
+// Vídeo no topo (16:9) + informações organizadas abaixo
 // compressão H.264 High Profile Level 4.0 + AAC
 // ============================================
 async function generateTrailerBannerVideo() {
@@ -863,15 +880,14 @@ async function generateTrailerBannerVideo() {
     }
     if (!mimeType) {
         btn.disabled = false;
-        btn.innerHTML = 'GERAR BANNER MP4 (1920x1080 HD)';
+        btn.innerHTML = 'GERAR BANNER MP4 (1080x1920)';
         progressBox.classList.add('hidden');
         alert('Navegador n\u00E3o suporta MediaRecorder');
         return;
     }
 
-    // Bitrates otimizados para WhatsApp HD
-    // WhatsApp reconhece HD quando: H.264 High Profile, >=1280x720, ~6-8 Mbps
-    // Formato 1920x1080 (landscape) com vídeo em tela cheia
+    // Bitrates otimizados para WhatsApp
+    // Formato 1080x1920 (portrait) com vídeo 1080x607 (16:9) no topo
     var recVideoBitrate, recAudioBitrate;
     if (quality === 'high')      { recVideoBitrate = nativeMp4 ? 8000000 : 10000000; recAudioBitrate = 192000; }
     else if (quality === 'low')  { recVideoBitrate = nativeMp4 ? 2500000 : 5000000; recAudioBitrate = 96000;  }
@@ -891,9 +907,9 @@ async function generateTrailerBannerVideo() {
     }
 
     try {
-        // Canvas 1920x1080 (16:9 landscape) - formato HD reconhecido pelo WhatsApp
-        var W = 1920, H = 1080;
-        var videoAreaH = Math.round(H * 0.6); // Vídeo ocupa 60% da altura (648px)
+        // Canvas 1080x1920 (9:16 portrait) - formato Post/Story
+        var W = 1080, H = 1920;
+        var videoAreaH = Math.round(W * 9 / 16); // Vídeo 16:9 no topo (607px)
 
         // Canvas final (o que vai pro MediaRecorder)
         var outCanvas = document.createElement('canvas');
@@ -909,10 +925,10 @@ async function generateTrailerBannerVideo() {
         sc.imageSmoothingEnabled = true;
         sc.imageSmoothingQuality = 'high';
 
-        videoContainer.innerHTML = '<div class="text-center"><p class="text-purple-300 mb-3 font-semibold">Gerando banner vídeo 1920x1080 HD'
+        videoContainer.innerHTML = '<div class="text-center"><p class="text-purple-300 mb-3 font-semibold">Gerando banner vídeo 1080x1920 (Post)'
             + (nativeMp4 ? ' (modo rápido MP4 nativo)' : ' (modo compatível)') + '...</p></div>';
         videoContainer.appendChild(outCanvas);
-        outCanvas.style.maxWidth = '480px';
+        outCanvas.style.maxWidth = '280px';
         outCanvas.style.borderRadius = '12px';
         outCanvas.style.boxShadow = '0 0 60px rgba(168,85,247,0.4)';
 
@@ -1123,16 +1139,16 @@ async function generateTrailerBannerVideo() {
                 var fetchFile = window.FFmpeg.fetchFile;
                 ffmpeg.FS('writeFile', inputName, await fetchFile(rawResult.blob));
 
-                // Configurações de compressão otimizados para WhatsApp HD
+                // Configurações de compressão otimizados para WhatsApp
                 // H.264 High Profile Level 4.0 + AAC + faststart
-                // Resolução 1920x1080 (landscape HD)
+                // Resolução 1080x1920 (portrait)
                 var crf, maxrate, bufsize, audioBr;
                 if (quality === 'high')      { crf = '20'; maxrate = '8000k'; bufsize = '16000k'; audioBr = '192k'; }
                 else if (quality === 'low')  { crf = '26'; maxrate = '2500k'; bufsize = '5000k';  audioBr = '96k';  }
                 else                         { crf = '22'; maxrate = '5000k'; bufsize = '10000k'; audioBr = '128k'; }
 
                 // ultrafast + fastdecode = MUITO mais rápido em wasm
-                // -vf scale=1920:1080 garante resolução HD para WhatsApp
+                // -vf scale=1080:1920 garante resolução portrait para WhatsApp
                 await ffmpeg.run(
                     '-i', inputName,
                     '-c:v', 'libx264',
@@ -1144,7 +1160,7 @@ async function generateTrailerBannerVideo() {
                     '-crf', crf,
                     '-maxrate', maxrate,
                     '-bufsize', bufsize,
-                    '-vf', 'scale=1920:1080:flags=fast_bilinear',
+                    '-vf', 'scale=1080:1920:flags=fast_bilinear',
                     '-r', '30',
                     '-c:a', 'aac',
                     '-b:a', audioBr,
@@ -1185,7 +1201,7 @@ async function generateTrailerBannerVideo() {
         var titleDiv = document.createElement('div');
         titleDiv.className = 'text-center mb-6';
         titleDiv.innerHTML = '<h3 class="font-oswald text-3xl font-bold text-purple-400 mb-2">Banner Gerado com Sucesso!</h3>' +
-            '<p class="text-zinc-400 text-sm">1920x1080 (16:9) — Otimizado para WhatsApp HD</p>';
+            '<p class="text-zinc-400 text-sm">1080x1920 (9:16) — Formato Post/Story</p>';
         resultContainer.appendChild(titleDiv);
         
         // Preview do vídeo
@@ -1206,13 +1222,13 @@ async function generateTrailerBannerVideo() {
             statusHtml2 = '<div class="flex items-center justify-center gap-2 mb-2">' +
                 '<span class="text-green-400 text-sm font-semibold">\u26A1 MP4 nativo (H.264 + AAC) — sem recompressão</span></div>' +
                 '<div class="text-center text-zinc-300 text-xs">' +
-                '<span class="font-bold">' + finalSizeMB + ' MB</span> · Qualidade: ' + quality.toUpperCase() + ' · 1920x1080</div>';
+                '<span class="font-bold">' + finalSizeMB + ' MB</span> · Qualidade: ' + quality.toUpperCase() + ' · 1080x1920</div>';
         } else if (compressed) {
             statusHtml2 = '<div class="flex items-center justify-center gap-2 mb-2">' +
                 '<span class="text-green-400 text-sm font-semibold">\u2728 Convertido para MP4 (H.264 High Profile + AAC)</span></div>' +
                 '<div class="text-center text-zinc-300 text-xs">' +
                 'Original: ' + rawSizeMB + ' MB → Final: <span class="font-bold text-green-400">' + finalSizeMB + ' MB</span> ' +
-                '<span class="text-green-400">(-' + savedPct + '%)</span> · 1920x1080</div>';
+                '<span class="text-green-400">(-' + savedPct + '%)</span> · 1080x1920</div>';
         } else {
             statusHtml2 = '<div class="flex items-center justify-center gap-2 mb-2">' +
                 '<span class="text-yellow-400 text-xs">\u26A0 Sem conversão disponível - vídeo original</span></div>' +
@@ -1246,7 +1262,7 @@ async function generateTrailerBannerVideo() {
         setTimeout(function() { progressBox.classList.add('hidden'); }, 1500);
 
         btn.disabled = false;
-        btn.innerHTML = 'GERAR BANNER MP4 (1920x1080 HD)';
+        btn.innerHTML = 'GERAR BANNER MP4 (1080x1920)';
     } catch (error) {
         console.error('Erro:', error);
         clearTimeout(failsafeTimer);
@@ -1254,7 +1270,7 @@ async function generateTrailerBannerVideo() {
         try { if (recorder && recorder.state !== 'inactive') recorder.stop(); } catch(e) {}
         alert('Erro ao gerar banner: ' + error.message);
         btn.disabled = false;
-        btn.innerHTML = 'GERAR BANNER MP4 (1920x1080 HD)';
+        btn.innerHTML = 'GERAR BANNER MP4 (1080x1920)';
         progressBox.classList.add('hidden');
     }
 }

@@ -1247,10 +1247,12 @@ async function generateTrailerBannerVideo() {
         progressLabel.textContent = 'Conclu\u00EDdo!';
 
         var finalSizeMB = (finalBlob.size / 1024 / 1024).toFixed(2);
+        var finalSizeBytes = finalBlob.size;
         var savedPct = compressed ? Math.round((1 - finalBlob.size / rawResult.blob.size) * 100) : 0;
         var url = URL.createObjectURL(finalBlob);
         var safeTitle = (selectedContent.title || 'trailer').replace(/[^a-zA-Z0-9]/g, '_');
         var fileName = safeTitle + '_trailer_whatsapp_hd.' + finalExt;
+        var exceedsLimit = finalSizeBytes > (100 * 1024 * 1024); // 100MB
 
         // Limpa o container e mostra o resultado final
         videoContainer.innerHTML = '';
@@ -1299,6 +1301,19 @@ async function generateTrailerBannerVideo() {
         }
         infoDiv.innerHTML = statusHtml2;
         resultContainer.appendChild(infoDiv);
+        
+        // Aviso se ultrapassar 100MB (limite WhatsApp HD)
+        if (exceedsLimit) {
+            var warnDiv = document.createElement('div');
+            warnDiv.className = 'mt-4 p-4 bg-yellow-900/30 border border-yellow-500/50 rounded-lg';
+            warnDiv.innerHTML = '<div class="flex items-start gap-3">' +
+                '<span class="text-yellow-400 text-xl flex-shrink-0">\u26A0\uFE0F</span>' +
+                '<div>' +
+                '<p class="text-yellow-300 font-semibold text-sm mb-1">Arquivo acima de 100MB</p>' +
+                '<p class="text-yellow-200/80 text-xs leading-relaxed">O WhatsApp pode não reconhecer o vídeo em HD. O limite para envio no formato HD é de até 100MB (ou até 180MB dependendo da sua região, versão do app e velocidade da conexão). Considere usar qualidade <b>Média</b> ou <b>Baixa</b> para reduzir o tamanho.</p>' +
+                '</div></div>';
+            resultContainer.appendChild(warnDiv);
+        }
         
         // Botão de download grande e profissional
         var dlBtn = document.createElement('a');

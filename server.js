@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const fetch = require('node-fetch');
+const axios = require('axios');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
@@ -23,30 +23,6 @@ if (!TMDB_API_KEY) {
 console.log('✅ TMDB API Key carregada com sucesso');
 
 const TMDB_API_URL = 'https://api.themoviedb.org/3';
-
-// ============================================
-// FETCH SIMPLES COM RETRY
-// ============================================
-async function fetchWithRetry(url, options = {}, retries = 2) {
-    for (let i = 0; i < retries; i++) {
-        try {
-            const response = await fetch(url, {
-                ...options,
-                timeout: 15000
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            return response;
-        } catch (error) {
-            console.error(`Tentativa ${i + 1}/${retries} falhou para ${url}:`, error.message);
-            if (i === retries - 1) throw error;
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-    }
-}
 
 // ============================================
 // RATE LIMITING - PROTEÇÃO CONTRA ABUSO
@@ -121,17 +97,18 @@ app.get('/api/image-proxy', async (req, res) => {
         const { url } = req.query;
         if (!url) return res.status(400).json({ error: 'URL obrigatoria' });
         
-        const response = await fetchWithRetry(url, { 
-            headers: { 'User-Agent': 'Mozilla/5.0' } 
+        const response = await axios.get(url, {
+            responseType: 'arraybuffer',
+            timeout: 15000,
+            headers: { 'User-Agent': 'Mozilla/5.0' }
         });
         
-        const buffer = await response.buffer();
         res.set({ 
-            'Content-Type': response.headers.get('content-type') || 'image/jpeg', 
+            'Content-Type': response.headers['content-type'] || 'image/jpeg', 
             'Cache-Control': 'public, max-age=86400',
             'Access-Control-Allow-Origin': '*' 
         });
-        res.send(buffer);
+        res.send(response.data);
     } catch (error) { 
         console.error('❌ Erro image-proxy:', error.message);
         res.status(500).json({ error: error.message }); 
@@ -147,11 +124,15 @@ app.get('/api/tmdb/search/movie', async (req, res) => {
         const lang = language || 'pt-BR';
         if (!query) return res.status(400).json({ error: 'Parametro query obrigatorio' });
         
-        const response = await fetchWithRetry(
-            `${TMDB_API_URL}/search/movie?api_key=${TMDB_API_KEY}&language=${lang}&query=${encodeURIComponent(query)}`
-        );
-        const data = await response.json();
-        res.json(data);
+        const response = await axios.get(`${TMDB_API_URL}/search/movie`, {
+            params: {
+                api_key: TMDB_API_KEY,
+                language: lang,
+                query: query
+            },
+            timeout: 15000
+        });
+        res.json(response.data);
     } catch (error) { 
         console.error('❌ Erro TMDB search movie:', error.message);
         res.status(500).json({ error: error.message }); 
@@ -164,11 +145,15 @@ app.get('/api/tmdb/search/tv', async (req, res) => {
         const lang = language || 'pt-BR';
         if (!query) return res.status(400).json({ error: 'Parametro query obrigatorio' });
         
-        const response = await fetchWithRetry(
-            `${TMDB_API_URL}/search/tv?api_key=${TMDB_API_KEY}&language=${lang}&query=${encodeURIComponent(query)}`
-        );
-        const data = await response.json();
-        res.json(data);
+        const response = await axios.get(`${TMDB_API_URL}/search/tv`, {
+            params: {
+                api_key: TMDB_API_KEY,
+                language: lang,
+                query: query
+            },
+            timeout: 15000
+        });
+        res.json(response.data);
     } catch (error) { 
         console.error('❌ Erro TMDB search tv:', error.message);
         res.status(500).json({ error: error.message }); 
@@ -182,11 +167,14 @@ app.get('/api/tmdb/movie/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const lang = req.query.language || 'pt-BR';
-        const response = await fetchWithRetry(
-            `${TMDB_API_URL}/movie/${id}?api_key=${TMDB_API_KEY}&language=${lang}`
-        );
-        const data = await response.json();
-        res.json(data);
+        const response = await axios.get(`${TMDB_API_URL}/movie/${id}`, {
+            params: {
+                api_key: TMDB_API_KEY,
+                language: lang
+            },
+            timeout: 15000
+        });
+        res.json(response.data);
     } catch (error) { 
         console.error('❌ Erro TMDB movie details:', error.message);
         res.status(500).json({ error: error.message }); 
@@ -197,11 +185,14 @@ app.get('/api/tmdb/tv/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const lang = req.query.language || 'pt-BR';
-        const response = await fetchWithRetry(
-            `${TMDB_API_URL}/tv/${id}?api_key=${TMDB_API_KEY}&language=${lang}`
-        );
-        const data = await response.json();
-        res.json(data);
+        const response = await axios.get(`${TMDB_API_URL}/tv/${id}`, {
+            params: {
+                api_key: TMDB_API_KEY,
+                language: lang
+            },
+            timeout: 15000
+        });
+        res.json(response.data);
     } catch (error) { 
         console.error('❌ Erro TMDB tv details:', error.message);
         res.status(500).json({ error: error.message }); 
@@ -214,11 +205,13 @@ app.get('/api/tmdb/tv/:id', async (req, res) => {
 app.get('/api/tmdb/movie/:id/watch', async (req, res) => {
     try {
         const { id } = req.params;
-        const response = await fetchWithRetry(
-            `${TMDB_API_URL}/movie/${id}/watch/providers?api_key=${TMDB_API_KEY}`
-        );
-        const data = await response.json();
-        res.json(data);
+        const response = await axios.get(`${TMDB_API_URL}/movie/${id}/watch/providers`, {
+            params: {
+                api_key: TMDB_API_KEY
+            },
+            timeout: 15000
+        });
+        res.json(response.data);
     } catch (error) { 
         console.error('❌ Erro TMDB movie watch:', error.message);
         res.status(500).json({ error: error.message }); 
@@ -228,11 +221,13 @@ app.get('/api/tmdb/movie/:id/watch', async (req, res) => {
 app.get('/api/tmdb/tv/:id/watch', async (req, res) => {
     try {
         const { id } = req.params;
-        const response = await fetchWithRetry(
-            `${TMDB_API_URL}/tv/${id}/watch/providers?api_key=${TMDB_API_KEY}`
-        );
-        const data = await response.json();
-        res.json(data);
+        const response = await axios.get(`${TMDB_API_URL}/tv/${id}/watch/providers`, {
+            params: {
+                api_key: TMDB_API_KEY
+            },
+            timeout: 15000
+        });
+        res.json(response.data);
     } catch (error) { 
         console.error('❌ Erro TMDB tv watch:', error.message);
         res.status(500).json({ error: error.message }); 
@@ -245,11 +240,14 @@ app.get('/api/tmdb/tv/:id/watch', async (req, res) => {
 app.get('/api/tmdb/movie/:id/videos', async (req, res) => {
     try {
         const { id } = req.params;
-        const response = await fetchWithRetry(
-            `${TMDB_API_URL}/movie/${id}/videos?api_key=${TMDB_API_KEY}&language=pt-BR`
-        );
-        const data = await response.json();
-        res.json(data);
+        const response = await axios.get(`${TMDB_API_URL}/movie/${id}/videos`, {
+            params: {
+                api_key: TMDB_API_KEY,
+                language: 'pt-BR'
+            },
+            timeout: 15000
+        });
+        res.json(response.data);
     } catch (error) { 
         console.error('❌ Erro TMDB movie videos:', error.message);
         res.status(500).json({ error: error.message }); 
@@ -259,11 +257,14 @@ app.get('/api/tmdb/movie/:id/videos', async (req, res) => {
 app.get('/api/tmdb/tv/:id/videos', async (req, res) => {
     try {
         const { id } = req.params;
-        const response = await fetchWithRetry(
-            `${TMDB_API_URL}/tv/${id}/videos?api_key=${TMDB_API_KEY}&language=pt-BR`
-        );
-        const data = await response.json();
-        res.json(data);
+        const response = await axios.get(`${TMDB_API_URL}/tv/${id}/videos`, {
+            params: {
+                api_key: TMDB_API_KEY,
+                language: 'pt-BR'
+            },
+            timeout: 15000
+        });
+        res.json(response.data);
     } catch (error) { 
         console.error('❌ Erro TMDB tv videos:', error.message);
         res.status(500).json({ error: error.message }); 
@@ -328,12 +329,15 @@ app.get('/api/video/best-trailer/:type/:id', async (req, res) => {
             return res.status(400).json({ error: 'Tipo deve ser "movie" ou "tv"' });
         }
 
-        const response = await fetchWithRetry(
-            `${TMDB_API_URL}/${type}/${id}/videos?api_key=${TMDB_API_KEY}&language=pt-BR`
-        );
-        const data = await response.json();
+        const response = await axios.get(`${TMDB_API_URL}/${type}/${id}/videos`, {
+            params: {
+                api_key: TMDB_API_KEY,
+                language: 'pt-BR'
+            },
+            timeout: 15000
+        });
         
-        const bestTrailer = prioritizeTrailers(data);
+        const bestTrailer = prioritizeTrailers(response.data);
         
         if (!bestTrailer) {
             return res.status(404).json({ error: 'Nenhum trailer encontrado' });

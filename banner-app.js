@@ -2,6 +2,13 @@ const API_BASE_URL = window.location.origin;
 const TMDB_BASE_URL = API_BASE_URL + '/api/tmdb';
 const TMDB_IMG_BASE = 'https://image.tmdb.org/t/p';
 
+// Função para gerar URL de imagem via proxy (evita problemas de CORS)
+function getTmdbImgUrl(path, size) {
+    if (!path) return null;
+    var fullUrl = TMDB_IMG_BASE + '/' + (size || 'w500') + path;
+    return API_BASE_URL + '/api/image-proxy?url=' + encodeURIComponent(fullUrl);
+}
+
 let currentMode = null;
 let selectedContent = null;
 let currentFormat = 'post';
@@ -245,8 +252,8 @@ async function searchMovies(query) {
         var results = await Promise.all(fetches);
         var moviesData = results[0];
         var seriesData = results[1];
-        var movies = (moviesData.results || []).slice(0, 8).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: m.poster_path ? TMDB_IMG_BASE + '/w500' + m.poster_path : null }; });
-        var series = (seriesData.results || []).slice(0, 8).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: s.poster_path ? TMDB_IMG_BASE + '/w500' + s.poster_path : null }; });
+        var movies = (moviesData.results || []).slice(0, 8).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: m.poster_path ? getTmdbImgUrl(m.poster_path) : null }; });
+        var series = (seriesData.results || []).slice(0, 8).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: s.poster_path ? getTmdbImgUrl(s.poster_path) : null }; });
         displayMovieResults(movies.concat(series));
     } catch (error) {
         console.error('Erro:', error);
@@ -287,7 +294,7 @@ async function selectMovie(movie) {
         if (brProviders.length > 0) { selectedContent.autoProvider = brProviders[0].provider_name; document.getElementById('platformAutoText').textContent = '(Detectado: ' + selectedContent.autoProvider + ')'; document.getElementById('moviePlatform').value = matchPlatform(selectedContent.autoProvider); }
         else { selectedContent.autoProvider = null; document.getElementById('platformAutoText').textContent = ''; }
     } catch (e) { console.error('Erro:', e); }
-    if (movie.poster) { try { posterImage = await loadImage(API_BASE_URL + '/api/image-proxy?url=' + encodeURIComponent(movie.poster)); } catch (e) { posterImage = null; } } else { posterImage = null; }
+    if (movie.poster) { try { posterImage = await loadImage(movie.poster); } catch (e) { posterImage = null; } } else { posterImage = null; }
     document.getElementById('movieControls').classList.remove('hidden');
     document.getElementById('movieSelectedInfo').innerHTML = '<div class="flex gap-3 mb-3">' + (movie.poster ? '<img src="' + movie.poster + '" class="w-20 h-30 object-cover rounded">' : '') + '<div class="flex-1"><h3 class="font-oswald text-lg font-bold">' + movie.title + '</h3><p class="text-zinc-500 text-sm">' + movie.year + ' - ' + (movie.type === 'movie' ? 'Filme' : 'S\u00E9rie') + ' - ' + movie.rating + '</p><p class="text-zinc-400 text-xs mt-2 line-clamp-3">' + movie.overview + '</p></div></div><button onclick="copyMovieInfo()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2">Copiar Informa\u00E7\u00F5es</button>';
     setTimeout(function() { generateMovieBanner(); }, 200);
@@ -518,8 +525,8 @@ async function searchVideos(query) {
         var results = await Promise.all(fetches);
         var moviesData = results[0];
         var seriesData = results[1];
-        var movies = (moviesData.results || []).slice(0, 8).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || '', poster: m.poster_path ? TMDB_IMG_BASE + '/w500' + m.poster_path : null }; });
-        var series = (seriesData.results || []).slice(0, 8).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || '', poster: s.poster_path ? TMDB_IMG_BASE + '/w500' + s.poster_path : null }; });
+        var movies = (moviesData.results || []).slice(0, 8).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || '', poster: m.poster_path ? getTmdbImgUrl(m.poster_path) : null }; });
+        var series = (seriesData.results || []).slice(0, 8).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || '', poster: s.poster_path ? getTmdbImgUrl(s.poster_path) : null }; });
         displayVideoResults(movies.concat(series));
     } catch (error) {
         console.error('Erro:', error);
@@ -564,7 +571,7 @@ async function selectVideoContent(content) {
 
     posterImage = null;
     if (content.poster) {
-        try { posterImage = await loadImage(API_BASE_URL + '/api/image-proxy?url=' + encodeURIComponent(content.poster)); } catch (e) { posterImage = null; }
+        try { posterImage = await loadImage(content.poster); } catch (e) { posterImage = null; }
     }
 
     document.getElementById('videoSelectedInfo').innerHTML =

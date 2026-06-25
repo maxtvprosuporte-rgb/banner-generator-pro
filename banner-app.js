@@ -528,23 +528,22 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
     }
     var mPadding = 30; var footerY = height - mPadding; var boxH = 50; var boxGap = 12;
     var totalBoxW = width - mPadding * 2 - boxGap * 2; var boxW = Math.floor(totalBoxW / 3);
-    var iconSize = 20;
-    var iconCenterY = footerY - boxH + Math.floor(boxH * 0.32);
-    var textCenterY = footerY - boxH + Math.floor(boxH * 0.74);
+    var iconSize = 22; var iconPad = 10;
+    var textCenterY = footerY - boxH / 2 + 6;
     c.textAlign = 'center';
     // Box Instagram (degradê laranja→rosa→roxo)
     var instaGrad = c.createLinearGradient(mPadding, footerY - boxH, mPadding + boxW, footerY);
     instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
     c.fillStyle = instaGrad; roundRect(c, mPadding, footerY - boxH, boxW, boxH, 8); c.fill();
-    drawInstagramIcon(c, mPadding + boxW / 2 - iconSize / 2, iconCenterY - iconSize / 2, iconSize);
+    drawInstagramIcon(c, mPadding + iconPad, footerY - boxH / 2 - iconSize / 2, iconSize);
     c.fillStyle = '#fff'; c.font = '600 15px Manrope, sans-serif';
-    c.fillText(globalSettings.instagramHandle, mPadding + boxW / 2, textCenterY);
+    c.fillText(globalSettings.instagramHandle, mPadding + iconPad + iconSize + (boxW - iconPad - iconSize) / 2, textCenterY);
     // Box WhatsApp (verde)
     var wppX = mPadding + boxW + boxGap;
     c.fillStyle = '#25D366'; roundRect(c, wppX, footerY - boxH, boxW, boxH, 8); c.fill();
-    drawWhatsAppIcon(c, wppX + boxW / 2 - iconSize / 2, iconCenterY - iconSize / 2, iconSize);
+    drawWhatsAppIcon(c, wppX + iconPad, footerY - boxH / 2 - iconSize / 2, iconSize);
     c.fillStyle = '#fff'; c.font = '600 13px Manrope, sans-serif';
-    c.fillText(globalSettings.whatsappText, wppX + boxW / 2, textCenterY);
+    c.fillText(globalSettings.whatsappText, wppX + iconPad + iconSize + (boxW - iconPad - iconSize) / 2, textCenterY);
     // Box CTA (vermelho)
     var ctaX = wppX + boxW + boxGap;
     c.fillStyle = '#ef4444'; roundRect(c, ctaX, footerY - boxH, boxW, boxH, 8); c.fill();
@@ -911,13 +910,12 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
         curY += 28;
     }
 
-    // Botões Instagram + WhatsApp + CTA (3 boxes lado a lado, ícone em cima / texto embaixo)
+    // Botões Instagram + WhatsApp + CTA (3 boxes lado a lado, ícone esquerda / texto direita)
     var btnH = 55, btnGap = 12;
     var btnW2 = Math.floor((contentMaxW - btnGap * 2) / 3);
     var btnY = H - btnH - 30;
-    var vIconSize = 22;
-    var vIconCY = btnY + Math.floor(btnH * 0.32);
-    var vTextCY = btnY + Math.floor(btnH * 0.74);
+    var vIconSize = 24; var vIconPad = 12;
+    var vTextCY = btnY + btnH / 2 + 6;
     oc.textAlign = 'center';
 
     // Botão Instagram (degradê laranja→rosa→roxo)
@@ -926,20 +924,20 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     oc.fillStyle = instaGrad;
     roundRect(oc, contentX, btnY, btnW2, btnH, 10);
     oc.fill();
-    drawInstagramIcon(oc, contentX + btnW2 / 2 - vIconSize / 2, vIconCY - vIconSize / 2, vIconSize);
+    drawInstagramIcon(oc, contentX + vIconPad, btnY + btnH / 2 - vIconSize / 2, vIconSize);
     oc.fillStyle = '#fff';
-    oc.font = '700 15px Manrope, sans-serif';
-    oc.fillText(globalSettings.instagramHandle, contentX + btnW2 / 2, vTextCY);
+    oc.font = '700 16px Manrope, sans-serif';
+    oc.fillText(globalSettings.instagramHandle, contentX + vIconPad + vIconSize + (btnW2 - vIconPad - vIconSize) / 2, vTextCY);
 
     // Botão WhatsApp (centro)
     var wppBtnX = contentX + btnW2 + btnGap;
     oc.fillStyle = '#25D366';
     roundRect(oc, wppBtnX, btnY, btnW2, btnH, 10);
     oc.fill();
-    drawWhatsAppIcon(oc, wppBtnX + btnW2 / 2 - vIconSize / 2, vIconCY - vIconSize / 2, vIconSize);
+    drawWhatsAppIcon(oc, wppBtnX + vIconPad, btnY + btnH / 2 - vIconSize / 2, vIconSize);
     oc.fillStyle = '#fff';
-    oc.font = '700 13px Manrope, sans-serif';
-    oc.fillText(globalSettings.whatsappText, wppBtnX + btnW2 / 2, vTextCY);
+    oc.font = '700 14px Manrope, sans-serif';
+    oc.fillText(globalSettings.whatsappText, wppBtnX + vIconPad + vIconSize + (btnW2 - vIconPad - vIconSize) / 2, vTextCY);
 
     // Botão CTA (direita)
     var btnX2 = wppBtnX + btnW2 + btnGap;
@@ -947,7 +945,7 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     roundRect(oc, btnX2, btnY, btnW2, btnH, 10);
     oc.fill();
     oc.fillStyle = '#fff';
-    oc.font = '800 17px Manrope, sans-serif';
+    oc.font = '800 18px Manrope, sans-serif';
     oc.fillText(globalSettings.ctaText, btnX2 + btnW2 / 2, vTextCY);
 
     oc.textAlign = 'left';
@@ -963,6 +961,10 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     oc.fillRect(0, 0, W, H);
 
     // ===== LAYOUT STORY: Logo no topo + Vídeo centralizado no meio + Info embaixo =====
+
+    // --- Posicionamento: Centro do video deslocado para cima (calculado ANTES da logo) ---
+    var videoCenterY = Math.round(H * 0.44); // Centro deslocado para cima
+    var videoY = videoCenterY - Math.floor(videoAreaH / 2);
 
     // --- TOPO: Logo centralizada sobre o vídeo (quase colada) ---
     var logoTopH = 260;
@@ -988,10 +990,6 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
         // Logo por cima do glow
         oc.drawImage(uploadedLogo, logoX, logoY, logoW, logoH);
     }
-
-    // --- Posicionamento: Centro do video deslocado para cima ---
-    var videoCenterY = Math.round(H * 0.44); // Centro deslocado para cima
-    var videoY = videoCenterY - Math.floor(videoAreaH / 2);
     var infoAreaY = videoY + videoAreaH;
     var infoAreaH = H - infoAreaY;
 
@@ -1109,9 +1107,8 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     var btnH = 70, btnGap = 20;
     var btnW2 = Math.floor((W - pad * 2 - btnGap * 2) / 3);
     var btnY = H - btnH - 50;
-    var sIconSize = 28;
-    var sIconCY = btnY + Math.floor(btnH * 0.32);
-    var sTextCY = btnY + Math.floor(btnH * 0.74);
+    var sIconSize = 32; var sIconPad = 16;
+    var sTextCY = btnY + btnH / 2 + 8;
     oc.textAlign = 'center';
 
     // Botão Instagram (degradê laranja→rosa→roxo)
@@ -1120,20 +1117,20 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     oc.fillStyle = instaGrad;
     roundRect(oc, pad, btnY, btnW2, btnH, 12);
     oc.fill();
-    drawInstagramIcon(oc, pad + btnW2 / 2 - sIconSize / 2, sIconCY - sIconSize / 2, sIconSize);
+    drawInstagramIcon(oc, pad + sIconPad, btnY + btnH / 2 - sIconSize / 2, sIconSize);
     oc.fillStyle = '#fff';
     oc.font = '700 20px Manrope, sans-serif';
-    oc.fillText(globalSettings.instagramHandle, pad + btnW2 / 2, sTextCY);
+    oc.fillText(globalSettings.instagramHandle, pad + sIconPad + sIconSize + (btnW2 - sIconPad - sIconSize) / 2, sTextCY);
 
     // Botão WhatsApp (centro)
     var wppBtnX = pad + btnW2 + btnGap;
     oc.fillStyle = '#25D366';
     roundRect(oc, wppBtnX, btnY, btnW2, btnH, 12);
     oc.fill();
-    drawWhatsAppIcon(oc, wppBtnX + btnW2 / 2 - sIconSize / 2, sIconCY - sIconSize / 2, sIconSize);
+    drawWhatsAppIcon(oc, wppBtnX + sIconPad, btnY + btnH / 2 - sIconSize / 2, sIconSize);
     oc.fillStyle = '#fff';
     oc.font = '700 18px Manrope, sans-serif';
-    oc.fillText(globalSettings.whatsappText, wppBtnX + btnW2 / 2, sTextCY);
+    oc.fillText(globalSettings.whatsappText, wppBtnX + sIconPad + sIconSize + (btnW2 - sIconPad - sIconSize) / 2, sTextCY);
 
     // Botão CTA (direita)
     var btnX2 = wppBtnX + btnW2 + btnGap;

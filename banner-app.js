@@ -923,7 +923,7 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
 // ============================================
 // RENDER ESTÁTICO STORY (cache) — 1080x1920 (9:16 vertical)
 // Layout: Fundo = capa do filme + degradê escuro embaixo
-// Vídeo no centro + Logo/@Instagram no topo + Info embaixo
+// Vídeo no centro + Logo no topo + Info centralizada + Boxes embaixo
 // ============================================
 function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     // Fundo: poster/capa do filme cobrindo tudo
@@ -932,13 +932,11 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
         var canR = W / H;
         var dw, dh, ox, oy;
         if (pR > canR) {
-            // Imagem mais larga - corta laterais
             dh = H;
             dw = H * pR;
             ox = (W - dw) / 2;
             oy = 0;
         } else {
-            // Imagem mais alta - corta topo/base
             dw = W;
             dh = W / pR;
             ox = 0;
@@ -950,74 +948,84 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
         oc.fillRect(0, 0, W, H);
     }
 
-    // Degradê escuro do meio para baixo (para as informações)
-    var gradStartY = H * 0.35;
+    // Degradê escuro do meio para baixo
+    var gradStartY = H * 0.3;
     var grad = oc.createLinearGradient(0, gradStartY, 0, H);
     grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(0.3, 'rgba(0,0,0,0.6)');
-    grad.addColorStop(0.5, 'rgba(0,0,0,0.85)');
+    grad.addColorStop(0.25, 'rgba(0,0,0,0.5)');
+    grad.addColorStop(0.5, 'rgba(0,0,0,0.8)');
+    grad.addColorStop(0.75, 'rgba(0,0,0,0.9)');
     grad.addColorStop(1, 'rgba(0,0,0,0.95)');
     oc.fillStyle = grad;
     oc.fillRect(0, 0, W, H);
 
-    // Degradê escuro no topo (para logo/@instagram)
-    var gradTop = oc.createLinearGradient(0, 0, 0, 250);
-    gradTop.addColorStop(0, 'rgba(0,0,0,0.8)');
+    // Degradê escuro no topo (para logo)
+    var gradTop = oc.createLinearGradient(0, 0, 0, 200);
+    gradTop.addColorStop(0, 'rgba(0,0,0,0.7)');
     gradTop.addColorStop(1, 'rgba(0,0,0,0)');
     oc.fillStyle = gradTop;
-    oc.fillRect(0, 0, W, 250);
+    oc.fillRect(0, 0, W, 200);
 
-    // ===== TOPO: Logo + @Instagram =====
-    var topPad = 40;
+    // ===== TOPO: Logo (apenas) =====
+    var topPad = 35;
     if (uploadedLogo) {
         var logoR = uploadedLogo.width / uploadedLogo.height;
-        var logoH = 100;
+        var logoH = 90;
         var logoW = logoH * logoR;
-        if (logoW > 280) { logoW = 280; logoH = logoW / logoR; }
-        oc.drawImage(uploadedLogo, W - logoW - topPad, topPad, logoW, logoH);
+        if (logoW > 260) { logoW = 260; logoH = logoW / logoR; }
+        // Centraliza a logo no topo
+        oc.drawImage(uploadedLogo, (W - logoW) / 2, topPad, logoW, logoH);
     }
 
-    // @Instagram no topo esquerdo
-    var instaHandle = globalSettings.instagramHandle || '@seuinstagram';
-    oc.font = '700 32px Manrope, sans-serif';
-    oc.fillStyle = '#fff';
-    oc.textAlign = 'left';
-    oc.shadowColor = 'rgba(0,0,0,0.8)';
-    oc.shadowBlur = 10;
-    oc.fillText(instaHandle, topPad, topPad + 50);
-    oc.shadowBlur = 0;
-
     // ===== CENTRO: Área do vídeo (será preenchida pelo drawFrame) =====
-    // A área do vídeo fica centralizada verticalmente
-    var videoY = Math.round((H - videoAreaH) / 2) - 100;
-    // Desenha uma borda sutil ao redor da área do vídeo
-    oc.strokeStyle = 'rgba(255,255,255,0.2)';
-    oc.lineWidth = 3;
+    var videoY = Math.round((H - videoAreaH) / 2) - 150;
+    // Borda sutil ao redor da área do vídeo
+    oc.strokeStyle = 'rgba(255,255,255,0.15)';
+    oc.lineWidth = 2;
     roundRect(oc, 0, videoY, W, videoAreaH, 0);
     oc.stroke();
 
-    // ===== BAIXO: Informações do filme =====
-    var pad = 50;
-    var infoY = videoY + videoAreaH + 40;
+    // ===== ÁREA DE INFORMAÇÕES (abaixo do vídeo) =====
+    var infoAreaStartY = videoY + videoAreaH;
+    var infoAreaH = H - infoAreaStartY - 40; // 40px margem inferior
+    var pad = 60;
     var maxW = W - pad * 2;
 
+    // Calcula altura de cada bloco para centralizar verticalmente
+    oc.font = '700 52px Oswald, sans-serif';
+    var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), maxW).slice(0, 2);
+    var titleH = titleLines.length * 58;
+
+    var metaH = 30;
+
+    oc.font = '400 22px Manrope, sans-serif';
+    var synLines = wrapText(oc, selectedContent.overview || '', maxW).slice(0, 3);
+    var synH = synLines.length * 30;
+
+    var logoBlockH = uploadedLogo ? 80 : 0;
+    var boxRowH = 70; // altura da linha de boxes
+
+    var gap1 = 20, gap2 = 25, gap3 = 30, gap4 = 40;
+    var totalInfoH = titleH + gap1 + metaH + gap2 + synH + gap3 + logoBlockH + gap4 + boxRowH;
+
+    // Centraliza verticalmente no espaço disponível
+    var curY = infoAreaStartY + Math.max(20, (infoAreaH - totalInfoH) / 2);
+
     // Título
-    oc.font = '700 56px Oswald, sans-serif';
+    oc.font = '700 52px Oswald, sans-serif';
     oc.fillStyle = '#fff';
     oc.textAlign = 'center';
     oc.shadowColor = 'rgba(0,0,0,0.9)';
-    oc.shadowBlur = 15;
-    var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), maxW).slice(0, 2);
-    var curY = infoY;
+    oc.shadowBlur = 12;
     for (var ti = 0; ti < titleLines.length; ti++) {
         oc.fillText(titleLines[ti], W / 2, curY);
-        curY += 62;
+        curY += 58;
     }
     oc.shadowBlur = 0;
 
-    // Meta (rating, ano, gênero, tempo, plataforma)
-    curY += 15;
-    oc.font = '600 26px Manrope, sans-serif';
+    // Meta
+    curY += gap1;
+    oc.font = '600 24px Manrope, sans-serif';
     var metaParts = [];
     if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push({ text: '\u2605 ' + selectedContent.rating, color: '#eab308' });
     if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push({ text: selectedContent.year, color: 'rgba(255,255,255,0.9)' });
@@ -1025,9 +1033,8 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     if (selectedContent.runtime && selectedContent.runtime !== 'N/A') metaParts.push({ text: selectedContent.runtime, color: 'rgba(255,255,255,0.9)' });
     var plat = selectedContent.autoProvider;
     if (plat) metaParts.push({ text: plat, color: '#ef4444' });
-    
+
     var sep = '  \u2022  ';
-    // Calcula largura total para centralizar
     var totalMetaW = 0;
     for (var mi = 0; mi < metaParts.length; mi++) {
         if (mi > 0) totalMetaW += oc.measureText(sep).width;
@@ -1045,42 +1052,71 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
         metaCursorX += oc.measureText(metaParts[mi].text).width;
     }
 
-    // Sinopse (centralizada, max 4 linhas)
-    curY += 35;
-    oc.font = '400 24px Manrope, sans-serif';
+    // Sinopse
+    curY += gap2;
+    oc.font = '400 22px Manrope, sans-serif';
     oc.fillStyle = 'rgba(255,255,255,0.85)';
     oc.textAlign = 'center';
-    var synLines = wrapText(oc, selectedContent.overview || '', maxW).slice(0, 4);
     for (var sj = 0; sj < synLines.length; sj++) {
         oc.fillText(synLines[sj], W / 2, curY);
-        curY += 32;
+        curY += 30;
     }
 
-    // Botões WhatsApp + CTA
-    var btnH = 65, btnGap = 20;
-    var btnW = Math.floor((maxW - btnGap) / 2);
-    var btnY = H - btnH - 50;
+    // Logo (após sinopse)
+    if (uploadedLogo && logoBlockH > 0) {
+        curY += gap3;
+        var sLogoR = uploadedLogo.width / uploadedLogo.height;
+        var sLogoH = 70;
+        var sLogoW = sLogoH * sLogoR;
+        if (sLogoW > 220) { sLogoW = 220; sLogoH = sLogoW / sLogoR; }
+        oc.drawImage(uploadedLogo, (W - sLogoW) / 2, curY - 10, sLogoW, sLogoH);
+    }
 
-    // Botão WhatsApp (esquerda)
-    oc.fillStyle = '#25D366';
-    roundRect(oc, pad, btnY, btnW, btnH, 12);
+    // ===== BOXES: @Instagram + WhatsApp + CTA (linha única, com espaçamento) =====
+    curY += gap4;
+    var boxH = 65;
+    var boxGap = 12;
+    var boxW = Math.floor((maxW - boxGap * 2) / 3);
+    var boxY = curY + (boxRowH - boxH) / 2;
+
+    // Box @Instagram (gradiente Instagram: laranja → rosa → roxo)
+    var instaBoxX = pad;
+    var instaGrad = oc.createLinearGradient(instaBoxX, boxY, instaBoxX + boxW, boxY + boxH);
+    instaGrad.addColorStop(0, '#f09433');
+    instaGrad.addColorStop(0.3, '#e6683c');
+    instaGrad.addColorStop(0.6, '#dc2743');
+    instaGrad.addColorStop(0.8, '#cc2366');
+    instaGrad.addColorStop(1, '#bc1888');
+    oc.fillStyle = instaGrad;
+    roundRect(oc, instaBoxX, boxY, boxW, boxH, 10);
     oc.fill();
+    // Ícone Instagram + @handle
     oc.fillStyle = '#fff';
-    oc.font = '700 24px Manrope, sans-serif';
+    oc.font = '700 20px Manrope, sans-serif';
     oc.textAlign = 'center';
-    oc.fillText(globalSettings.whatsappText, pad + btnW / 2, btnY + btnH / 2 + 8);
+    var instaHandle = globalSettings.instagramHandle || '@seuinstagram';
+    oc.fillText(instaHandle, instaBoxX + boxW / 2, boxY + boxH / 2 + 7);
 
-    // Botão CTA (direita)
-    oc.fillStyle = '#ef4444';
-    roundRect(oc, pad + btnW + btnGap, btnY, btnW, btnH, 12);
+    // Box WhatsApp (verde)
+    var wppBoxX = pad + boxW + boxGap;
+    oc.fillStyle = '#25D366';
+    roundRect(oc, wppBoxX, boxY, boxW, boxH, 10);
     oc.fill();
     oc.fillStyle = '#fff';
-    oc.font = '800 26px Manrope, sans-serif';
-    oc.fillText(globalSettings.ctaText, pad + btnW + btnGap + btnW / 2, btnY + btnH / 2 + 8);
+    oc.font = '700 18px Manrope, sans-serif';
+    oc.fillText(globalSettings.whatsappText, wppBoxX + boxW / 2, boxY + boxH / 2 + 6);
+
+    // Box CTA (vermelho)
+    var ctaBoxX = pad + (boxW + boxGap) * 2;
+    oc.fillStyle = '#ef4444';
+    roundRect(oc, ctaBoxX, boxY, boxW, boxH, 10);
+    oc.fill();
+    oc.fillStyle = '#fff';
+    oc.font = '800 20px Manrope, sans-serif';
+    oc.fillText(globalSettings.ctaText, ctaBoxX + boxW / 2, boxY + boxH / 2 + 7);
 
     oc.textAlign = 'left';
 
-    // Retorna a posição Y do vídeo para o drawFrame
     return videoY;
 }
 

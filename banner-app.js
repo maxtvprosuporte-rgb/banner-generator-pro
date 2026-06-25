@@ -1103,10 +1103,11 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
         curY += 32;
     }
 
-    // Botões Instagram + WhatsApp + CTA (3 boxes lado a lado, ícone em cima / texto embaixo)
+    // Botões Instagram + WhatsApp + CTA (3 boxes lado a lado, ícone esquerda / texto direita)
+    // Posicionados logo após a sinopse
     var btnH = 70, btnGap = 20;
     var btnW2 = Math.floor((W - pad * 2 - btnGap * 2) / 3);
-    var btnY = H - btnH - 50;
+    var btnY = curY + 20; // Logo após a última linha da sinopse
     var sIconSize = 32; var sIconPad = 16;
     var sTextCY = btnY + btnH / 2 + 8;
     oc.textAlign = 'center';

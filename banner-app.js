@@ -990,7 +990,7 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     oc.fillRect(0, 0, W, 380);
 
     // ===== TOPO: Logo grande centralizada =====
-    var topPad = 40;
+    var topPad = 80;
     if (uploadedLogo) {
         var logoR = uploadedLogo.width / uploadedLogo.height;
         var logoH = 180;
@@ -1019,7 +1019,30 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), maxW).slice(0, 2);
     var titleH = titleLines.length * 58;
 
-    var metaH = 30;
+    var metaParts = [];
+    if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push({ text: '\u2605 ' + selectedContent.rating, color: '#eab308' });
+    if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push({ text: selectedContent.year, color: 'rgba(255,255,255,0.9)' });
+    if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push({ text: selectedContent.genres.split(',')[0].trim(), color: 'rgba(255,255,255,0.9)' });
+    if (selectedContent.runtime && selectedContent.runtime !== 'N/A') metaParts.push({ text: selectedContent.runtime, color: 'rgba(255,255,255,0.9)' });
+    var plat = selectedContent.autoProvider;
+    if (plat) metaParts.push({ text: plat, color: '#ef4444' });
+
+    // Calcula quantas linhas de metadados serão necessárias
+    oc.font = '600 24px Manrope, sans-serif';
+    var sep = '  \u2022  ';
+    var metaLineCount = 1;
+    var currentLineW = 0;
+    for (var mi = 0; mi < metaParts.length; mi++) {
+        var itemW = oc.measureText(metaParts[mi].text).width;
+        var sepW = mi > 0 ? oc.measureText(sep).width : 0;
+        if (currentLineW + itemW + sepW > maxW && currentLineW > 0) {
+            metaLineCount++;
+            currentLineW = itemW;
+        } else {
+            currentLineW += itemW + sepW;
+        }
+    }
+    var metaH = metaLineCount * 30;
 
     oc.font = '400 22px Manrope, sans-serif';
     var synLines = wrapText(oc, selectedContent.overview || '', maxW).slice(0, 3);
@@ -1045,33 +1068,44 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     }
     oc.shadowBlur = 0;
 
-    // Meta
+    // Meta (com quebra automática de linha se necessário)
     curY += gap1;
-    oc.font = '600 24px Manrope, sans-serif';
-    var metaParts = [];
-    if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push({ text: '\u2605 ' + selectedContent.rating, color: '#eab308' });
-    if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push({ text: selectedContent.year, color: 'rgba(255,255,255,0.9)' });
-    if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push({ text: selectedContent.genres.split(',')[0].trim(), color: 'rgba(255,255,255,0.9)' });
-    if (selectedContent.runtime && selectedContent.runtime !== 'N/A') metaParts.push({ text: selectedContent.runtime, color: 'rgba(255,255,255,0.9)' });
-    var plat = selectedContent.autoProvider;
-    if (plat) metaParts.push({ text: plat, color: '#ef4444' });
-
-    var sep = '  \u2022  ';
-    var totalMetaW = 0;
+    var metaLines = [];
+    var currentLine = [];
+    var curLineW = 0;
     for (var mi = 0; mi < metaParts.length; mi++) {
-        if (mi > 0) totalMetaW += oc.measureText(sep).width;
-        totalMetaW += oc.measureText(metaParts[mi].text).width;
-    }
-    var metaCursorX = (W - totalMetaW) / 2;
-    for (var mi = 0; mi < metaParts.length; mi++) {
-        if (mi > 0) {
-            oc.fillStyle = 'rgba(255,255,255,0.6)';
-            oc.fillText(sep, metaCursorX, curY);
-            metaCursorX += oc.measureText(sep).width;
+        var itemW = oc.measureText(metaParts[mi].text).width;
+        var sepW = mi > 0 ? oc.measureText(sep).width : 0;
+        if (curLineW + itemW + sepW > maxW && currentLine.length > 0) {
+            metaLines.push(currentLine);
+            currentLine = [];
+            curLineW = 0;
         }
-        oc.fillStyle = metaParts[mi].color;
-        oc.fillText(metaParts[mi].text, metaCursorX, curY);
-        metaCursorX += oc.measureText(metaParts[mi].text).width;
+        if (currentLine.length > 0) curLineW += oc.measureText(sep).width;
+        currentLine.push(metaParts[mi]);
+        curLineW += itemW;
+    }
+    if (currentLine.length > 0) metaLines.push(currentLine);
+
+    for (var li = 0; li < metaLines.length; li++) {
+        var lineParts = metaLines[li];
+        var lineW = 0;
+        for (var pi = 0; pi < lineParts.length; pi++) {
+            if (pi > 0) lineW += oc.measureText(sep).width;
+            lineW += oc.measureText(lineParts[pi].text).width;
+        }
+        var metaCursorX = (W - lineW) / 2;
+        for (var pi = 0; pi < lineParts.length; pi++) {
+            if (pi > 0) {
+                oc.fillStyle = 'rgba(255,255,255,0.6)';
+                oc.fillText(sep, metaCursorX, curY);
+                metaCursorX += oc.measureText(sep).width;
+            }
+            oc.fillStyle = lineParts[pi].color;
+            oc.fillText(lineParts[pi].text, metaCursorX, curY);
+            metaCursorX += oc.measureText(lineParts[pi].text).width;
+        }
+        curY += 30;
     }
 
     // Sinopse

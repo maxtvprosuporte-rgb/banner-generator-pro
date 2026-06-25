@@ -526,13 +526,24 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
         c.restore();
         var cornerH = 240; var cornerW = cornerH * (uploadedLogo.width / uploadedLogo.height); c.globalAlpha = 1; c.drawImage(uploadedLogo, width - cornerW - 25, 25, cornerW, cornerH);
     }
-    var mPadding = 50; var footerY = height - mPadding; var boxH = 50;
-    c.fillStyle = '#25D366'; roundRect(c, mPadding, footerY - boxH, 180, boxH, 8); c.fill();
+    var mPadding = 50; var footerY = height - mPadding; var boxH = 50; var boxGap = 12;
+    var totalBoxW = width - mPadding * 2 - boxGap * 2; var boxW = Math.floor(totalBoxW / 3);
+    // Box Instagram (degradê laranja→rosa→roxo)
+    var instaGrad = c.createLinearGradient(mPadding, footerY - boxH, mPadding + boxW, footerY);
+    instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
+    c.fillStyle = instaGrad; roundRect(c, mPadding, footerY - boxH, boxW, boxH, 8); c.fill();
     c.fillStyle = '#fff'; c.font = '600 20px Manrope, sans-serif'; c.textAlign = 'center';
-    c.fillText(globalSettings.whatsappText, mPadding + 90, footerY - boxH / 2 + 7);
-    c.fillStyle = '#ef4444'; roundRect(c, mPadding + 195, footerY - boxH, 180, boxH, 8); c.fill();
+    c.fillText(globalSettings.instagramHandle, mPadding + boxW / 2, footerY - boxH / 2 + 7);
+    // Box WhatsApp (verde)
+    var wppX = mPadding + boxW + boxGap;
+    c.fillStyle = '#25D366'; roundRect(c, wppX, footerY - boxH, boxW, boxH, 8); c.fill();
+    c.fillStyle = '#fff'; c.font = '600 18px Manrope, sans-serif';
+    c.fillText(globalSettings.whatsappText, wppX + boxW / 2, footerY - boxH / 2 + 7);
+    // Box CTA (vermelho)
+    var ctaX = wppX + boxW + boxGap;
+    c.fillStyle = '#ef4444'; roundRect(c, ctaX, footerY - boxH, boxW, boxH, 8); c.fill();
     c.fillStyle = '#fff'; c.font = '700 20px Manrope, sans-serif';
-    c.fillText(globalSettings.ctaText, mPadding + 285, footerY - boxH / 2 + 7);
+    c.fillText(globalSettings.ctaText, ctaX + boxW / 2, footerY - boxH / 2 + 7);
     var currentY = footerY - boxH - 25;
     var maxTextWidth = width - mPadding * 2;
     c.font = '400 24px Manrope, sans-serif'; c.fillStyle = 'rgba(255,255,255,0.9)'; c.textAlign = 'left';
@@ -894,27 +905,38 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
         curY += 28;
     }
 
-    // Botões WhatsApp + CTA (lado a lado, alinhados com o conteúdo à direita do poster)
-    var btnH = 55, btnGap = 15;
-    var btnW2 = Math.floor((contentMaxW - btnGap) / 2);
+    // Botões Instagram + WhatsApp + CTA (3 boxes lado a lado)
+    var btnH = 55, btnGap = 12;
+    var btnW2 = Math.floor((contentMaxW - btnGap * 2) / 3);
     var btnY = H - btnH - 30;
 
-    // Botão WhatsApp (esquerda)
-    oc.fillStyle = '#25D366';
+    // Botão Instagram (degradê laranja→rosa→roxo)
+    var instaGrad = oc.createLinearGradient(contentX, btnY, contentX + btnW2, btnY + btnH);
+    instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
+    oc.fillStyle = instaGrad;
     roundRect(oc, contentX, btnY, btnW2, btnH, 10);
     oc.fill();
     oc.fillStyle = '#fff';
-    oc.font = '700 22px Manrope, sans-serif';
+    oc.font = '700 20px Manrope, sans-serif';
     oc.textAlign = 'center';
-    oc.fillText(globalSettings.whatsappText, contentX + btnW2 / 2, btnY + btnH / 2 + 7);
+    oc.fillText(globalSettings.instagramHandle, contentX + btnW2 / 2, btnY + btnH / 2 + 7);
+
+    // Botão WhatsApp (centro)
+    var wppBtnX = contentX + btnW2 + btnGap;
+    oc.fillStyle = '#25D366';
+    roundRect(oc, wppBtnX, btnY, btnW2, btnH, 10);
+    oc.fill();
+    oc.fillStyle = '#fff';
+    oc.font = '700 18px Manrope, sans-serif';
+    oc.fillText(globalSettings.whatsappText, wppBtnX + btnW2 / 2, btnY + btnH / 2 + 7);
 
     // Botão CTA (direita)
-    var btnX2 = contentX + btnW2 + btnGap;
+    var btnX2 = wppBtnX + btnW2 + btnGap;
     oc.fillStyle = '#ef4444';
     roundRect(oc, btnX2, btnY, btnW2, btnH, 10);
     oc.fill();
     oc.fillStyle = '#fff';
-    oc.font = '800 24px Manrope, sans-serif';
+    oc.font = '800 20px Manrope, sans-serif';
     oc.fillText(globalSettings.ctaText, btnX2 + btnW2 / 2, btnY + btnH / 2 + 7);
 
     oc.textAlign = 'left';
@@ -959,20 +981,21 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     oc.fillStyle = grad;
     oc.fillRect(0, 0, W, H);
 
-    // Degradê escuro no topo (para logo)
-    var gradTop = oc.createLinearGradient(0, 0, 0, 200);
-    gradTop.addColorStop(0, 'rgba(0,0,0,0.7)');
+    // Degradê escuro no topo (para logo grande centralizada)
+    var gradTop = oc.createLinearGradient(0, 0, 0, 380);
+    gradTop.addColorStop(0, 'rgba(0,0,0,0.85)');
+    gradTop.addColorStop(0.5, 'rgba(0,0,0,0.5)');
     gradTop.addColorStop(1, 'rgba(0,0,0,0)');
     oc.fillStyle = gradTop;
-    oc.fillRect(0, 0, W, 200);
+    oc.fillRect(0, 0, W, 380);
 
-    // ===== TOPO: Logo (apenas) =====
-    var topPad = 35;
+    // ===== TOPO: Logo grande centralizada =====
+    var topPad = 40;
     if (uploadedLogo) {
         var logoR = uploadedLogo.width / uploadedLogo.height;
-        var logoH = 90;
+        var logoH = 180;
         var logoW = logoH * logoR;
-        if (logoW > 260) { logoW = 260; logoH = logoW / logoR; }
+        if (logoW > 500) { logoW = 500; logoH = logoW / logoR; }
         // Centraliza a logo no topo
         oc.drawImage(uploadedLogo, (W - logoW) / 2, topPad, logoW, logoH);
     }
@@ -1002,11 +1025,10 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     var synLines = wrapText(oc, selectedContent.overview || '', maxW).slice(0, 3);
     var synH = synLines.length * 30;
 
-    var logoBlockH = uploadedLogo ? 80 : 0;
     var boxRowH = 70; // altura da linha de boxes
 
-    var gap1 = 20, gap2 = 25, gap3 = 30, gap4 = 40;
-    var totalInfoH = titleH + gap1 + metaH + gap2 + synH + gap3 + logoBlockH + gap4 + boxRowH;
+    var gap1 = 20, gap2 = 25, gap4 = 40;
+    var totalInfoH = titleH + gap1 + metaH + gap2 + synH + gap4 + boxRowH;
 
     // Centraliza verticalmente no espaço disponível
     var curY = infoAreaStartY + Math.max(20, (infoAreaH - totalInfoH) / 2);
@@ -1060,16 +1082,6 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     for (var sj = 0; sj < synLines.length; sj++) {
         oc.fillText(synLines[sj], W / 2, curY);
         curY += 30;
-    }
-
-    // Logo (após sinopse)
-    if (uploadedLogo && logoBlockH > 0) {
-        curY += gap3;
-        var sLogoR = uploadedLogo.width / uploadedLogo.height;
-        var sLogoH = 70;
-        var sLogoW = sLogoH * sLogoR;
-        if (sLogoW > 220) { sLogoW = 220; sLogoH = sLogoW / sLogoR; }
-        oc.drawImage(uploadedLogo, (W - sLogoW) / 2, curY - 10, sLogoW, sLogoH);
     }
 
     // ===== BOXES: @Instagram + WhatsApp + CTA (linha única, com espaçamento) =====

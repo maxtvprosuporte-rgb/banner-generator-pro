@@ -528,17 +528,24 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
     }
     var mPadding = 50; var footerY = height - mPadding; var boxH = 50; var boxGap = 12;
     var totalBoxW = width - mPadding * 2 - boxGap * 2; var boxW = Math.floor(totalBoxW / 3);
+    var iconSize = 30; var iconPad = 10;
     // Box Instagram (degradê laranja→rosa→roxo)
     var instaGrad = c.createLinearGradient(mPadding, footerY - boxH, mPadding + boxW, footerY);
     instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
     c.fillStyle = instaGrad; roundRect(c, mPadding, footerY - boxH, boxW, boxH, 8); c.fill();
-    c.fillStyle = '#fff'; c.font = '600 20px Manrope, sans-serif'; c.textAlign = 'center';
-    c.fillText(globalSettings.instagramHandle, mPadding + boxW / 2, footerY - boxH / 2 + 7);
+    var instaIconX = mPadding + iconPad;
+    var instaIconY = footerY - boxH / 2 - iconSize / 2;
+    drawInstagramIcon(c, instaIconX, instaIconY, iconSize);
+    c.fillStyle = '#fff'; c.font = '600 18px Manrope, sans-serif'; c.textAlign = 'center';
+    c.fillText(globalSettings.instagramHandle, mPadding + boxW / 2, footerY - boxH / 2 + 6);
     // Box WhatsApp (verde)
     var wppX = mPadding + boxW + boxGap;
     c.fillStyle = '#25D366'; roundRect(c, wppX, footerY - boxH, boxW, boxH, 8); c.fill();
-    c.fillStyle = '#fff'; c.font = '600 18px Manrope, sans-serif';
-    c.fillText(globalSettings.whatsappText, wppX + boxW / 2, footerY - boxH / 2 + 7);
+    var wppIconX = wppX + iconPad;
+    var wppIconY = footerY - boxH / 2 - iconSize / 2;
+    drawWhatsAppIcon(c, wppIconX, wppIconY, iconSize);
+    c.fillStyle = '#fff'; c.font = '600 16px Manrope, sans-serif';
+    c.fillText(globalSettings.whatsappText, wppX + boxW / 2, footerY - boxH / 2 + 6);
     // Box CTA (vermelho)
     var ctaX = wppX + boxW + boxGap;
     c.fillStyle = '#ef4444'; roundRect(c, ctaX, footerY - boxH, boxW, boxH, 8); c.fill();
@@ -909,6 +916,7 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     var btnH = 55, btnGap = 12;
     var btnW2 = Math.floor((contentMaxW - btnGap * 2) / 3);
     var btnY = H - btnH - 30;
+    var vIconSize = 34; var vIconPad = 12;
 
     // Botão Instagram (degradê laranja→rosa→roxo)
     var instaGrad = oc.createLinearGradient(contentX, btnY, contentX + btnW2, btnY + btnH);
@@ -916,19 +924,21 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     oc.fillStyle = instaGrad;
     roundRect(oc, contentX, btnY, btnW2, btnH, 10);
     oc.fill();
+    drawInstagramIcon(oc, contentX + vIconPad, btnY + btnH / 2 - vIconSize / 2, vIconSize);
     oc.fillStyle = '#fff';
-    oc.font = '700 20px Manrope, sans-serif';
+    oc.font = '700 18px Manrope, sans-serif';
     oc.textAlign = 'center';
-    oc.fillText(globalSettings.instagramHandle, contentX + btnW2 / 2, btnY + btnH / 2 + 7);
+    oc.fillText(globalSettings.instagramHandle, contentX + btnW2 / 2, btnY + btnH / 2 + 6);
 
     // Botão WhatsApp (centro)
     var wppBtnX = contentX + btnW2 + btnGap;
     oc.fillStyle = '#25D366';
     roundRect(oc, wppBtnX, btnY, btnW2, btnH, 10);
     oc.fill();
+    drawWhatsAppIcon(oc, wppBtnX + vIconPad, btnY + btnH / 2 - vIconSize / 2, vIconSize);
     oc.fillStyle = '#fff';
-    oc.font = '700 18px Manrope, sans-serif';
-    oc.fillText(globalSettings.whatsappText, wppBtnX + btnW2 / 2, btnY + btnH / 2 + 7);
+    oc.font = '700 16px Manrope, sans-serif';
+    oc.fillText(globalSettings.whatsappText, wppBtnX + btnW2 / 2, btnY + btnH / 2 + 6);
 
     // Botão CTA (direita)
     var btnX2 = wppBtnX + btnW2 + btnGap;
@@ -944,80 +954,92 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
 
 // ============================================
 // RENDER ESTÁTICO STORY (cache) — 1080x1920 (9:16 vertical)
-// Layout: Fundo = capa do filme + degradê escuro embaixo
-// Vídeo no centro + Logo no topo + Info centralizada + Boxes embaixo
+// Mesmo padrão do Post: Vídeo no topo + Informações embaixo + Boxes no rodapé
 // ============================================
 function renderStaticStoryLayer(oc, W, H, videoAreaH) {
-    // Fundo: poster/capa do filme cobrindo tudo
-    if (posterImage) {
-        var pR = posterImage.width / posterImage.height;
-        var canR = W / H;
-        var dw, dh, ox, oy;
-        if (pR > canR) {
-            dh = H;
-            dw = H * pR;
-            ox = (W - dw) / 2;
-            oy = 0;
-        } else {
-            dw = W;
-            dh = W / pR;
-            ox = 0;
-            oy = (H - dh) / 2;
-        }
-        oc.drawImage(posterImage, ox, oy, dw, dh);
-    } else {
-        oc.fillStyle = '#1a1a2e';
-        oc.fillRect(0, 0, W, H);
-    }
-
-    // Degradê escuro do meio para baixo
-    var gradStartY = H * 0.3;
-    var grad = oc.createLinearGradient(0, gradStartY, 0, H);
-    grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(0.25, 'rgba(0,0,0,0.5)');
-    grad.addColorStop(0.5, 'rgba(0,0,0,0.8)');
-    grad.addColorStop(0.75, 'rgba(0,0,0,0.9)');
-    grad.addColorStop(1, 'rgba(0,0,0,0.95)');
-    oc.fillStyle = grad;
+    // Fundo total (preto)
+    oc.fillStyle = '#000';
     oc.fillRect(0, 0, W, H);
 
-    // Degradê escuro no topo (para logo grande centralizada)
-    var gradTop = oc.createLinearGradient(0, 0, 0, 380);
-    gradTop.addColorStop(0, 'rgba(0,0,0,0.85)');
-    gradTop.addColorStop(0.5, 'rgba(0,0,0,0.5)');
-    gradTop.addColorStop(1, 'rgba(0,0,0,0)');
-    oc.fillStyle = gradTop;
-    oc.fillRect(0, 0, W, 380);
+    // Área do vídeo (topo) - será preenchida pelo drawFrame
+    oc.fillStyle = '#000';
+    oc.fillRect(0, 0, W, videoAreaH);
 
-    // ===== TOPO: Logo grande centralizada =====
-    var topPad = 80;
+    // Área de informações (inferior) - fundo gradiente escuro
+    var infoAreaY = videoAreaH;
+    var infoAreaH = H - videoAreaH;
+    
+    var bgGrad = oc.createLinearGradient(0, infoAreaY, 0, H);
+    bgGrad.addColorStop(0, '#0a0a0a');
+    bgGrad.addColorStop(1, '#050505');
+    oc.fillStyle = bgGrad;
+    oc.fillRect(0, infoAreaY, W, infoAreaH);
+
+    // ===== TOPO: Logo centralizada com efeito glow atrás =====
     if (uploadedLogo) {
         var logoR = uploadedLogo.width / uploadedLogo.height;
-        var logoH = 180;
+        var logoH = 200;
         var logoW = logoH * logoR;
-        if (logoW > 500) { logoW = 500; logoH = logoW / logoR; }
-        // Centraliza a logo no topo
-        oc.drawImage(uploadedLogo, (W - logoW) / 2, topPad, logoW, logoH);
+        if (logoW > 550) { logoW = 550; logoH = logoW / logoR; }
+        var logoX = (W - logoW) / 2;
+        var logoY = 120; // Mais baixo
+        
+        // Efeito glow/destaque atrás da logo (círculo radial)
+        var glowRadius = Math.max(logoW, logoH) * 0.8;
+        var glowX = W / 2;
+        var glowY = logoY + logoH / 2;
+        var glowGrad = oc.createRadialGradient(glowX, glowY, 0, glowX, glowY, glowRadius);
+        glowGrad.addColorStop(0, 'rgba(139, 92, 246, 0.3)'); // Roxo suave
+        glowGrad.addColorStop(0.5, 'rgba(139, 92, 246, 0.15)');
+        glowGrad.addColorStop(1, 'rgba(139, 92, 246, 0)');
+        oc.fillStyle = glowGrad;
+        oc.fillRect(0, 0, W, videoAreaH);
+        
+        // Logo por cima do glow
+        oc.drawImage(uploadedLogo, logoX, logoY, logoW, logoH);
     }
 
-    // ===== CENTRO: Área do vídeo (será preenchida pelo drawFrame) =====
-    var videoY = Math.round((H - videoAreaH) / 2) - 150;
-    // Borda sutil ao redor da área do vídeo
-    oc.strokeStyle = 'rgba(255,255,255,0.15)';
-    oc.lineWidth = 2;
-    roundRect(oc, 0, videoY, W, videoAreaH, 0);
-    oc.stroke();
-
-    // ===== ÁREA DE INFORMAÇÕES (abaixo do vídeo) =====
-    var infoAreaStartY = videoY + videoAreaH;
-    var infoAreaH = H - infoAreaStartY - 40; // 40px margem inferior
+    // ======== INFO AREA: poster ESQUERDA + conteúdo DIREITA ========
     var pad = 60;
-    var maxW = W - pad * 2;
+    var posterW = 280, posterH = 420;
+    var posterX = pad;
+    var posterY = infoAreaY + 60;
+    var contentX = posterX + posterW + 40;
+    var contentMaxW = W - contentX - pad;
 
-    // Calcula altura de cada bloco para centralizar verticalmente
-    oc.font = '700 52px Oswald, sans-serif';
-    var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), maxW).slice(0, 2);
-    var titleH = titleLines.length * 58;
+    // Poster do filme (à esquerda)
+    if (posterImage) {
+        var pR = posterImage.width / posterImage.height;
+        var aR2 = posterW / posterH;
+        oc.save();
+        oc.beginPath();
+        roundRect(oc, posterX, posterY, posterW, posterH, 16);
+        oc.clip();
+        if (pR > aR2) {
+            var dh2 = posterH; var dw2 = posterH * pR;
+            oc.drawImage(posterImage, posterX - (dw2 - posterW) / 2, posterY, dw2, dh2);
+        } else {
+            var dw3 = posterW; var dh3 = posterW / pR;
+            oc.drawImage(posterImage, posterX, posterY - (dh3 - posterH) / 2, dw3, dh3);
+        }
+        oc.restore();
+        
+        // Borda sutil no poster
+        oc.strokeStyle = 'rgba(255,255,255,0.1)';
+        oc.lineWidth = 2;
+        oc.beginPath();
+        roundRect(oc, posterX, posterY, posterW, posterH, 16);
+        oc.stroke();
+    } else {
+        oc.fillStyle = '#1a1a1a';
+        roundRect(oc, posterX, posterY, posterW, posterH, 16);
+        oc.fill();
+    }
+
+    // Calcula a altura total do conteúdo para centralizar verticalmente em relação ao poster
+    oc.font = '700 56px Oswald, sans-serif';
+    var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), contentMaxW).slice(0, 3);
+    var titleBlockH = titleLines.length * 65;
 
     var metaParts = [];
     if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push({ text: '\u2605 ' + selectedContent.rating, color: '#eab308' });
@@ -1026,144 +1048,94 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     if (selectedContent.runtime && selectedContent.runtime !== 'N/A') metaParts.push({ text: selectedContent.runtime, color: 'rgba(255,255,255,0.9)' });
     var plat = selectedContent.autoProvider;
     if (plat) metaParts.push({ text: plat, color: '#ef4444' });
+    var metaBlockH = 28;
 
-    // Calcula quantas linhas de metadados serão necessárias
-    oc.font = '600 24px Manrope, sans-serif';
-    var sep = '  \u2022  ';
-    var metaLineCount = 1;
-    var currentLineW = 0;
-    for (var mi = 0; mi < metaParts.length; mi++) {
-        var itemW = oc.measureText(metaParts[mi].text).width;
-        var sepW = mi > 0 ? oc.measureText(sep).width : 0;
-        if (currentLineW + itemW + sepW > maxW && currentLineW > 0) {
-            metaLineCount++;
-            currentLineW = itemW;
-        } else {
-            currentLineW += itemW + sepW;
-        }
-    }
-    var metaH = metaLineCount * 30;
+    oc.font = '400 24px Manrope, sans-serif';
+    var synLines = wrapText(oc, selectedContent.overview || '', contentMaxW).slice(0, 6);
+    var synBlockH = synLines.length * 32;
 
-    oc.font = '400 22px Manrope, sans-serif';
-    var synLines = wrapText(oc, selectedContent.overview || '', maxW).slice(0, 3);
-    var synH = synLines.length * 30;
-
-    var boxRowH = 70; // altura da linha de boxes
-
-    var gap1 = 20, gap2 = 25, gap4 = 40;
-    var totalInfoH = titleH + gap1 + metaH + gap2 + synH + gap4 + boxRowH;
-
-    // Centraliza verticalmente no espaço disponível
-    var curY = infoAreaStartY + Math.max(20, (infoAreaH - totalInfoH) / 2);
+    var gap1 = 15, gap2 = 35;
+    var totalContentH = titleBlockH + gap1 + metaBlockH + gap2 + synBlockH;
+    var curY = posterY + Math.max(0, (posterH - totalContentH) / 2);
 
     // Título
-    oc.font = '700 52px Oswald, sans-serif';
+    oc.textAlign = 'left';
+    oc.font = '700 56px Oswald, sans-serif';
     oc.fillStyle = '#fff';
-    oc.textAlign = 'center';
-    oc.shadowColor = 'rgba(0,0,0,0.9)';
+    oc.shadowColor = 'rgba(0,0,0,0.8)';
     oc.shadowBlur = 12;
-    for (var ti = 0; ti < titleLines.length; ti++) {
-        oc.fillText(titleLines[ti], W / 2, curY);
-        curY += 58;
+    curY += 56;
+    for (var ti2 = 0; ti2 < titleLines.length; ti2++) {
+        oc.fillText(titleLines[ti2], contentX, curY);
+        curY += 65;
     }
     oc.shadowBlur = 0;
 
-    // Meta (com quebra automática de linha se necessário)
+    // Meta
     curY += gap1;
-    var metaLines = [];
-    var currentLine = [];
-    var curLineW = 0;
+    oc.font = '600 28px Manrope, sans-serif';
+    var sep = '  \u2022  ';
+    var metaCursorX = contentX;
     for (var mi = 0; mi < metaParts.length; mi++) {
-        var itemW = oc.measureText(metaParts[mi].text).width;
-        var sepW = mi > 0 ? oc.measureText(sep).width : 0;
-        if (curLineW + itemW + sepW > maxW && currentLine.length > 0) {
-            metaLines.push(currentLine);
-            currentLine = [];
-            curLineW = 0;
+        if (mi > 0) {
+            oc.fillStyle = 'rgba(255,255,255,0.6)';
+            oc.fillText(sep, metaCursorX, curY);
+            metaCursorX += oc.measureText(sep).width;
         }
-        if (currentLine.length > 0) curLineW += oc.measureText(sep).width;
-        currentLine.push(metaParts[mi]);
-        curLineW += itemW;
-    }
-    if (currentLine.length > 0) metaLines.push(currentLine);
-
-    for (var li = 0; li < metaLines.length; li++) {
-        var lineParts = metaLines[li];
-        var lineW = 0;
-        for (var pi = 0; pi < lineParts.length; pi++) {
-            if (pi > 0) lineW += oc.measureText(sep).width;
-            lineW += oc.measureText(lineParts[pi].text).width;
-        }
-        var metaCursorX = (W - lineW) / 2;
-        for (var pi = 0; pi < lineParts.length; pi++) {
-            if (pi > 0) {
-                oc.fillStyle = 'rgba(255,255,255,0.6)';
-                oc.fillText(sep, metaCursorX, curY);
-                metaCursorX += oc.measureText(sep).width;
-            }
-            oc.fillStyle = lineParts[pi].color;
-            oc.fillText(lineParts[pi].text, metaCursorX, curY);
-            metaCursorX += oc.measureText(lineParts[pi].text).width;
-        }
-        curY += 30;
+        oc.fillStyle = metaParts[mi].color;
+        oc.fillText(metaParts[mi].text, metaCursorX, curY);
+        metaCursorX += oc.measureText(metaParts[mi].text).width;
     }
 
     // Sinopse
     curY += gap2;
-    oc.font = '400 22px Manrope, sans-serif';
-    oc.fillStyle = 'rgba(255,255,255,0.85)';
-    oc.textAlign = 'center';
-    for (var sj = 0; sj < synLines.length; sj++) {
-        oc.fillText(synLines[sj], W / 2, curY);
-        curY += 30;
+    oc.font = '400 24px Manrope, sans-serif';
+    oc.fillStyle = 'rgba(255,255,255,0.8)';
+    for (var sj2 = 0; sj2 < synLines.length; sj2++) {
+        oc.fillText(synLines[sj2], contentX, curY);
+        curY += 32;
     }
 
-    // ===== BOXES: @Instagram + WhatsApp + CTA (linha única, com espaçamento) =====
-    curY += gap4;
-    var boxH = 65;
-    var boxGap = 12;
-    var boxW = Math.floor((maxW - boxGap * 2) / 3);
-    var boxY = curY + (boxRowH - boxH) / 2;
+    // Botões Instagram + WhatsApp + CTA (3 boxes lado a lado, largura total)
+    var btnH = 70, btnGap = 15;
+    var btnW2 = Math.floor((W - pad * 2 - btnGap * 2) / 3);
+    var btnY = H - btnH - 50;
+    var sIconSize = 42; var sIconPad = 16;
 
-    // Box @Instagram (gradiente Instagram: laranja → rosa → roxo)
-    var instaBoxX = pad;
-    var instaGrad = oc.createLinearGradient(instaBoxX, boxY, instaBoxX + boxW, boxY + boxH);
-    instaGrad.addColorStop(0, '#f09433');
-    instaGrad.addColorStop(0.3, '#e6683c');
-    instaGrad.addColorStop(0.6, '#dc2743');
-    instaGrad.addColorStop(0.8, '#cc2366');
-    instaGrad.addColorStop(1, '#bc1888');
+    // Botão Instagram (degradê laranja→rosa→roxo)
+    var instaGrad = oc.createLinearGradient(pad, btnY, pad + btnW2, btnY + btnH);
+    instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
     oc.fillStyle = instaGrad;
-    roundRect(oc, instaBoxX, boxY, boxW, boxH, 10);
+    roundRect(oc, pad, btnY, btnW2, btnH, 12);
     oc.fill();
-    // Ícone Instagram + @handle
+    drawInstagramIcon(oc, pad + sIconPad, btnY + btnH / 2 - sIconSize / 2, sIconSize);
+    oc.fillStyle = '#fff';
+    oc.font = '700 22px Manrope, sans-serif';
+    oc.textAlign = 'center';
+    oc.fillText(globalSettings.instagramHandle, pad + btnW2 / 2, btnY + btnH / 2 + 8);
+
+    // Botão WhatsApp (centro)
+    var wppBtnX = pad + btnW2 + btnGap;
+    oc.fillStyle = '#25D366';
+    roundRect(oc, wppBtnX, btnY, btnW2, btnH, 12);
+    oc.fill();
+    drawWhatsAppIcon(oc, wppBtnX + sIconPad, btnY + btnH / 2 - sIconSize / 2, sIconSize);
     oc.fillStyle = '#fff';
     oc.font = '700 20px Manrope, sans-serif';
-    oc.textAlign = 'center';
-    var instaHandle = globalSettings.instagramHandle || '@seuinstagram';
-    oc.fillText(instaHandle, instaBoxX + boxW / 2, boxY + boxH / 2 + 7);
+    oc.fillText(globalSettings.whatsappText, wppBtnX + btnW2 / 2, btnY + btnH / 2 + 7);
 
-    // Box WhatsApp (verde)
-    var wppBoxX = pad + boxW + boxGap;
-    oc.fillStyle = '#25D366';
-    roundRect(oc, wppBoxX, boxY, boxW, boxH, 10);
-    oc.fill();
-    oc.fillStyle = '#fff';
-    oc.font = '700 18px Manrope, sans-serif';
-    oc.fillText(globalSettings.whatsappText, wppBoxX + boxW / 2, boxY + boxH / 2 + 6);
-
-    // Box CTA (vermelho)
-    var ctaBoxX = pad + (boxW + boxGap) * 2;
+    // Botão CTA (direita)
+    var btnX2 = wppBtnX + btnW2 + btnGap;
     oc.fillStyle = '#ef4444';
-    roundRect(oc, ctaBoxX, boxY, boxW, boxH, 10);
+    roundRect(oc, btnX2, btnY, btnW2, btnH, 12);
     oc.fill();
     oc.fillStyle = '#fff';
-    oc.font = '800 20px Manrope, sans-serif';
-    oc.fillText(globalSettings.ctaText, ctaBoxX + boxW / 2, boxY + boxH / 2 + 7);
+    oc.font = '800 24px Manrope, sans-serif';
+    oc.fillText(globalSettings.ctaText, btnX2 + btnW2 / 2, btnY + btnH / 2 + 8);
 
     oc.textAlign = 'left';
 
-    return videoY;
+    return 0; // Vídeo começa no topo (Y=0)
 }
 
 // ============================================
@@ -1632,6 +1604,70 @@ async function generateTrailerBannerVideo() {
         progressBox.classList.add('hidden');
     }
 }
+// ============================================
+// ÍCONES INSTAGRAM E WHATSAPP (desenhados via canvas)
+// ============================================
+function drawInstagramIcon(c, x, y, size) {
+    c.save();
+    c.strokeStyle = '#fff';
+    c.fillStyle = '#fff';
+    c.lineWidth = Math.max(2, size * 0.08);
+    c.lineJoin = 'round';
+    // Quadrado arredondado
+    var r = size * 0.25;
+    roundRect(c, x, y, size, size, r);
+    c.stroke();
+    // Círculo central
+    var cx = x + size / 2;
+    var cy = y + size / 2;
+    var radius = size * 0.22;
+    c.beginPath();
+    c.arc(cx, cy, radius, 0, Math.PI * 2);
+    c.stroke();
+    // Ponto no canto superior direito
+    var dotR = size * 0.07;
+    var dotX = x + size * 0.72;
+    var dotY = y + size * 0.28;
+    c.beginPath();
+    c.arc(dotX, dotY, dotR, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+}
+
+function drawWhatsAppIcon(c, x, y, size) {
+    c.save();
+    c.strokeStyle = '#fff';
+    c.fillStyle = '#fff';
+    c.lineWidth = Math.max(2, size * 0.08);
+    c.lineJoin = 'round';
+    var cx = x + size / 2;
+    var cy = y + size / 2;
+    var radius = size * 0.42;
+    // Círculo principal (balão)
+    c.beginPath();
+    c.arc(cx, cy, radius, 0, Math.PI * 2);
+    c.stroke();
+    // "Rabinho" do balão (pequena forma triangular na parte inferior esquerda)
+    var tailX = cx - radius * 0.7;
+    var tailY = cy + radius * 0.7;
+    c.beginPath();
+    c.moveTo(tailX - size * 0.05, tailY + size * 0.05);
+    c.lineTo(tailX + size * 0.1, tailY - size * 0.15);
+    c.lineTo(tailX - size * 0.15, tailY - size * 0.1);
+    c.closePath();
+    c.fill();
+    // Telefone simplificado (fone de ouvido)
+    c.lineWidth = Math.max(1.5, size * 0.06);
+    var phoneSize = radius * 0.5;
+    c.beginPath();
+    c.arc(cx - phoneSize * 0.3, cy - phoneSize * 0.1, phoneSize * 0.35, -Math.PI * 0.8, -Math.PI * 0.2);
+    c.stroke();
+    c.beginPath();
+    c.arc(cx + phoneSize * 0.3, cy + phoneSize * 0.1, phoneSize * 0.35, Math.PI * 0.2, Math.PI * 0.8);
+    c.stroke();
+    c.restore();
+}
+
 // ============================================
 // UTILITIES
 // ============================================

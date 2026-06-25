@@ -519,7 +519,7 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
         c.translate(width / 2, height / 2); c.rotate(-30 * Math.PI / 180); c.translate(-width / 2, -height / 2);
         for (var py = -height; py < height * 2; py += spY) { for (var px = -width; px < width * 2; px += spX) { c.drawImage(uploadedLogo, px, py, pW, pH); } }
         c.restore();
-        var cornerH = 140; var cornerW = cornerH * (uploadedLogo.width / uploadedLogo.height); c.globalAlpha = 1; c.drawImage(uploadedLogo, width - cornerW - 20, 20, cornerW, cornerH);
+        var cornerH = 240; var cornerW = cornerH * (uploadedLogo.width / uploadedLogo.height); c.globalAlpha = 1; c.drawImage(uploadedLogo, width - cornerW - 25, 25, cornerW, cornerH);
     }
     var mPadding = 50; var footerY = height - mPadding; var boxH = 50;
     c.fillStyle = '#25D366'; roundRect(c, mPadding, footerY - boxH, 180, boxH, 8); c.fill();
@@ -762,9 +762,9 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     // Logo no canto superior direito (sobre o vídeo)
     if (uploadedLogo) {
         var logoR = uploadedLogo.width / uploadedLogo.height;
-        var logoH = 80;
+        var logoH = 140;
         var logoW = logoH * logoR;
-        if (logoW > 200) { logoW = 200; logoH = logoW / logoR; }
+        if (logoW > 320) { logoW = 320; logoH = logoW / logoR; }
         oc.save();
         oc.globalAlpha = 1.0;
         oc.drawImage(uploadedLogo, W - logoW - 25, 25, logoW, logoH);
@@ -1114,9 +1114,9 @@ async function generateTrailerBannerVideo() {
             // Redesenha a logo POR CIMA do vídeo (canto superior direito)
             if (uploadedLogo) {
                 var logoR2 = uploadedLogo.width / uploadedLogo.height;
-                var logoH2 = 80;
+                var logoH2 = 140;
                 var logoW2 = logoH2 * logoR2;
-                if (logoW2 > 200) { logoW2 = 200; logoH2 = logoW2 / logoR2; }
+                if (logoW2 > 320) { logoW2 = 320; logoH2 = logoW2 / logoR2; }
                 oc.save();
                 oc.globalAlpha = 1.0;
                 oc.drawImage(uploadedLogo, W - logoW2 - 25, 25, logoW2, logoH2);

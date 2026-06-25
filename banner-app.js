@@ -961,49 +961,56 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     oc.fillStyle = '#000';
     oc.fillRect(0, 0, W, H);
 
-    // Área do vídeo (topo) - será preenchida pelo drawFrame
-    oc.fillStyle = '#000';
-    oc.fillRect(0, 0, W, videoAreaH);
+    // ===== LAYOUT STORY: Logo no topo + Vídeo centralizado no meio + Info embaixo =====
 
-    // Área de informações (inferior) - fundo gradiente escuro
-    var infoAreaY = videoAreaH;
-    var infoAreaH = H - videoAreaH;
-    
+    // --- TOPO: Logo centralizada com efeito glow (espaço superior) ---
+    var logoTopH = 280; // Altura reservada para a área da logo
+    if (uploadedLogo) {
+        var logoR = uploadedLogo.width / uploadedLogo.height;
+        var logoH = 220;
+        var logoW = logoH * logoR;
+        if (logoW > 600) { logoW = 600; logoH = logoW / logoR; }
+        var logoX = (W - logoW) / 2;
+        var logoY = Math.max(20, (logoTopH - logoH) / 2); // Centralizada na área do topo
+
+        // Efeito glow/destaque atrás da logo
+        var glowRadius = Math.max(logoW, logoH) * 0.9;
+        var glowX = W / 2;
+        var glowY = logoY + logoH / 2;
+        var glowGrad = oc.createRadialGradient(glowX, glowY, 0, glowX, glowY, glowRadius);
+        glowGrad.addColorStop(0, 'rgba(139, 92, 246, 0.35)');
+        glowGrad.addColorStop(0.5, 'rgba(139, 92, 246, 0.15)');
+        glowGrad.addColorStop(1, 'rgba(139, 92, 246, 0)');
+        oc.fillStyle = glowGrad;
+        oc.fillRect(0, 0, W, logoTopH);
+
+        // Logo por cima do glow
+        oc.drawImage(uploadedLogo, logoX, logoY, logoW, logoH);
+    }
+
+    // --- Posicionamento do vídeo CENTRALIZADO no meio ---
+    var videoY = logoTopH + Math.floor((H - logoTopH - videoAreaH) / 2);
+
+    // Área do vídeo (preto base - será preenchida pelo drawFrame)
+    oc.fillStyle = '#000';
+    oc.fillRect(0, videoY, W, videoAreaH);
+
+    // --- ÁREA DE INFORMAÇÕES (abaixo do vídeo) ---
+    var infoAreaY = videoY + videoAreaH;
+    var infoAreaH = H - infoAreaY;
+
+    // Fundo gradiente para a área de informações
     var bgGrad = oc.createLinearGradient(0, infoAreaY, 0, H);
     bgGrad.addColorStop(0, '#0a0a0a');
     bgGrad.addColorStop(1, '#050505');
     oc.fillStyle = bgGrad;
     oc.fillRect(0, infoAreaY, W, infoAreaH);
 
-    // ===== TOPO: Logo centralizada com efeito glow atrás =====
-    if (uploadedLogo) {
-        var logoR = uploadedLogo.width / uploadedLogo.height;
-        var logoH = 200;
-        var logoW = logoH * logoR;
-        if (logoW > 550) { logoW = 550; logoH = logoW / logoR; }
-        var logoX = (W - logoW) / 2;
-        var logoY = 120; // Mais baixo
-        
-        // Efeito glow/destaque atrás da logo (círculo radial)
-        var glowRadius = Math.max(logoW, logoH) * 0.8;
-        var glowX = W / 2;
-        var glowY = logoY + logoH / 2;
-        var glowGrad = oc.createRadialGradient(glowX, glowY, 0, glowX, glowY, glowRadius);
-        glowGrad.addColorStop(0, 'rgba(139, 92, 246, 0.3)'); // Roxo suave
-        glowGrad.addColorStop(0.5, 'rgba(139, 92, 246, 0.15)');
-        glowGrad.addColorStop(1, 'rgba(139, 92, 246, 0)');
-        oc.fillStyle = glowGrad;
-        oc.fillRect(0, 0, W, videoAreaH);
-        
-        // Logo por cima do glow
-        oc.drawImage(uploadedLogo, logoX, logoY, logoW, logoH);
-    }
-
     // ======== INFO AREA: poster ESQUERDA + conteúdo DIREITA ========
     var pad = 60;
     var posterW = 280, posterH = 420;
     var posterX = pad;
-    var posterY = infoAreaY + 60;
+    var posterY = infoAreaY + 50;
     var contentX = posterX + posterW + 40;
     var contentMaxW = W - contentX - pad;
 
@@ -1023,7 +1030,7 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
             oc.drawImage(posterImage, posterX, posterY - (dh3 - posterH) / 2, dw3, dh3);
         }
         oc.restore();
-        
+
         // Borda sutil no poster
         oc.strokeStyle = 'rgba(255,255,255,0.1)';
         oc.lineWidth = 2;
@@ -1135,7 +1142,7 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
 
     oc.textAlign = 'left';
 
-    return 0; // Vídeo começa no topo (Y=0)
+    return videoY; // Retorna a posição Y do vídeo para o drawFrame
 }
 
 // ============================================
@@ -1640,31 +1647,43 @@ function drawWhatsAppIcon(c, x, y, size) {
     c.fillStyle = '#fff';
     c.lineWidth = Math.max(2, size * 0.08);
     c.lineJoin = 'round';
+    c.lineCap = 'round';
     var cx = x + size / 2;
     var cy = y + size / 2;
     var radius = size * 0.42;
-    // Círculo principal (balão)
+    // Balão de chat (círculo com rabinho)
     c.beginPath();
-    c.arc(cx, cy, radius, 0, Math.PI * 2);
+    c.arc(cx - size * 0.02, cy - size * 0.04, radius, 0, Math.PI * 2);
     c.stroke();
-    // "Rabinho" do balão (pequena forma triangular na parte inferior esquerda)
-    var tailX = cx - radius * 0.7;
-    var tailY = cy + radius * 0.7;
+    // Rabinho do balão
+    var tailAngle = Math.PI * 0.75;
+    var bubbleCx = cx - size * 0.02;
+    var bubbleCy = cy - size * 0.04;
+    var tailBaseX = bubbleCx + Math.cos(tailAngle) * radius;
+    var tailBaseY = bubbleCy + Math.sin(tailAngle) * radius;
     c.beginPath();
-    c.moveTo(tailX - size * 0.05, tailY + size * 0.05);
-    c.lineTo(tailX + size * 0.1, tailY - size * 0.15);
-    c.lineTo(tailX - size * 0.15, tailY - size * 0.1);
+    c.moveTo(tailBaseX + size * 0.04, tailBaseY - size * 0.02);
+    c.lineTo(tailBaseX - size * 0.1, tailBaseY + size * 0.14);
+    c.lineTo(tailBaseX - size * 0.02, tailBaseY + size * 0.06);
     c.closePath();
     c.fill();
-    // Telefone simplificado (fone de ouvido)
-    c.lineWidth = Math.max(1.5, size * 0.06);
-    var phoneSize = radius * 0.5;
+    // Aparelho telefônico (handset) - desenho mais realista
+    c.lineWidth = Math.max(2, size * 0.07);
+    var hCx = bubbleCx;
+    var hCy = bubbleCy;
+    var hR = radius * 0.42;
+    // Curva principal do handset (formato de S / banana)
     c.beginPath();
-    c.arc(cx - phoneSize * 0.3, cy - phoneSize * 0.1, phoneSize * 0.35, -Math.PI * 0.8, -Math.PI * 0.2);
+    c.arc(hCx, hCy - hR * 0.15, hR * 0.72, Math.PI * 1.15, Math.PI * 1.85);
     c.stroke();
+    // Earpiece (parte superior do telefone)
     c.beginPath();
-    c.arc(cx + phoneSize * 0.3, cy + phoneSize * 0.1, phoneSize * 0.35, Math.PI * 0.2, Math.PI * 0.8);
-    c.stroke();
+    c.arc(hCx - hR * 0.55, hCy - hR * 0.55, hR * 0.28, 0, Math.PI * 2);
+    c.fill();
+    // Mouthpiece (parte inferior do telefone)
+    c.beginPath();
+    c.arc(hCx + hR * 0.55, hCy - hR * 0.55, hR * 0.28, 0, Math.PI * 2);
+    c.fill();
     c.restore();
 }
 

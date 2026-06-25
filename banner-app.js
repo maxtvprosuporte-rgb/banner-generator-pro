@@ -964,14 +964,14 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     // ===== LAYOUT STORY: Logo no topo + Vídeo centralizado no meio + Info embaixo =====
 
     // --- TOPO: Logo centralizada com efeito glow (espaço superior) ---
-    var logoTopH = 280; // Altura reservada para a área da logo
+    var logoTopH = 260; // Area reduzida para dar mais espaco ao video
     if (uploadedLogo) {
         var logoR = uploadedLogo.width / uploadedLogo.height;
-        var logoH = 220;
+        var logoH = 200;
         var logoW = logoH * logoR;
-        if (logoW > 600) { logoW = 600; logoH = logoW / logoR; }
+        if (logoW > 550) { logoW = 550; logoH = logoW / logoR; }
         var logoX = (W - logoW) / 2;
-        var logoY = Math.max(20, (logoTopH - logoH) / 2); // Centralizada na área do topo
+        var logoY = 50; // Posicao Y ajustada
 
         // Efeito glow/destaque atrás da logo
         var glowRadius = Math.max(logoW, logoH) * 0.9;
@@ -988,16 +988,17 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
         oc.drawImage(uploadedLogo, logoX, logoY, logoW, logoH);
     }
 
-    // --- Posicionamento do vídeo CENTRALIZADO no meio ---
-    var videoY = logoTopH + Math.floor((H - logoTopH - videoAreaH) / 2);
+    // --- Posicionamento: Centro do video no centro do canvas ---
+    var videoCenterY = H / 2; // Centro do canvas = 960
+    var videoY = videoCenterY - Math.floor(videoAreaH / 2); // Centraliza o video
+    var infoAreaY = videoY + videoAreaH;
+    var infoAreaH = H - infoAreaY;
 
     // Área do vídeo (preto base - será preenchida pelo drawFrame)
     oc.fillStyle = '#000';
     oc.fillRect(0, videoY, W, videoAreaH);
 
     // --- ÁREA DE INFORMAÇÕES (abaixo do vídeo) ---
-    var infoAreaY = videoY + videoAreaH;
-    var infoAreaH = H - infoAreaY;
 
     // Fundo gradiente para a área de informações
     var bgGrad = oc.createLinearGradient(0, infoAreaY, 0, H);
@@ -1008,9 +1009,9 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
 
     // ======== INFO AREA: poster ESQUERDA + conteúdo DIREITA ========
     var pad = 60;
-    var posterW = 280, posterH = 420;
+    var posterW = 230, posterH = 300; // Poster compacto para caber com video centralizado
     var posterX = pad;
-    var posterY = infoAreaY + 50;
+    var posterY = infoAreaY + 30; // Menos espaco no topo da info
     var contentX = posterX + posterW + 40;
     var contentMaxW = W - contentX - pad;
 
@@ -1104,9 +1105,9 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     }
 
     // Botões Instagram + WhatsApp + CTA (3 boxes lado a lado, largura total)
-    var btnH = 70, btnGap = 15;
+    var btnH = 70, btnGap = 20;
     var btnW2 = Math.floor((W - pad * 2 - btnGap * 2) / 3);
-    var btnY = H - btnH - 50;
+    var btnY = H - btnH - 70;
     var sIconSize = 42; var sIconPad = 16;
 
     // Botão Instagram (degradê laranja→rosa→roxo)

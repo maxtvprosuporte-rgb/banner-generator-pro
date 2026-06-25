@@ -12,10 +12,11 @@ function getTmdbImgUrl(path, size) {
 let currentMode = null;
 let selectedContent = null;
 let currentFormat = 'post';
+let videoFormat = 'post';
 let uploadedLogo = null;
 let posterImage = null;
 let currentTrailer = null;
-let globalSettings = { logo: null, whatsappText: '(00) 00000-0000', ctaText: 'ASSINA JÁ' };
+let globalSettings = { logo: null, whatsappText: '(00) 00000-0000', ctaText: 'ASSINA JÁ', instagramHandle: '@seuinstagram' };
 
 let movieTypeFilter = 'both';
 let videoTypeFilter = 'both';
@@ -155,8 +156,10 @@ function loadGlobalSettings() {
                 // Se não há logo salva, tentar carregar logo padrão da raiz
                 loadDefaultLogo();
             }
+            var w1 = document.getElementById('settingsInstagramHandle');
             var w2 = document.getElementById('settingsWhatsappText');
             var w3 = document.getElementById('settingsCtaText');
+            if (w1) w1.value = globalSettings.instagramHandle || '@seuinstagram';
             if (w2) w2.value = globalSettings.whatsappText || '(00) 00000-0000';
             if (w3) w3.value = globalSettings.ctaText || 'ASSINA JÁ';
         } else {
@@ -179,12 +182,14 @@ document.getElementById('settingsModal').addEventListener('click', function(e) {
 });
 
 function saveSettings() {
+    globalSettings.instagramHandle = document.getElementById('settingsInstagramHandle').value;
     globalSettings.whatsappText = document.getElementById('settingsWhatsappText').value;
     globalSettings.ctaText = document.getElementById('settingsCtaText').value;
     // Logo já foi atribuído a globalSettings.logo no event listener do input
     localStorage.setItem('bannerGeneratorSettings', JSON.stringify(globalSettings));
     console.log('✅ Configurações salvas:', {
         logo: globalSettings.logo ? 'Presente' : 'Ausente',
+        instagram: globalSettings.instagramHandle,
         whatsapp: globalSettings.whatsappText,
         cta: globalSettings.ctaText
     });
@@ -603,6 +608,13 @@ async function loadVideoMode() {
                 '<video id="videoPreview" class="w-full mt-3 rounded hidden" controls></video>' +
             '</div>' +
             '<section class="flex flex-col gap-2">' +
+                '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label>' +
+                '<div class="flex gap-2">' +
+                    '<button id="videoFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white">Post (1:1)</button>' +
+                    '<button id="videoFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story (9:16)</button>' +
+                '</div>' +
+            '</section>' +
+            '<section class="flex flex-col gap-2">' +
                 '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Qualidade Final (WhatsApp HD)</label>' +
                 '<select id="videoQuality" class="bg-black border border-zinc-800 p-3 text-white text-sm w-full rounded focus:outline-none focus:border-purple-500 appearance-none cursor-pointer">' +
                     '<option value="high" selected>Alta (HD ~8 Mbps, WhatsApp HD garantido)</option>' +
@@ -620,6 +632,8 @@ async function loadVideoMode() {
         document.getElementById('videoTypeBoth').addEventListener('click', function() { setVideoTypeFilter('both'); });
         document.getElementById('videoTypeMovie').addEventListener('click', function() { setVideoTypeFilter('movie'); });
         document.getElementById('videoTypeTv').addEventListener('click', function() { setVideoTypeFilter('tv'); });
+        document.getElementById('videoFormatPost').addEventListener('click', function() { videoFormat = 'post'; updateVideoFormatButtons(); });
+        document.getElementById('videoFormatStory').addEventListener('click', function() { videoFormat = 'story'; updateVideoFormatButtons(); });
         document.getElementById('videoFileInput').addEventListener('change', handleVideoFileUpload);
         document.getElementById('videoGenerateBtn').addEventListener('click', generateTrailerBannerVideo);
     }, 100);
@@ -640,6 +654,18 @@ function setVideoTypeFilter(type) {
     });
     var inp = document.getElementById('videoSearch');
     if (inp && inp.value.trim()) searchVideos(inp.value);
+}
+
+function updateVideoFormatButtons() {
+    var postBtn = document.getElementById('videoFormatPost');
+    var storyBtn = document.getElementById('videoFormatStory');
+    if (videoFormat === 'post') {
+        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
+        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
+    } else {
+        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
+        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
+    }
 }
 
 async function searchVideos(query) {
@@ -895,8 +921,172 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
 }
 
 // ============================================
+// RENDER ESTÁTICO STORY (cache) — 1080x1920 (9:16 vertical)
+// Layout: Fundo = capa do filme + degradê escuro embaixo
+// Vídeo no centro + Logo/@Instagram no topo + Info embaixo
+// ============================================
+function renderStaticStoryLayer(oc, W, H, videoAreaH) {
+    // Fundo: poster/capa do filme cobrindo tudo
+    if (posterImage) {
+        var pR = posterImage.width / posterImage.height;
+        var canR = W / H;
+        var dw, dh, ox, oy;
+        if (pR > canR) {
+            // Imagem mais larga - corta laterais
+            dh = H;
+            dw = H * pR;
+            ox = (W - dw) / 2;
+            oy = 0;
+        } else {
+            // Imagem mais alta - corta topo/base
+            dw = W;
+            dh = W / pR;
+            ox = 0;
+            oy = (H - dh) / 2;
+        }
+        oc.drawImage(posterImage, ox, oy, dw, dh);
+    } else {
+        oc.fillStyle = '#1a1a2e';
+        oc.fillRect(0, 0, W, H);
+    }
+
+    // Degradê escuro do meio para baixo (para as informações)
+    var gradStartY = H * 0.35;
+    var grad = oc.createLinearGradient(0, gradStartY, 0, H);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(0.3, 'rgba(0,0,0,0.6)');
+    grad.addColorStop(0.5, 'rgba(0,0,0,0.85)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.95)');
+    oc.fillStyle = grad;
+    oc.fillRect(0, 0, W, H);
+
+    // Degradê escuro no topo (para logo/@instagram)
+    var gradTop = oc.createLinearGradient(0, 0, 0, 250);
+    gradTop.addColorStop(0, 'rgba(0,0,0,0.8)');
+    gradTop.addColorStop(1, 'rgba(0,0,0,0)');
+    oc.fillStyle = gradTop;
+    oc.fillRect(0, 0, W, 250);
+
+    // ===== TOPO: Logo + @Instagram =====
+    var topPad = 40;
+    if (uploadedLogo) {
+        var logoR = uploadedLogo.width / uploadedLogo.height;
+        var logoH = 100;
+        var logoW = logoH * logoR;
+        if (logoW > 280) { logoW = 280; logoH = logoW / logoR; }
+        oc.drawImage(uploadedLogo, W - logoW - topPad, topPad, logoW, logoH);
+    }
+
+    // @Instagram no topo esquerdo
+    var instaHandle = globalSettings.instagramHandle || '@seuinstagram';
+    oc.font = '700 32px Manrope, sans-serif';
+    oc.fillStyle = '#fff';
+    oc.textAlign = 'left';
+    oc.shadowColor = 'rgba(0,0,0,0.8)';
+    oc.shadowBlur = 10;
+    oc.fillText(instaHandle, topPad, topPad + 50);
+    oc.shadowBlur = 0;
+
+    // ===== CENTRO: Área do vídeo (será preenchida pelo drawFrame) =====
+    // A área do vídeo fica centralizada verticalmente
+    var videoY = Math.round((H - videoAreaH) / 2) - 100;
+    // Desenha uma borda sutil ao redor da área do vídeo
+    oc.strokeStyle = 'rgba(255,255,255,0.2)';
+    oc.lineWidth = 3;
+    roundRect(oc, 0, videoY, W, videoAreaH, 0);
+    oc.stroke();
+
+    // ===== BAIXO: Informações do filme =====
+    var pad = 50;
+    var infoY = videoY + videoAreaH + 40;
+    var maxW = W - pad * 2;
+
+    // Título
+    oc.font = '700 56px Oswald, sans-serif';
+    oc.fillStyle = '#fff';
+    oc.textAlign = 'center';
+    oc.shadowColor = 'rgba(0,0,0,0.9)';
+    oc.shadowBlur = 15;
+    var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), maxW).slice(0, 2);
+    var curY = infoY;
+    for (var ti = 0; ti < titleLines.length; ti++) {
+        oc.fillText(titleLines[ti], W / 2, curY);
+        curY += 62;
+    }
+    oc.shadowBlur = 0;
+
+    // Meta (rating, ano, gênero, tempo, plataforma)
+    curY += 15;
+    oc.font = '600 26px Manrope, sans-serif';
+    var metaParts = [];
+    if (selectedContent.rating && selectedContent.rating !== 'N/A') metaParts.push({ text: '\u2605 ' + selectedContent.rating, color: '#eab308' });
+    if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push({ text: selectedContent.year, color: 'rgba(255,255,255,0.9)' });
+    if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push({ text: selectedContent.genres.split(',')[0].trim(), color: 'rgba(255,255,255,0.9)' });
+    if (selectedContent.runtime && selectedContent.runtime !== 'N/A') metaParts.push({ text: selectedContent.runtime, color: 'rgba(255,255,255,0.9)' });
+    var plat = selectedContent.autoProvider;
+    if (plat) metaParts.push({ text: plat, color: '#ef4444' });
+    
+    var sep = '  \u2022  ';
+    // Calcula largura total para centralizar
+    var totalMetaW = 0;
+    for (var mi = 0; mi < metaParts.length; mi++) {
+        if (mi > 0) totalMetaW += oc.measureText(sep).width;
+        totalMetaW += oc.measureText(metaParts[mi].text).width;
+    }
+    var metaCursorX = (W - totalMetaW) / 2;
+    for (var mi = 0; mi < metaParts.length; mi++) {
+        if (mi > 0) {
+            oc.fillStyle = 'rgba(255,255,255,0.6)';
+            oc.fillText(sep, metaCursorX, curY);
+            metaCursorX += oc.measureText(sep).width;
+        }
+        oc.fillStyle = metaParts[mi].color;
+        oc.fillText(metaParts[mi].text, metaCursorX, curY);
+        metaCursorX += oc.measureText(metaParts[mi].text).width;
+    }
+
+    // Sinopse (centralizada, max 4 linhas)
+    curY += 35;
+    oc.font = '400 24px Manrope, sans-serif';
+    oc.fillStyle = 'rgba(255,255,255,0.85)';
+    oc.textAlign = 'center';
+    var synLines = wrapText(oc, selectedContent.overview || '', maxW).slice(0, 4);
+    for (var sj = 0; sj < synLines.length; sj++) {
+        oc.fillText(synLines[sj], W / 2, curY);
+        curY += 32;
+    }
+
+    // Botões WhatsApp + CTA
+    var btnH = 65, btnGap = 20;
+    var btnW = Math.floor((maxW - btnGap) / 2);
+    var btnY = H - btnH - 50;
+
+    // Botão WhatsApp (esquerda)
+    oc.fillStyle = '#25D366';
+    roundRect(oc, pad, btnY, btnW, btnH, 12);
+    oc.fill();
+    oc.fillStyle = '#fff';
+    oc.font = '700 24px Manrope, sans-serif';
+    oc.textAlign = 'center';
+    oc.fillText(globalSettings.whatsappText, pad + btnW / 2, btnY + btnH / 2 + 8);
+
+    // Botão CTA (direita)
+    oc.fillStyle = '#ef4444';
+    roundRect(oc, pad + btnW + btnGap, btnY, btnW, btnH, 12);
+    oc.fill();
+    oc.fillStyle = '#fff';
+    oc.font = '800 26px Manrope, sans-serif';
+    oc.fillText(globalSettings.ctaText, pad + btnW + btnGap + btnW / 2, btnY + btnH / 2 + 8);
+
+    oc.textAlign = 'left';
+
+    // Retorna a posição Y do vídeo para o drawFrame
+    return videoY;
+}
+
+// ============================================
 // GERA BANNER VIDEO - OTIMIZADO p/ WhatsApp
-// Canvas: 1080x1080 (1:1 square)
+// Canvas: 1080x1080 (1:1 square) ou 1080x1920 (9:16 story)
 // Vídeo no topo (16:9) + informações organizadas abaixo
 // compressão H.264 High Profile Level 4.0 + AAC
 // ============================================
@@ -957,9 +1147,11 @@ async function generateTrailerBannerVideo() {
     }
 
     try {
-        // Canvas 1080x1080 (1:1 square)
-        var W = 1080, H = 1080;
-        var videoAreaH = Math.round(W * 9 / 16); // Vídeo 16:9 no topo (607px)
+        // Define dimensões baseado no formato
+        var W = 1080;
+        var H = videoFormat === 'story' ? 1920 : 1080;
+        var videoAreaH = Math.round(W * 9 / 16); // Vídeo 16:9 (607px)
+        var formatLabel = videoFormat === 'story' ? '1080x1920 (9:16 Story)' : '1080x1080 (1:1 Post)';
 
         // Canvas final (o que vai pro MediaRecorder)
         var outCanvas = document.createElement('canvas');
@@ -975,10 +1167,10 @@ async function generateTrailerBannerVideo() {
         sc.imageSmoothingEnabled = true;
         sc.imageSmoothingQuality = 'high';
 
-        videoContainer.innerHTML = '<div class="text-center"><p class="text-purple-300 mb-3 font-semibold">Gerando banner vídeo 1080x1080 (1:1)'
+        videoContainer.innerHTML = '<div class="text-center"><p class="text-purple-300 mb-3 font-semibold">Gerando banner vídeo ' + formatLabel
             + (nativeMp4 ? ' (modo rápido MP4 nativo)' : ' (modo compatível)') + '...</p></div>';
         videoContainer.appendChild(outCanvas);
-        outCanvas.style.maxWidth = '350px';
+        outCanvas.style.maxWidth = videoFormat === 'story' ? '250px' : '350px';
         outCanvas.style.borderRadius = '12px';
         outCanvas.style.boxShadow = '0 0 60px rgba(168,85,247,0.4)';
 
@@ -1002,7 +1194,12 @@ async function generateTrailerBannerVideo() {
         });
 
         // Renderiza a camada estática UMA VEZ no offscreen
-        renderStaticBannerLayer(sc, W, H, videoAreaH);
+        var videoY = 0; // Posição Y do vídeo (necessário para Story)
+        if (videoFormat === 'story') {
+            videoY = renderStaticStoryLayer(sc, W, H, videoAreaH);
+        } else {
+            renderStaticBannerLayer(sc, W, H, videoAreaH);
+        }
         // Copia já pro canvas final (preview inicial)
         oc.drawImage(staticCanvas, 0, 0);
 
@@ -1070,14 +1267,14 @@ async function generateTrailerBannerVideo() {
         // ===================================================
         // drawFrame OTIMIZADO:
         // 1. Copia a camada estática (1 drawImage) - rápido
-        // 2. Desenha o vídeo APENAS na área superior (videoAreaH)
+        // 2. Desenha o vídeo na área apropriada (videoY + videoAreaH)
         // 30fps FIXOS (setInterval 33ms)
         // ===================================================
         function drawFrame() {
             // Copia toda a camada estática (poster, texto, botões, logo)
             oc.drawImage(staticCanvas, 0, 0);
 
-            // Desenha o frame atual do vídeo APENAS na área superior (16:9)
+            // Desenha o frame atual do vídeo na área apropriada
             if (!srcVideo.paused && !srcVideo.ended && srcVideo.readyState >= 2) {
                 var vR = srcVideo.videoWidth / srcVideo.videoHeight;
                 var aR = W / videoAreaH;
@@ -1100,10 +1297,10 @@ async function generateTrailerBannerVideo() {
                     oc.save();
                     // Clipping para garantir que o vídeo não ultrapasse a área
                     oc.beginPath();
-                    oc.rect(0, 0, W, videoAreaH);
+                    oc.rect(0, videoY, W, videoAreaH);
                     oc.clip();
-                    // Desenha o vídeo
-                    oc.drawImage(srcVideo, ox, oy, dw, dh);
+                    // Desenha o vídeo na posição Y correta
+                    oc.drawImage(srcVideo, ox, videoY + oy, dw, dh);
                     // Restaura o estado
                     oc.restore();
                 } catch(e) {
@@ -1111,8 +1308,8 @@ async function generateTrailerBannerVideo() {
                 }
             }
 
-            // Redesenha a logo POR CIMA do vídeo (canto superior direito)
-            if (uploadedLogo) {
+            // Redesenha a logo POR CIMA do vídeo (canto superior direito) - apenas para Post
+            if (videoFormat === 'post' && uploadedLogo) {
                 var logoR2 = uploadedLogo.width / uploadedLogo.height;
                 var logoH2 = 140;
                 var logoW2 = logoH2 * logoR2;
@@ -1222,7 +1419,7 @@ async function generateTrailerBannerVideo() {
                     '-crf', crf,
                     '-maxrate', maxrate,
                     '-bufsize', bufsize,
-                    '-vf', 'scale=1080:1080:flags=fast_bilinear',
+                    '-vf', 'scale=' + W + ':' + H + ':flags=fast_bilinear',
                     '-r', '30',
                     '-c:a', 'aac',
                     '-b:a', audioBr,
@@ -1251,7 +1448,8 @@ async function generateTrailerBannerVideo() {
         var savedPct = compressed ? Math.round((1 - finalBlob.size / rawResult.blob.size) * 100) : 0;
         var url = URL.createObjectURL(finalBlob);
         var safeTitle = (selectedContent.title || 'trailer').replace(/[^a-zA-Z0-9]/g, '_');
-        var fileName = safeTitle + '_trailer_whatsapp_hd.' + finalExt;
+        var formatSuffix = videoFormat === 'story' ? '_story' : '_post';
+        var fileName = safeTitle + '_trailer' + formatSuffix + '_whatsapp_hd.' + finalExt;
         var exceedsLimit = finalSizeBytes > (100 * 1024 * 1024); // 100MB
 
         // Limpa o container e mostra o resultado final
@@ -1265,7 +1463,7 @@ async function generateTrailerBannerVideo() {
         var titleDiv = document.createElement('div');
         titleDiv.className = 'text-center mb-6';
         titleDiv.innerHTML = '<h3 class="font-oswald text-3xl font-bold text-purple-400 mb-2">Banner Gerado com Sucesso!</h3>' +
-            '<p class="text-zinc-400 text-sm">1080x1080 (1:1) — Formato quadrado</p>';
+            '<p class="text-zinc-400 text-sm">' + (videoFormat === 'story' ? '1080x1920 (9:16) — Formato Story' : '1080x1080 (1:1) — Formato Post') + '</p>';
         resultContainer.appendChild(titleDiv);
         
         // Preview do vídeo
@@ -1275,29 +1473,30 @@ async function generateTrailerBannerVideo() {
         vidEl.autoplay = true;
         vidEl.loop = true;
         vidEl.muted = true;
-        vidEl.style.cssText = 'width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 0 60px rgba(168,85,247,0.5); margin: 0 auto; display: block;';
+        vidEl.style.cssText = 'width: 100%; max-width: ' + (videoFormat === 'story' ? '350px' : '600px') + '; border-radius: 12px; box-shadow: 0 0 60px rgba(168,85,247,0.5); margin: 0 auto; display: block;';
         resultContainer.appendChild(vidEl);
         
         // Informações técnicas
         var infoDiv = document.createElement('div');
         infoDiv.className = 'mt-6 p-4 bg-zinc-900/50 border border-zinc-800 rounded-lg';
         var statusHtml2 = '';
+        var resLabel = W + 'x' + H;
         if (nativeOut) {
             statusHtml2 = '<div class="flex items-center justify-center gap-2 mb-2">' +
                 '<span class="text-green-400 text-sm font-semibold">\u26A1 MP4 nativo (H.264 + AAC) — sem recompressão</span></div>' +
                 '<div class="text-center text-zinc-300 text-xs">' +
-                '<span class="font-bold">' + finalSizeMB + ' MB</span> · Qualidade: ' + quality.toUpperCase() + ' · 1080x1080</div>';
+                '<span class="font-bold">' + finalSizeMB + ' MB</span> · Qualidade: ' + quality.toUpperCase() + ' · ' + resLabel + '</div>';
         } else if (compressed) {
             statusHtml2 = '<div class="flex items-center justify-center gap-2 mb-2">' +
                 '<span class="text-green-400 text-sm font-semibold">\u2728 Convertido para MP4 (H.264 High Profile + AAC)</span></div>' +
                 '<div class="text-center text-zinc-300 text-xs">' +
                 'Original: ' + rawSizeMB + ' MB → Final: <span class="font-bold text-green-400">' + finalSizeMB + ' MB</span> ' +
-                '<span class="text-green-400">(-' + savedPct + '%)</span> · 1080x1080</div>';
+                '<span class="text-green-400">(-' + savedPct + '%)</span> · ' + resLabel + '</div>';
         } else {
             statusHtml2 = '<div class="flex items-center justify-center gap-2 mb-2">' +
                 '<span class="text-yellow-400 text-xs">\u26A0 Sem conversão disponível - vídeo original</span></div>' +
                 '<div class="text-center text-zinc-400 text-xs">' +
-                'Tamanho: ' + finalSizeMB + ' MB · Formato: ' + finalExt.toUpperCase() + '</div>';
+                'Tamanho: ' + finalSizeMB + ' MB · Formato: ' + finalExt.toUpperCase() + ' · ' + resLabel + '</div>';
         }
         infoDiv.innerHTML = statusHtml2;
         resultContainer.appendChild(infoDiv);

@@ -442,7 +442,7 @@ function matchPlatform(name) {
 
 function getPlatformColor(platform) {
     if (platform === 'WPlay') return '#0CA77F';
-    if (platform === 'RushPlay') return '#250301';
+    if (platform === 'RushPlay') return '#ef4444';
     return '#ef4444'; // default red
 }
 
@@ -457,7 +457,7 @@ function drawPlatformText(c, platform, x, y, fontSize) {
         c.fillStyle = 'rgba(255,255,255,0.6)';
         c.fillText(' / ', x + wplayW, y);
         var sepW = c.measureText(' / ').width;
-        c.fillStyle = '#250301';
+        c.fillStyle = '#ef4444';
         c.fillText('RushPlay', x + wplayW + sepW, y);
         return wplayW + sepW + c.measureText('RushPlay').width;
     } else {

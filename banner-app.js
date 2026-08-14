@@ -520,7 +520,9 @@ function downloadMovieBanner() {
         var isPost = currentFormat === 'post';
         var baseW = 1080;
         var baseH = isPost ? 1350 : 1920;
-        var scale = 2;
+        // scale reduzido de 2x para 1.5x: 1080x1920 j\u00E1 \u00E9 Full HD;
+        // 2x virava 2160x3840 (quase 4K) e derrubava a aba no Safari iOS por falta de mem\u00F3ria
+        var scale = 1.5;
         hdCanvas.width = baseW * scale;
         hdCanvas.height = baseH * scale;
         var hdCtx = hdCanvas.getContext('2d');
@@ -528,14 +530,31 @@ function downloadMovieBanner() {
         hdCtx.imageSmoothingQuality = 'high';
         hdCtx.scale(scale, scale);
         renderMovieBannerToCtx(hdCtx, baseW, baseH, isPost);
-        var dataUrl = hdCanvas.toDataURL('image/png');
+
         var safeTitle = (selectedContent.title || 'banner').replace(/[^a-zA-Z0-9]/g, '_') || 'banner';
-        var link = document.createElement('a');
-        link.download = safeTitle + '_' + currentFormat + '_FULLHD.png';
-        link.href = dataUrl;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        var fileName = safeTitle + '_' + currentFormat + '_FULLHD.png';
+
+        // toBlob em vez de toDataURL: evita manter uma string base64 gigante
+        // na mem\u00F3ria (principal causa de crash de aba em imagens grandes no iOS)
+        hdCanvas.toBlob(function(blob) {
+            try {
+                if (!blob) throw new Error('N\u00E3o foi poss\u00EDvel gerar a imagem (blob vazio).');
+                var url = URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.download = fileName;
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+            } catch (err2) {
+                console.error('Erro ao baixar banner:', err2);
+                alert('Erro ao baixar a imagem: ' + (err2 && err2.message ? err2.message : err2));
+            } finally {
+                hdCanvas.width = 0;
+                hdCanvas.height = 0;
+            }
+        }, 'image/png');
     } catch (err) {
         console.error('Erro ao baixar banner:', err);
         alert('Erro ao baixar a imagem: ' + (err && err.message ? err.message : err) + '\n\nTente novamente ou tire um print desta mensagem para diagnosticar.');
@@ -1275,12 +1294,12 @@ async function generateTrailerBannerVideo() {
         return;
     }
 
-    // Bitrates otimizados para WhatsApp
+    // Bitrates otimizados para WhatsApp (com margem extra antes da recompressão do próprio WhatsApp)
     // Formato 1080x1080 (1:1 square) com vídeo 1080x607 (16:9) no topo
     var recVideoBitrate, recAudioBitrate;
-    if (quality === 'high')      { recVideoBitrate = nativeMp4 ? 8000000 : 10000000; recAudioBitrate = 192000; }
-    else if (quality === 'low')  { recVideoBitrate = nativeMp4 ? 2500000 : 5000000; recAudioBitrate = 96000;  }
-    else                         { recVideoBitrate = nativeMp4 ? 5000000 : 7000000; recAudioBitrate = 128000; }
+    if (quality === 'high')      { recVideoBitrate = nativeMp4 ? 10000000 : 12000000; recAudioBitrate = 192000; }
+    else if (quality === 'low')  { recVideoBitrate = nativeMp4 ? 2500000 : 5000000;  recAudioBitrate = 96000;  }
+    else                         { recVideoBitrate = nativeMp4 ? 6000000 : 8000000;  recAudioBitrate = 128000; }
 
     var srcVideo = null;
     var recorder = null;
@@ -1551,16 +1570,17 @@ async function generateTrailerBannerVideo() {
                 // H.264 High Profile Level 4.0 + AAC + faststart
                 // Resolução 1080x1080 (1:1 square)
                 var crf, maxrate, bufsize, audioBr;
-                if (quality === 'high')      { crf = '20'; maxrate = '8000k'; bufsize = '16000k'; audioBr = '192k'; }
-                else if (quality === 'low')  { crf = '26'; maxrate = '2500k'; bufsize = '5000k';  audioBr = '96k';  }
-                else                         { crf = '22'; maxrate = '5000k'; bufsize = '10000k'; audioBr = '128k'; }
+                if (quality === 'high')      { crf = '18'; maxrate = '10000k'; bufsize = '20000k'; audioBr = '192k'; }
+                else if (quality === 'low')  { crf = '24'; maxrate = '3000k';  bufsize = '6000k';  audioBr = '96k';  }
+                else                         { crf = '20'; maxrate = '6000k';  bufsize = '12000k'; audioBr = '128k'; }
 
-                // ultrafast + fastdecode = MUITO mais rápido em wasm
+                // veryfast (em vez de ultrafast) = qualidade bem melhor por bit,
+                // ainda rápido o bastante no core com threads do ffmpeg.wasm
                 // -vf scale=1080:1080 garante resolução quadrada para WhatsApp
                 await ffmpeg.run(
                     '-i', inputName,
                     '-c:v', 'libx264',
-                    '-preset', 'ultrafast',
+                    '-preset', 'veryfast',
                     '-tune', 'fastdecode',
                     '-profile:v', 'high',
                     '-level', '4.0',
@@ -1568,7 +1588,7 @@ async function generateTrailerBannerVideo() {
                     '-crf', crf,
                     '-maxrate', maxrate,
                     '-bufsize', bufsize,
-                    '-vf', 'scale=' + W + ':' + H + ':flags=fast_bilinear',
+                    '-vf', 'scale=' + W + ':' + H + ':flags=lanczos',
                     '-r', '30',
                     '-c:a', 'aac',
                     '-b:a', audioBr,

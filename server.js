@@ -25,6 +25,19 @@ console.log('✅ TMDB API Key carregada com sucesso');
 const TMDB_API_URL = 'https://api.themoviedb.org/3';
 
 // ============================================
+// CROSS-ORIGIN ISOLATION (COOP/COEP) - NECESSÁRIO PARA FFMPEG.WASM
+// O static.json NÃO é lido pelo Express/Render (é config de host estático
+// tipo Netlify/Surge). Por isso os headers precisam ser setados aqui,
+// direto no servidor, para não depender só do coi-serviceworker.js
+// (que força reload da página quando não consegue isolar via SW).
+// ============================================
+app.use((req, res, next) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+    next();
+});
+
+// ============================================
 // RATE LIMITING - PROTEÇÃO CONTRA ABUSO
 // ============================================
 const apiLimiter = rateLimit({
@@ -106,7 +119,8 @@ app.get('/api/image-proxy', async (req, res) => {
         res.set({ 
             'Content-Type': response.headers['content-type'] || 'image/jpeg', 
             'Cache-Control': 'public, max-age=86400',
-            'Access-Control-Allow-Origin': '*' 
+            'Access-Control-Allow-Origin': '*',
+            'Cross-Origin-Resource-Policy': 'cross-origin'
         });
         res.send(response.data);
     } catch (error) { 
@@ -406,4 +420,5 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log('🛡️ Rate Limit: 30 req/min');
     console.log('💾 Cache: 24 horas');
     console.log('🔒 Segurança: API Keys protegidas');
+    console.log('🧩 COOP/COEP: habilitados via header (cross-origin isolation)');
 });

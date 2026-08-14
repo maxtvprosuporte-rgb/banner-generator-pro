@@ -387,8 +387,8 @@ async function searchMovies(query) {
         var results = await Promise.all(fetches);
         var moviesData = results[0];
         var seriesData = results[1];
-        var movies = (moviesData.results || []).slice(0, 8).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: m.poster_path ? getTmdbImgUrl(m.poster_path) : null }; });
-        var series = (seriesData.results || []).slice(0, 8).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: s.poster_path ? getTmdbImgUrl(s.poster_path) : null }; });
+        var movies = (moviesData.results || []).slice(0, 20).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: m.poster_path ? getTmdbImgUrl(m.poster_path) : null }; });
+        var series = (seriesData.results || []).slice(0, 20).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: s.poster_path ? getTmdbImgUrl(s.poster_path) : null }; });
         displayMovieResults(movies.concat(series));
     } catch (error) {
         console.error('Erro:', error);
@@ -515,25 +515,31 @@ function updateMovieFormatButtons() {
 
 function downloadMovieBanner() {
     if (!selectedContent) { alert('Selecione um filme ou s\u00E9rie primeiro!'); return; }
-    var hdCanvas = document.createElement('canvas');
-    var isPost = currentFormat === 'post';
-    var baseW = 1080;
-    var baseH = isPost ? 1350 : 1920;
-    var scale = 2;
-    hdCanvas.width = baseW * scale;
-    hdCanvas.height = baseH * scale;
-    var hdCtx = hdCanvas.getContext('2d');
-    hdCtx.imageSmoothingEnabled = true;
-    hdCtx.imageSmoothingQuality = 'high';
-    hdCtx.scale(scale, scale);
-    renderMovieBannerToCtx(hdCtx, baseW, baseH, isPost);
-    var dataUrl = hdCanvas.toDataURL('image/png');
-    var link = document.createElement('a');
-    link.download = selectedContent.title.replace(/[^a-zA-Z0-9]/g, '_') + '_' + currentFormat + '_FULLHD.png';
-    link.href = dataUrl;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+        var hdCanvas = document.createElement('canvas');
+        var isPost = currentFormat === 'post';
+        var baseW = 1080;
+        var baseH = isPost ? 1350 : 1920;
+        var scale = 2;
+        hdCanvas.width = baseW * scale;
+        hdCanvas.height = baseH * scale;
+        var hdCtx = hdCanvas.getContext('2d');
+        hdCtx.imageSmoothingEnabled = true;
+        hdCtx.imageSmoothingQuality = 'high';
+        hdCtx.scale(scale, scale);
+        renderMovieBannerToCtx(hdCtx, baseW, baseH, isPost);
+        var dataUrl = hdCanvas.toDataURL('image/png');
+        var safeTitle = (selectedContent.title || 'banner').replace(/[^a-zA-Z0-9]/g, '_') || 'banner';
+        var link = document.createElement('a');
+        link.download = safeTitle + '_' + currentFormat + '_FULLHD.png';
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch (err) {
+        console.error('Erro ao baixar banner:', err);
+        alert('Erro ao baixar a imagem: ' + (err && err.message ? err.message : err) + '\n\nTente novamente ou tire um print desta mensagem para diagnosticar.');
+    }
 }
 
 function renderMovieBannerToCtx(c, width, height, isPost) {
@@ -753,8 +759,8 @@ async function searchVideos(query) {
         var results = await Promise.all(fetches);
         var moviesData = results[0];
         var seriesData = results[1];
-        var movies = (moviesData.results || []).slice(0, 8).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || '', poster: m.poster_path ? getTmdbImgUrl(m.poster_path) : null }; });
-        var series = (seriesData.results || []).slice(0, 8).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || '', poster: s.poster_path ? getTmdbImgUrl(s.poster_path) : null }; });
+        var movies = (moviesData.results || []).slice(0, 20).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || '', poster: m.poster_path ? getTmdbImgUrl(m.poster_path) : null }; });
+        var series = (seriesData.results || []).slice(0, 20).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || '', poster: s.poster_path ? getTmdbImgUrl(s.poster_path) : null }; });
         displayVideoResults(movies.concat(series));
     } catch (error) {
         console.error('Erro:', error);

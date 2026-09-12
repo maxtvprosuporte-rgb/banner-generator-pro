@@ -866,7 +866,12 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
 
     // ======== INFO AREA: poster ESQUERDA + conteúdo DIREITA ========
     var pad = 40;
-    var posterW = 210, posterH = 315;
+    // Reserva o espaço necessário para os boxes (Instagram/WhatsApp/CTA) no rodapé
+    // e limita a altura do poster para que ele nunca fique por baixo/atrás dos boxes.
+    var reservedBtnH = 55, reservedBtnBottomMargin = 30, reservedGapBeforeButtons = 20;
+    var maxPosterH = infoAreaH - pad - reservedBtnH - reservedBtnBottomMargin - reservedGapBeforeButtons;
+    var posterH = Math.min(315, maxPosterH);
+    var posterW = Math.round(posterH * (210 / 315));
     var posterX = pad;
     var posterY = infoAreaY + pad;
     var contentX = posterX + posterW + 30;
@@ -1169,10 +1174,11 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     }
 
     // Botões Instagram + WhatsApp + CTA (3 boxes lado a lado, ícone esquerda / texto direita)
-    // Posicionados logo após a sinopse
+    // Posicionados sempre ABAIXO tanto do texto (sinopse) quanto da capa do conteúdo,
+    // para nunca ficar por cima/atrás do poster quando o texto for curto.
     var btnH = 70, btnGap = 20;
     var btnW2 = Math.floor((W - pad * 2 - btnGap * 2) / 3);
-    var btnY = curY + 20; // Logo após a última linha da sinopse
+    var btnY = Math.max(curY + 20, posterY + posterH + 20);
     var sIconSize = 32; var sIconPad = 16;
     var sTextCY = btnY + btnH / 2 + 8;
     oc.textAlign = 'center';

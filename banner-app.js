@@ -81,44 +81,12 @@ function detectNativeMp4Support() {
 }
 
 // ============================================
-// CARREGAR LOGO PADRÃO - tenta raiz e subpastas
+// LOGO: agora é 100% via upload do dispositivo,
+// salva em base64 no localStorage (bannerGeneratorSettings.logo).
+// Não há mais tentativa de carregar logo.png de pastas do servidor
+// (a pasta antiga foi removida). Se não houver logo salva, o app
+// simplesmente fica sem logo até o usuário enviar uma em Configurações.
 // ============================================
-function loadDefaultLogo() {
-    var folders = ['', 'img/', 'assets/', 'images/', 'static/', 'public/'];
-    var extensions = ['logo.PNG', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'logo.svg'];
-    var paths = [];
-    folders.forEach(function(folder) {
-        extensions.forEach(function(ext) {
-            paths.push(folder + ext);
-        });
-    });
-    
-    var tried = 0;
-    function tryNext() {
-        if (tried >= paths.length) {
-            console.log('ℹ️ Nenhuma logo padrão encontrada. Tentativas: ' + paths.slice(0, 10).join(', ') + '...');
-            return;
-        }
-        var path = paths[tried];
-        var img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = function() {
-            uploadedLogo = img;
-            console.log('✅ Logo padrão carregada: ' + path + ' (' + img.width + 'x' + img.height + ')');
-            var slt = document.getElementById('settingsLogoText');
-            var slr = document.getElementById('settingsRemoveLogo');
-            if (slt) slt.textContent = 'Logo padrão (' + path + ')';
-            if (slr) slr.classList.remove('hidden');
-        };
-        img.onerror = function() {
-            tried++;
-            tryNext();
-        };
-        img.src = path;
-        tried++;
-    }
-    tryNext();
-}
 
 // ============================================
 // SETTINGS
@@ -141,20 +109,15 @@ function loadGlobalSettings() {
                 };
                 img.onerror = function() {
                     console.error('❌ Erro ao carregar logo do localStorage');
-                    // Tentar remover logo corrompida
+                    // Remover logo corrompida
                     globalSettings.logo = null;
                     localStorage.setItem('bannerGeneratorSettings', JSON.stringify(globalSettings));
-                    // Tentar carregar logo padrão da raiz
-                    loadDefaultLogo();
                 };
                 img.src = globalSettings.logo;
                 var slt = document.getElementById('settingsLogoText');
                 var slr = document.getElementById('settingsRemoveLogo');
                 if (slt) slt.textContent = 'Logo carregada';
                 if (slr) slr.classList.remove('hidden');
-            } else {
-                // Se não há logo salva, tentar carregar logo padrão da raiz
-                loadDefaultLogo();
             }
             var w1 = document.getElementById('settingsInstagramHandle');
             var w2 = document.getElementById('settingsWhatsappText');
@@ -164,13 +127,9 @@ function loadGlobalSettings() {
             if (w3) w3.value = globalSettings.ctaText || 'ASSINA JÁ';
         } else {
             console.log('ℹ️ Nenhuma configuração salva encontrada');
-            // Tentar carregar logo padrão da raiz
-            loadDefaultLogo();
         }
     } catch (e) { 
         console.error('❌ Erro ao carregar configurações:', e); 
-        // Tentar carregar logo padrão da raiz
-        loadDefaultLogo();
     }
 }
 
@@ -291,6 +250,7 @@ function selectMode(mode) {
     selectedContent = null;
     if (mode === 'movies') loadMoviesMode();
     else if (mode === 'video') loadVideoMode();
+    else if (mode === 'customvideo') loadCustomVideoMode();
 }
 
 function goHome() {
@@ -1719,6 +1679,744 @@ async function generateTrailerBannerVideo() {
         progressBox.classList.add('hidden');
     }
 }
+// ============================================
+// MODO 3: VÍDEO COM TEXTO LIVRE (sem dados de filme)
+// Mesmo padrão visual do gerador de Trailer em Vídeo
+// (vídeo no topo + logo + boxes Instagram/WhatsApp/CTA),
+// porém a área inferior mostra um TEXTO PERSONALIZADO
+// que se auto-ajusta (tamanho de fonte) conforme o
+// tamanho do texto digitado, em vez de dados do filme.
+// ============================================
+
+// Ajusta automaticamente o tamanho da fonte de um bloco de texto
+// para que ele caiba dentro de maxWidth x maxHeight, quebrando linhas.
+function fitAutoText(oc, text, maxWidth, maxHeight, opts) {
+    opts = opts || {};
+    var maxFont = opts.maxFont || 64;
+    var minFont = opts.minFont || 22;
+    var weight = opts.weight || '700';
+    var family = opts.family || 'Oswald, sans-serif';
+    var lineHeightRatio = opts.lineHeightRatio || 1.22;
+    var maxLines = opts.maxLines || 8;
+    var clean = (text || '').trim();
+    if (!clean) clean = 'SEU TEXTO AQUI';
+
+    var fontSize = maxFont;
+    var lines = [];
+    var lineHeight = 0;
+    while (fontSize >= minFont) {
+        oc.font = weight + ' ' + fontSize + 'px ' + family;
+        lines = wrapText(oc, clean, maxWidth);
+        lineHeight = Math.round(fontSize * lineHeightRatio);
+        if (lines.length <= maxLines && (lines.length * lineHeight) <= maxHeight) break;
+        fontSize -= 2;
+    }
+    // Se mesmo na fonte mínima não coube, corta linhas excedentes com reticências
+    if ((lines.length * lineHeight) > maxHeight) {
+        var maxAllowedLines = Math.max(1, Math.floor(maxHeight / lineHeight));
+        if (lines.length > maxAllowedLines) {
+            lines = lines.slice(0, maxAllowedLines);
+            var lastIdx = lines.length - 1;
+            var lastLine = lines[lastIdx];
+            oc.font = weight + ' ' + fontSize + 'px ' + family;
+            while (lastLine.length > 0 && oc.measureText(lastLine + '…').width > maxWidth) {
+                lastLine = lastLine.slice(0, -1);
+            }
+            lines[lastIdx] = lastLine + '…';
+        }
+    }
+    return { fontSize: fontSize, lines: lines, lineHeight: lineHeight };
+}
+
+// Desenha as 3 boxes (Instagram / WhatsApp / CTA) numa faixa horizontal completa
+function drawCustomBottomButtons(oc, x, y, totalW, btnH, btnGap, iconSize, iconPad, fontSizeHandle, fontSizeCta) {
+    var btnW = Math.floor((totalW - btnGap * 2) / 3);
+    var textCY = y + btnH / 2 + Math.round(fontSizeHandle * 0.3);
+    oc.textAlign = 'center';
+
+    // Instagram (degradê)
+    var instaGrad = oc.createLinearGradient(x, y, x + btnW, y + btnH);
+    instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
+    oc.fillStyle = instaGrad;
+    roundRect(oc, x, y, btnW, btnH, 10);
+    oc.fill();
+    drawInstagramIcon(oc, x + iconPad, y + btnH / 2 - iconSize / 2, iconSize);
+    oc.fillStyle = '#fff';
+    oc.font = '700 ' + fontSizeHandle + 'px Manrope, sans-serif';
+    oc.fillText(globalSettings.instagramHandle, x + iconPad + iconSize + (btnW - iconPad - iconSize) / 2, textCY);
+
+    // WhatsApp
+    var wppX = x + btnW + btnGap;
+    oc.fillStyle = '#25D366';
+    roundRect(oc, wppX, y, btnW, btnH, 10);
+    oc.fill();
+    drawWhatsAppIcon(oc, wppX + iconPad, y + btnH / 2 - iconSize / 2, iconSize);
+    oc.fillStyle = '#fff';
+    oc.font = '700 ' + fontSizeHandle + 'px Manrope, sans-serif';
+    oc.fillText(globalSettings.whatsappText, wppX + iconPad + iconSize + (btnW - iconPad - iconSize) / 2, textCY);
+
+    // CTA
+    var ctaX = wppX + btnW + btnGap;
+    oc.fillStyle = '#ef4444';
+    roundRect(oc, ctaX, y, btnW, btnH, 10);
+    oc.fill();
+    oc.fillStyle = '#fff';
+    oc.font = '800 ' + fontSizeCta + 'px Manrope, sans-serif';
+    oc.fillText(globalSettings.ctaText, ctaX + btnW / 2, y + btnH / 2 + Math.round(fontSizeCta * 0.3));
+
+    oc.textAlign = 'left';
+}
+
+// Layout POST (1080x1080) — vídeo no topo, texto livre centralizado embaixo
+function renderCustomStaticBannerLayer(oc, W, H, videoAreaH, customText) {
+    oc.fillStyle = '#000';
+    oc.fillRect(0, 0, W, H);
+    oc.fillRect(0, 0, W, videoAreaH);
+
+    var infoAreaY = videoAreaH;
+    var infoAreaH = H - videoAreaH;
+    var bgGrad = oc.createLinearGradient(0, infoAreaY, 0, H);
+    bgGrad.addColorStop(0, '#0a0a0a');
+    bgGrad.addColorStop(1, '#050505');
+    oc.fillStyle = bgGrad;
+    oc.fillRect(0, infoAreaY, W, infoAreaH);
+
+    // Logo no canto inferior direito do vídeo (igual ao modo Trailer)
+    if (uploadedLogo) {
+        var logoR = uploadedLogo.width / uploadedLogo.height;
+        var logoH = 140;
+        var logoW = logoH * logoR;
+        if (logoW > 320) { logoW = 320; logoH = logoW / logoR; }
+        oc.save();
+        oc.globalAlpha = 1.0;
+        oc.drawImage(uploadedLogo, W - logoW - 25, videoAreaH - logoH - 10, logoW, logoH);
+        oc.restore();
+    }
+
+    var pad = 50;
+    var btnH = 55, btnGap = 12;
+    var btnY = H - btnH - 30;
+    var textMaxW = W - pad * 2;
+    var textAreaTop = infoAreaY + pad;
+    var textAreaH = Math.max(40, (btnY - 25) - textAreaTop);
+
+    var fit = fitAutoText(oc, (customText || '').toUpperCase(), textMaxW, textAreaH, { maxFont: 64, minFont: 24, weight: '700', family: 'Oswald, sans-serif', lineHeightRatio: 1.22, maxLines: 6 });
+    var totalTextH = fit.lines.length * fit.lineHeight;
+    var startY = textAreaTop + Math.max(0, (textAreaH - totalTextH) / 2) + fit.fontSize * 0.85;
+
+    oc.textAlign = 'center';
+    oc.fillStyle = '#fff';
+    oc.shadowColor = 'rgba(0,0,0,0.8)';
+    oc.shadowBlur = 10;
+    oc.font = '700 ' + fit.fontSize + 'px Oswald, sans-serif';
+    var cy = startY;
+    for (var i = 0; i < fit.lines.length; i++) { oc.fillText(fit.lines[i], W / 2, cy); cy += fit.lineHeight; }
+    oc.shadowBlur = 0;
+    oc.textAlign = 'left';
+
+    drawCustomBottomButtons(oc, pad, btnY, W - pad * 2, btnH, btnGap, 24, 12, 16, 18);
+}
+
+// Layout STORY (1080x1920) — logo no topo + vídeo centralizado + texto livre embaixo
+function renderCustomStaticStoryLayer(oc, W, H, videoAreaH, customText) {
+    oc.fillStyle = '#000';
+    oc.fillRect(0, 0, W, H);
+
+    var videoCenterY = Math.round(H * 0.44);
+    var videoY = videoCenterY - Math.floor(videoAreaH / 2);
+
+    var logoTopH = 260;
+    if (uploadedLogo) {
+        var logoR = uploadedLogo.width / uploadedLogo.height;
+        var logoH = 200;
+        var logoW = logoH * logoR;
+        if (logoW > 550) { logoW = 550; logoH = logoW / logoR; }
+        var logoX = (W - logoW) / 2;
+        var logoY = videoY - logoH + 15;
+
+        var glowRadius = Math.max(logoW, logoH) * 0.9;
+        var glowX = W / 2;
+        var glowY = logoY + logoH / 2;
+        var glowGrad = oc.createRadialGradient(glowX, glowY, 0, glowX, glowY, glowRadius);
+        glowGrad.addColorStop(0, 'rgba(139, 92, 246, 0.35)');
+        glowGrad.addColorStop(0.5, 'rgba(139, 92, 246, 0.15)');
+        glowGrad.addColorStop(1, 'rgba(139, 92, 246, 0)');
+        oc.fillStyle = glowGrad;
+        oc.fillRect(0, 0, W, logoTopH);
+
+        oc.drawImage(uploadedLogo, logoX, logoY, logoW, logoH);
+    }
+
+    var infoAreaY = videoY + videoAreaH;
+    var infoAreaH = H - infoAreaY;
+
+    oc.fillStyle = '#000';
+    oc.fillRect(0, videoY, W, videoAreaH);
+
+    var bgGrad = oc.createLinearGradient(0, infoAreaY, 0, H);
+    bgGrad.addColorStop(0, '#0a0a0a');
+    bgGrad.addColorStop(1, '#050505');
+    oc.fillStyle = bgGrad;
+    oc.fillRect(0, infoAreaY, W, infoAreaH);
+
+    var pad = 60;
+    var btnH = 70, btnGap = 20;
+    var btnY = H - btnH - 40;
+    var textMaxW = W - pad * 2;
+    var textAreaTop = infoAreaY + 30;
+    var textAreaH = Math.max(40, (btnY - 30) - textAreaTop);
+
+    var fit = fitAutoText(oc, (customText || '').toUpperCase(), textMaxW, textAreaH, { maxFont: 76, minFont: 28, weight: '700', family: 'Oswald, sans-serif', lineHeightRatio: 1.22, maxLines: 7 });
+    var totalTextH = fit.lines.length * fit.lineHeight;
+    var startY = textAreaTop + Math.max(0, (textAreaH - totalTextH) / 2) + fit.fontSize * 0.85;
+
+    oc.textAlign = 'center';
+    oc.fillStyle = '#fff';
+    oc.shadowColor = 'rgba(0,0,0,0.8)';
+    oc.shadowBlur = 12;
+    oc.font = '700 ' + fit.fontSize + 'px Oswald, sans-serif';
+    var cy = startY;
+    for (var i = 0; i < fit.lines.length; i++) { oc.fillText(fit.lines[i], W / 2, cy); cy += fit.lineHeight; }
+    oc.shadowBlur = 0;
+    oc.textAlign = 'left';
+
+    drawCustomBottomButtons(oc, pad, btnY, W - pad * 2, btnH, btnGap, 32, 16, 20, 22);
+
+    return videoY;
+}
+
+// ============================================
+// CONTROLE DA UI — MODO VÍDEO COM TEXTO LIVRE
+// ============================================
+async function loadCustomVideoMode() {
+    uploadedVideoFile = null;
+    if (uploadedVideoUrl) { try { URL.revokeObjectURL(uploadedVideoUrl); } catch(e) {} }
+    uploadedVideoUrl = null;
+    videoFormat = 'post';
+
+    var nativeMp4Type = detectNativeMp4Support();
+    var statusHtml;
+    if (nativeMp4Type) {
+        statusHtml = '<span class="text-green-400">\u26A1 MP4 nativo ativado (modo r\u00E1pido)</span>';
+    } else if (ffmpegSupported()) {
+        statusHtml = '<span class="text-green-400">\u2713 Convers\u00E3o WebM\u2192MP4 ativada</span>';
+    } else {
+        statusHtml = '<span class="text-yellow-400">\u26A0 Sem convers\u00E3o - v\u00EDdeo sair\u00E1 em WebM</span>';
+    }
+
+    controlPanel.innerHTML =
+        '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-blue-400">V\u00EDdeo com Texto Livre</h2><p class="text-zinc-500 text-sm mt-2">Carregue um v\u00EDdeo MP4 e escreva um texto personalizado — sem dados de filme</p><p class="text-xs mt-2">' + statusHtml + '</p></header>' +
+        '<div class="border-2 border-dashed border-blue-500/40 rounded-lg p-5 bg-blue-900/10">' +
+            '<label class="text-xs uppercase tracking-widest text-blue-300 font-semibold block mb-3">V\u00EDdeo MP4 (do dispositivo)</label>' +
+            '<label class="cursor-pointer flex flex-col items-center gap-2 hover:bg-blue-900/20 transition-colors p-4 rounded">' +
+                '<svg class="w-10 h-10 text-blue-400" fill="currentColor" viewBox="0 0 256 256"><path d="M232,72H160V40a16,16,0,0,0-16-16H40A16,16,0,0,0,24,40V184a16,16,0,0,0,16,16H88v32a16,16,0,0,0,16,16H232a16,16,0,0,0,16-16V88A16,16,0,0,0,232,72ZM40,40H144V72H88a16,16,0,0,0-16,16v96H40Zm192,200H104V88H232V240Z"/></svg>' +
+                '<span id="cvFileName" class="text-sm text-blue-200 font-semibold">Clique para escolher MP4</span>' +
+                '<input type="file" id="cvFileInput" accept="video/mp4,video/*" class="hidden" data-testid="cv-file-input">' +
+            '</label>' +
+            '<video id="cvPreview" class="w-full mt-3 rounded hidden" controls></video>' +
+        '</div>' +
+        '<section class="flex flex-col gap-2 mt-5">' +
+            '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold flex items-center justify-between">Texto Personalizado <span id="cvCharCount" class="text-zinc-600 normal-case">0/140</span></label>' +
+            '<textarea id="cvCustomText" maxlength="140" rows="4" placeholder="Digite o texto que vai aparecer no banner..." class="bg-black border-2 border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 w-full rounded-lg resize-none" data-testid="cv-custom-text"></textarea>' +
+            '<p class="text-xs text-zinc-600">O tamanho da fonte se ajusta automaticamente conforme a quantidade de texto.</p>' +
+        '</section>' +
+        '<section class="flex flex-col gap-2 mt-5">' +
+            '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label>' +
+            '<div class="flex gap-2">' +
+                '<button id="cvFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white">Post (1:1)</button>' +
+                '<button id="cvFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story (9:16)</button>' +
+            '</div>' +
+        '</section>' +
+        '<section class="flex flex-col gap-2 mt-5">' +
+            '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Qualidade Final (WhatsApp HD)</label>' +
+            '<select id="cvQuality" class="bg-black border border-zinc-800 p-3 text-white text-sm w-full rounded focus:outline-none focus:border-blue-500 appearance-none cursor-pointer">' +
+                '<option value="high" selected>Alta (HD ~8 Mbps, WhatsApp HD garantido)</option>' +
+                '<option value="medium">M\u00E9dia (~5 Mbps, bom equil\u00EDbrio)</option>' +
+                '<option value="low">Baixa (~2.5 Mbps, m\u00E1xima economia)</option>' +
+            '</select>' +
+        '</section>' +
+        '<button id="cvGenerateBtn" class="w-full bg-blue-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-blue-400 transition-all flex items-center justify-center gap-3 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-5" disabled data-testid="cv-generate-btn">GERAR BANNER MP4 (1080x1080)</button>' +
+        '<div id="cvProgressBox" class="hidden text-center mt-3"><p class="text-xs text-zinc-400 mb-2" id="cvProgressLabel">Gerando v\u00EDdeo...</p><div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div id="cvProgressFill" class="h-full bg-blue-500 transition-all" style="width:0%"></div></div></div>';
+
+    setTimeout(function() {
+        document.getElementById('cvFormatPost').addEventListener('click', function() { videoFormat = 'post'; updateCustomVideoFormatButtons(); });
+        document.getElementById('cvFormatStory').addEventListener('click', function() { videoFormat = 'story'; updateCustomVideoFormatButtons(); });
+        document.getElementById('cvFileInput').addEventListener('change', handleCustomVideoFileUpload);
+        document.getElementById('cvCustomText').addEventListener('input', function(e) {
+            var count = e.target.value.length;
+            var cc = document.getElementById('cvCharCount');
+            if (cc) cc.textContent = count + '/140';
+            updateCustomGenerateBtnState();
+        });
+        document.getElementById('cvGenerateBtn').addEventListener('click', generateCustomTrailerBannerVideo);
+    }, 100);
+
+    canvas.classList.add('hidden');
+    videoContainer.classList.remove('hidden');
+    videoContainer.innerHTML = '<div class="text-center p-12"><div class="text-8xl mb-6">\uD83D\uDCDD</div><h3 class="font-oswald text-3xl font-bold text-blue-400 mb-3">V\u00CDDEO COM TEXTO LIVRE</h3><p class="text-zinc-400 max-w-md mx-auto">1. Carregue o v\u00EDdeo MP4 do dispositivo<br>2. Escreva o texto personalizado<br>3. Escolha formato e qualidade<br>4. Clique em <b>Gerar Banner MP4</b><br><br><span class="text-blue-400">\u2728 Mesmo padr\u00E3o visual do gerador de trailer, sem nenhuma informa\u00E7\u00E3o de filme — s\u00F3 o seu texto.</span></p></div>';
+}
+
+function updateCustomVideoFormatButtons() {
+    var postBtn = document.getElementById('cvFormatPost');
+    var storyBtn = document.getElementById('cvFormatStory');
+    if (!postBtn || !storyBtn) return;
+    if (videoFormat === 'post') {
+        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
+        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
+    } else {
+        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
+        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
+    }
+}
+
+function handleCustomVideoFileUpload(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    if (uploadedVideoUrl) { try { URL.revokeObjectURL(uploadedVideoUrl); } catch(err) {} }
+    uploadedVideoFile = file;
+    uploadedVideoUrl = URL.createObjectURL(file);
+    document.getElementById('cvFileName').textContent = file.name;
+    var prev = document.getElementById('cvPreview');
+    prev.src = uploadedVideoUrl;
+    prev.classList.remove('hidden');
+    updateCustomGenerateBtnState();
+}
+
+function updateCustomGenerateBtnState() {
+    var btn = document.getElementById('cvGenerateBtn');
+    if (!btn) return;
+    var textEl = document.getElementById('cvCustomText');
+    var hasText = !!(textEl && textEl.value.trim());
+    btn.disabled = !(uploadedVideoFile && hasText);
+}
+
+// ============================================
+// GERA BANNER VIDEO — MODO TEXTO LIVRE
+// Mesmo pipeline de gravação do modo Trailer, porém
+// desenhando as camadas "Custom" (sem dados de filme).
+// ============================================
+async function generateCustomTrailerBannerVideo() {
+    var customTextEl = document.getElementById('cvCustomText');
+    var customText = customTextEl ? customTextEl.value.trim() : '';
+    if (!uploadedVideoFile || !customText) { alert('Carregue um MP4 e escreva o texto personalizado'); return; }
+    var btn = document.getElementById('cvGenerateBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner mx-auto"></div>';
+    var progressBox = document.getElementById('cvProgressBox');
+    var progressLabel = document.getElementById('cvProgressLabel');
+    var progressFill = document.getElementById('cvProgressFill');
+    progressBox.classList.remove('hidden');
+    progressLabel.textContent = 'Preparando v\u00EDdeo...';
+    progressFill.style.width = '5%';
+
+    var quality = (document.getElementById('cvQuality') || {}).value || 'high';
+
+    var nativeMp4Type = detectNativeMp4Support();
+    var nativeMp4 = !!nativeMp4Type;
+    var webmTypes = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm'
+    ];
+    var mimeType = nativeMp4Type;
+    if (!mimeType) {
+        for (var wi = 0; wi < webmTypes.length; wi++) {
+            if (window.MediaRecorder && MediaRecorder.isTypeSupported(webmTypes[wi])) { mimeType = webmTypes[wi]; break; }
+        }
+    }
+    if (!mimeType) {
+        btn.disabled = false;
+        btn.innerHTML = 'GERAR BANNER MP4 (1080x1080)';
+        progressBox.classList.add('hidden');
+        alert('Navegador n\u00E3o suporta MediaRecorder');
+        return;
+    }
+
+    var recVideoBitrate, recAudioBitrate;
+    if (quality === 'high')      { recVideoBitrate = nativeMp4 ? 10000000 : 12000000; recAudioBitrate = 192000; }
+    else if (quality === 'low')  { recVideoBitrate = nativeMp4 ? 2500000 : 5000000;  recAudioBitrate = 96000;  }
+    else                         { recVideoBitrate = nativeMp4 ? 6000000 : 8000000;  recAudioBitrate = 128000; }
+
+    var srcVideo = null;
+    var recorder = null;
+    var failsafeTimer = null;
+    var stopRequested = false;
+    var audioCtxRef = null;
+    var drawIntervalId = null;
+
+    function cleanupVideoEl() {
+        try { if (drawIntervalId) clearInterval(drawIntervalId); } catch(e) {}
+        try { if (srcVideo && srcVideo.parentNode) srcVideo.parentNode.removeChild(srcVideo); } catch(e) {}
+        try { if (audioCtxRef && audioCtxRef.state !== 'closed') audioCtxRef.close(); } catch(e) {}
+    }
+
+    try {
+        var W = 1080;
+        var H = videoFormat === 'story' ? 1920 : 1080;
+        var videoAreaH = Math.round(W * 0.61);
+        var formatLabel = videoFormat === 'story' ? '1080x1920 (9:16 Story)' : '1080x1080 (1:1 Post)';
+
+        var outCanvas = document.createElement('canvas');
+        outCanvas.width = W; outCanvas.height = H;
+        var oc = outCanvas.getContext('2d', { alpha: false });
+        oc.imageSmoothingEnabled = true;
+        oc.imageSmoothingQuality = 'high';
+
+        var staticCanvas = document.createElement('canvas');
+        staticCanvas.width = W; staticCanvas.height = H;
+        var sc = staticCanvas.getContext('2d', { alpha: false });
+        sc.imageSmoothingEnabled = true;
+        sc.imageSmoothingQuality = 'high';
+
+        videoContainer.innerHTML = '<div class="text-center"><p class="text-blue-300 mb-3 font-semibold">Gerando banner v\u00EDdeo ' + formatLabel
+            + (nativeMp4 ? ' (modo r\u00E1pido MP4 nativo)' : ' (modo compat\u00EDvel)') + '...</p></div>';
+        videoContainer.appendChild(outCanvas);
+        outCanvas.style.maxWidth = videoFormat === 'story' ? '250px' : '350px';
+        outCanvas.style.borderRadius = '12px';
+        outCanvas.style.boxShadow = '0 0 60px rgba(59,130,246,0.4)';
+
+        srcVideo = document.createElement('video');
+        srcVideo.src = uploadedVideoUrl;
+        srcVideo.preload = 'auto';
+        srcVideo.playsInline = true;
+        srcVideo.muted = false;
+        srcVideo.style.cssText = 'position:fixed;left:-99999px;top:-99999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+        document.body.appendChild(srcVideo);
+
+        await new Promise(function(res, rej) {
+            var done = false;
+            var to = setTimeout(function() { if (!done) { done = true; rej(new Error('Timeout ao carregar MP4 (15s)')); } }, 15000);
+            function ok() { if (done) return; done = true; clearTimeout(to); res(); }
+            function fail() { if (done) return; done = true; clearTimeout(to); rej(new Error('Erro ao carregar MP4')); }
+            srcVideo.addEventListener('canplay', ok, { once: true });
+            srcVideo.addEventListener('loadeddata', ok, { once: true });
+            srcVideo.addEventListener('error', fail, { once: true });
+            if (srcVideo.readyState >= 3) ok();
+        });
+
+        var videoY = 0;
+        if (videoFormat === 'story') {
+            videoY = renderCustomStaticStoryLayer(sc, W, H, videoAreaH, customText);
+        } else {
+            renderCustomStaticBannerLayer(sc, W, H, videoAreaH, customText);
+        }
+        oc.drawImage(staticCanvas, 0, 0);
+
+        progressLabel.textContent = 'Iniciando reprodu\u00E7\u00E3o...';
+        progressFill.style.width = '10%';
+
+        var audioStream = null;
+        var audioCtx = null;
+        try {
+            var AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+                audioCtx = new AudioCtx();
+                audioCtxRef = audioCtx;
+                if (audioCtx.state === 'suspended') { try { await audioCtx.resume(); } catch(e) {} }
+                var sourceNode = audioCtx.createMediaElementSource(srcVideo);
+                var destNode = audioCtx.createMediaStreamDestination();
+                sourceNode.connect(destNode);
+                var muteGain = audioCtx.createGain();
+                muteGain.gain.value = 0;
+                sourceNode.connect(muteGain);
+                muteGain.connect(audioCtx.destination);
+                audioStream = destNode.stream;
+            }
+        } catch(e) { console.warn('Web Audio API falhou:', e); }
+
+        try { srcVideo.currentTime = 0; } catch(e) {}
+        try { await srcVideo.play(); }
+        catch(e) { throw new Error('N\u00E3o foi poss\u00EDvel reproduzir o v\u00EDdeo. Tente outro arquivo.'); }
+
+        progressLabel.textContent = 'Configurando grava\u00E7\u00E3o...';
+        progressFill.style.width = '15%';
+
+        if (!audioStream) {
+            try {
+                if (typeof srcVideo.captureStream === 'function') audioStream = srcVideo.captureStream();
+                else if (typeof srcVideo.mozCaptureStream === 'function') audioStream = srcVideo.mozCaptureStream();
+            } catch(e) {}
+        }
+
+        var canvasStream = outCanvas.captureStream(30);
+        var combinedTracks = [].concat(canvasStream.getVideoTracks());
+        if (audioStream) audioStream.getAudioTracks().forEach(function(t) { combinedTracks.push(t); });
+        var combinedStream = new MediaStream(combinedTracks);
+
+        recorder = new MediaRecorder(combinedStream, {
+            mimeType: mimeType,
+            videoBitsPerSecond: recVideoBitrate,
+            audioBitsPerSecond: recAudioBitrate
+        });
+        var chunks = [];
+        recorder.ondataavailable = function(ev) { if (ev.data && ev.data.size > 0) chunks.push(ev.data); };
+        recorder.onerror = function(e) { console.error('MediaRecorder error:', e); };
+
+        var rawBlobPromise = new Promise(function(resolve, reject) {
+            recorder.onstop = function() {
+                try {
+                    if (chunks.length === 0) { reject(new Error('Nenhum dado gravado.')); return; }
+                    var ext = mimeType.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
+                    var blob = new Blob(chunks, { type: mimeType.split(';')[0] });
+                    resolve({ blob: blob, ext: ext });
+                } catch(err) { reject(err); }
+            };
+        });
+
+        function drawFrame() {
+            oc.drawImage(staticCanvas, 0, 0);
+
+            if (!srcVideo.paused && !srcVideo.ended && srcVideo.readyState >= 2) {
+                var vR = srcVideo.videoWidth / srcVideo.videoHeight;
+                var aR = W / videoAreaH;
+                var dw, dh, ox, oy;
+                if (vR > aR) {
+                    dw = W;
+                    dh = W / vR;
+                    ox = 0;
+                    oy = (videoAreaH - dh) / 2;
+                } else {
+                    dh = videoAreaH;
+                    dw = videoAreaH * vR;
+                    ox = (W - dw) / 2;
+                    oy = 0;
+                }
+                try {
+                    oc.save();
+                    oc.beginPath();
+                    oc.rect(0, videoY, W, videoAreaH);
+                    oc.clip();
+                    oc.drawImage(srcVideo, ox, videoY + oy, dw, dh);
+                    oc.restore();
+                } catch(e) {
+                    oc.restore();
+                }
+            }
+
+            if (videoFormat === 'post' && uploadedLogo) {
+                var logoR2 = uploadedLogo.width / uploadedLogo.height;
+                var logoH2 = 140;
+                var logoW2 = logoH2 * logoR2;
+                if (logoW2 > 320) { logoW2 = 320; logoH2 = logoW2 / logoR2; }
+                oc.save();
+                oc.globalAlpha = 1.0;
+                oc.drawImage(uploadedLogo, W - logoW2 - 25, videoAreaH - logoH2 - 10, logoW2, logoH2);
+                oc.restore();
+            }
+
+            if (srcVideo.duration > 0) {
+                var topPct = nativeMp4 ? 95 : 50;
+                var basePct = 15;
+                var pct = Math.min(topPct, basePct + (srcVideo.currentTime / srcVideo.duration) * (topPct - basePct));
+                progressFill.style.width = pct + '%';
+                progressLabel.textContent = 'Gravando: ' + Math.floor(srcVideo.currentTime) + 's / ' + Math.floor(srcVideo.duration) + 's';
+            }
+        }
+
+        function stopRecording(reason) {
+            if (stopRequested) return;
+            stopRequested = true;
+            try { if (drawIntervalId) { clearInterval(drawIntervalId); drawIntervalId = null; } } catch(e) {}
+            try { srcVideo.pause(); } catch(e) {}
+            setTimeout(function() {
+                try {
+                    if (recorder && recorder.state !== 'inactive') {
+                        recorder.requestData();
+                        setTimeout(function() { try { if (recorder.state !== 'inactive') recorder.stop(); } catch(e) {} }, 100);
+                    }
+                } catch(e) {}
+            }, 250);
+        }
+
+        srcVideo.addEventListener('ended', function() { stopRecording('ended'); });
+        srcVideo.addEventListener('pause', function() {
+            if (srcVideo.duration > 0 && srcVideo.currentTime >= srcVideo.duration - 0.2) stopRecording('pause-near-end');
+        });
+        srcVideo.addEventListener('timeupdate', function() {
+            if (srcVideo.duration > 0 && srcVideo.currentTime >= srcVideo.duration - 0.05) stopRecording('timeupdate-end');
+        });
+
+        var maxMs = ((srcVideo.duration || 60) + 3) * 1000;
+        failsafeTimer = setTimeout(function() { stopRecording('failsafe-timeout'); }, maxMs);
+
+        progressLabel.textContent = 'Gravando...';
+        progressFill.style.width = '20%';
+        recorder.start(500);
+
+        drawIntervalId = setInterval(drawFrame, 1000 / 30);
+
+        var rawResult = await rawBlobPromise;
+        clearTimeout(failsafeTimer);
+        cleanupVideoEl();
+
+        var finalBlob = rawResult.blob;
+        var finalExt = rawResult.ext;
+        var rawSizeMB = (rawResult.blob.size / 1024 / 1024).toFixed(2);
+        var compressed = false;
+        var nativeOut = false;
+
+        if (nativeMp4 && rawResult.ext === 'mp4') {
+            nativeOut = true;
+            progressFill.style.width = '100%';
+            progressLabel.textContent = 'Finalizando...';
+        } else if (ffmpegSupported()) {
+            try {
+                progressLabel.textContent = 'Carregando compressor FFmpeg...';
+                progressFill.style.width = '55%';
+                var ffmpeg = await loadFFmpegOnce(function(ratio) {
+                    var pct = 60 + Math.max(0, Math.min(1, ratio)) * 35;
+                    progressFill.style.width = pct + '%';
+                    progressLabel.textContent = 'Convertendo WebM \u2192 MP4... ' + Math.round(ratio * 100) + '%';
+                });
+
+                progressLabel.textContent = 'Convertendo WebM \u2192 MP4...';
+                progressFill.style.width = '60%';
+
+                var inputName = 'input.' + rawResult.ext;
+                var outputName = 'output.mp4';
+                var fetchFile = window.FFmpeg.fetchFile;
+                ffmpeg.FS('writeFile', inputName, await fetchFile(rawResult.blob));
+
+                var crf, maxrate, bufsize, audioBr;
+                if (quality === 'high')      { crf = '18'; maxrate = '10000k'; bufsize = '20000k'; audioBr = '192k'; }
+                else if (quality === 'low')  { crf = '24'; maxrate = '3000k';  bufsize = '6000k';  audioBr = '96k';  }
+                else                         { crf = '20'; maxrate = '6000k';  bufsize = '12000k'; audioBr = '128k'; }
+
+                await ffmpeg.run(
+                    '-i', inputName,
+                    '-c:v', 'libx264',
+                    '-preset', 'veryfast',
+                    '-tune', 'fastdecode',
+                    '-profile:v', 'high',
+                    '-level', '4.0',
+                    '-pix_fmt', 'yuv420p',
+                    '-crf', crf,
+                    '-maxrate', maxrate,
+                    '-bufsize', bufsize,
+                    '-vf', 'scale=' + W + ':' + H + ':flags=lanczos',
+                    '-r', '30',
+                    '-c:a', 'aac',
+                    '-b:a', audioBr,
+                    '-ar', '44100',
+                    '-ac', '2',
+                    '-movflags', '+faststart',
+                    '-threads', '0',
+                    '-y', outputName
+                );
+
+                var data = ffmpeg.FS('readFile', outputName);
+                finalBlob = new Blob([data.buffer], { type: 'video/mp4' });
+                finalExt = 'mp4';
+                compressed = true;
+                try { ffmpeg.FS('unlink', inputName); ffmpeg.FS('unlink', outputName); } catch(e) {}
+            } catch (compErr) {
+                console.error('Erro na compacta\u00E7\u00E3o FFmpeg, mantendo v\u00EDdeo original:', compErr);
+            }
+        }
+
+        progressFill.style.width = '100%';
+        progressLabel.textContent = 'Conclu\u00EDdo!';
+
+        var finalSizeMB = (finalBlob.size / 1024 / 1024).toFixed(2);
+        var finalSizeBytes = finalBlob.size;
+        var savedPct = compressed ? Math.round((1 - finalBlob.size / rawResult.blob.size) * 100) : 0;
+        var url = URL.createObjectURL(finalBlob);
+        var safeTitle = customText.slice(0, 30).replace(/[^a-zA-Z0-9]/g, '_') || 'video_personalizado';
+        var formatSuffix = videoFormat === 'story' ? '_story' : '_post';
+        var fileName = safeTitle + formatSuffix + '_whatsapp_hd.' + finalExt;
+        var exceedsLimit = finalSizeBytes > (100 * 1024 * 1024);
+
+        videoContainer.innerHTML = '';
+
+        var resultContainer = document.createElement('div');
+        resultContainer.className = 'w-full max-w-2xl mx-auto';
+
+        var titleDiv = document.createElement('div');
+        titleDiv.className = 'text-center mb-6';
+        titleDiv.innerHTML = '<h3 class="font-oswald text-3xl font-bold text-blue-400 mb-2">Banner Gerado com Sucesso!</h3>' +
+            '<p class="text-zinc-400 text-sm">' + (videoFormat === 'story' ? '1080x1920 (9:16) — Formato Story' : '1080x1080 (1:1) — Formato Post') + '</p>';
+        resultContainer.appendChild(titleDiv);
+
+        var vidEl = document.createElement('video');
+        vidEl.src = url;
+        vidEl.controls = true;
+        vidEl.autoplay = true;
+        vidEl.loop = true;
+        vidEl.muted = true;
+        vidEl.style.cssText = 'width: 100%; max-width: ' + (videoFormat === 'story' ? '350px' : '600px') + '; border-radius: 12px; box-shadow: 0 0 60px rgba(59,130,246,0.5); margin: 0 auto; display: block;';
+        resultContainer.appendChild(vidEl);
+
+        var infoDiv = document.createElement('div');
+        infoDiv.className = 'mt-6 p-4 bg-zinc-900/50 border border-zinc-800 rounded-lg';
+        var statusHtml2 = '';
+        var resLabel = W + 'x' + H;
+        if (nativeOut) {
+            statusHtml2 = '<div class="flex items-center justify-center gap-2 mb-2">' +
+                '<span class="text-green-400 text-sm font-semibold">\u26A1 MP4 nativo (H.264 + AAC) — sem recompressão</span></div>' +
+                '<div class="text-center text-zinc-300 text-xs">' +
+                '<span class="font-bold">' + finalSizeMB + ' MB</span> · Qualidade: ' + quality.toUpperCase() + ' · ' + resLabel + '</div>';
+        } else if (compressed) {
+            statusHtml2 = '<div class="flex items-center justify-center gap-2 mb-2">' +
+                '<span class="text-green-400 text-sm font-semibold">\u2728 Convertido para MP4 (H.264 High Profile + AAC)</span></div>' +
+                '<div class="text-center text-zinc-300 text-xs">' +
+                'Original: ' + rawSizeMB + ' MB → Final: <span class="font-bold text-green-400">' + finalSizeMB + ' MB</span> ' +
+                '<span class="text-green-400">(-' + savedPct + '%)</span> · ' + resLabel + '</div>';
+        } else {
+            statusHtml2 = '<div class="flex items-center justify-center gap-2 mb-2">' +
+                '<span class="text-yellow-400 text-xs">\u26A0 Sem conversão disponível - vídeo original</span></div>' +
+                '<div class="text-center text-zinc-400 text-xs">' +
+                'Tamanho: ' + finalSizeMB + ' MB · Formato: ' + finalExt.toUpperCase() + ' · ' + resLabel + '</div>';
+        }
+        infoDiv.innerHTML = statusHtml2;
+        resultContainer.appendChild(infoDiv);
+
+        if (exceedsLimit) {
+            var warnDiv = document.createElement('div');
+            warnDiv.className = 'mt-4 p-4 bg-yellow-900/30 border border-yellow-500/50 rounded-lg';
+            warnDiv.innerHTML = '<div class="flex items-start gap-3">' +
+                '<span class="text-yellow-400 text-xl flex-shrink-0">\u26A0\uFE0F</span>' +
+                '<div>' +
+                '<p class="text-yellow-300 font-semibold text-sm mb-1">Arquivo acima de 100MB</p>' +
+                '<p class="text-yellow-200/80 text-xs leading-relaxed">O WhatsApp pode não reconhecer o vídeo em HD. O limite para envio no formato HD é de até 100MB (ou até 180MB dependendo da sua região, versão do app e velocidade da conexão). Considere usar qualidade <b>Média</b> ou <b>Baixa</b> para reduzir o tamanho.</p>' +
+                '</div></div>';
+            resultContainer.appendChild(warnDiv);
+        }
+
+        var dlBtn = document.createElement('a');
+        dlBtn.href = url;
+        dlBtn.download = fileName;
+        dlBtn.className = 'block w-full mt-6 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold uppercase tracking-wider py-5 px-8 rounded-xl cursor-pointer transition-all shadow-lg hover:shadow-blue-500/50 text-center';
+        dlBtn.innerHTML = '<span class="flex items-center justify-center gap-3">' +
+            '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>' +
+            '</svg>' +
+            '<span>BAIXAR VÍDEO HD</span></span>';
+        dlBtn.setAttribute('data-testid', 'cv-download-btn');
+        resultContainer.appendChild(dlBtn);
+
+        var fileNameDiv = document.createElement('div');
+        fileNameDiv.className = 'text-center mt-3 text-zinc-500 text-xs';
+        fileNameDiv.textContent = fileName;
+        resultContainer.appendChild(fileNameDiv);
+
+        videoContainer.appendChild(resultContainer);
+
+        setTimeout(function() { progressBox.classList.add('hidden'); }, 1500);
+
+        btn.disabled = false;
+        btn.innerHTML = 'GERAR BANNER MP4 (1080x1080)';
+    } catch (error) {
+        console.error('Erro:', error);
+        clearTimeout(failsafeTimer);
+        cleanupVideoEl();
+        try { if (recorder && recorder.state !== 'inactive') recorder.stop(); } catch(e) {}
+        alert('Erro ao gerar banner: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = 'GERAR BANNER MP4 (1080x1080)';
+        progressBox.classList.add('hidden');
+    }
+}
+
 // ============================================
 // ÍCONES INSTAGRAM E WHATSAPP (desenhados via canvas)
 // ============================================

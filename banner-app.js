@@ -852,7 +852,7 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     oc.fillStyle = bgGrad;
     oc.fillRect(0, infoAreaY, W, infoAreaH);
 
-    // Logo no canto inferior direito do vídeo (quase colada na borda)
+    // Logo no canto superior direito do vídeo (quase colada na borda)
     if (uploadedLogo) {
         var logoR = uploadedLogo.width / uploadedLogo.height;
         var logoH = 140;
@@ -860,7 +860,7 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
         if (logoW > 320) { logoW = 320; logoH = logoW / logoR; }
         oc.save();
         oc.globalAlpha = 1.0;
-        oc.drawImage(uploadedLogo, W - logoW - 25, videoAreaH - logoH - 10, logoW, logoH);
+        oc.drawImage(uploadedLogo, W - logoW - 25, 10, logoW, logoH);
         oc.restore();
     }
 
@@ -1407,18 +1407,18 @@ async function generateTrailerBannerVideo() {
                 var vR = srcVideo.videoWidth / srcVideo.videoHeight;
                 var aR = W / videoAreaH;
                 var dw, dh, ox, oy;
-                if (vR > aR) { 
-                    // Vídeo mais largo que a área - corta nas laterais
-                    dw = W; 
-                    dh = W / vR; 
-                    ox = 0; 
-                    oy = (videoAreaH - dh) / 2; 
-                } else { 
-                    // Vídeo mais alto que a área - corta em cima/embaixo
-                    dh = videoAreaH; 
-                    dw = videoAreaH * vR; 
-                    ox = (W - dw) / 2; 
-                    oy = 0; 
+                if (vR > aR) {
+                    // Vídeo mais largo que a área - cobre a altura toda e corta as laterais
+                    dh = videoAreaH;
+                    dw = videoAreaH * vR;
+                    ox = (W - dw) / 2;
+                    oy = 0;
+                } else {
+                    // Vídeo mais alto/estreito que a área - cobre a largura toda e corta em cima/embaixo
+                    dw = W;
+                    dh = W / vR;
+                    ox = 0;
+                    oy = (videoAreaH - dh) / 2;
                 }
                 try { 
                     // Salva o estado do canvas
@@ -1436,7 +1436,7 @@ async function generateTrailerBannerVideo() {
                 }
             }
 
-            // Redesenha a logo POR CIMA do vídeo (canto inferior direito da área do vídeo) - apenas para Post
+            // Redesenha a logo POR CIMA do vídeo (canto superior direito da área do vídeo) - apenas para Post
             if (videoFormat === 'post' && uploadedLogo) {
                 var logoR2 = uploadedLogo.width / uploadedLogo.height;
                 var logoH2 = 140;
@@ -1444,7 +1444,7 @@ async function generateTrailerBannerVideo() {
                 if (logoW2 > 320) { logoW2 = 320; logoH2 = logoW2 / logoR2; }
                 oc.save();
                 oc.globalAlpha = 1.0;
-                oc.drawImage(uploadedLogo, W - logoW2 - 25, videoAreaH - logoH2 - 10, logoW2, logoH2);
+                oc.drawImage(uploadedLogo, W - logoW2 - 25, 10, logoW2, logoH2);
                 oc.restore();
             }
 
@@ -1781,7 +1781,7 @@ function renderCustomStaticBannerLayer(oc, W, H, videoAreaH, customText) {
     oc.fillStyle = bgGrad;
     oc.fillRect(0, infoAreaY, W, infoAreaH);
 
-    // Logo no canto inferior direito do vídeo (igual ao modo Trailer)
+    // Logo no canto superior direito do vídeo (igual ao modo Trailer)
     if (uploadedLogo) {
         var logoR = uploadedLogo.width / uploadedLogo.height;
         var logoH = 140;
@@ -1789,7 +1789,7 @@ function renderCustomStaticBannerLayer(oc, W, H, videoAreaH, customText) {
         if (logoW > 320) { logoW = 320; logoH = logoW / logoR; }
         oc.save();
         oc.globalAlpha = 1.0;
-        oc.drawImage(uploadedLogo, W - logoW - 25, videoAreaH - logoH - 10, logoW, logoH);
+        oc.drawImage(uploadedLogo, W - logoW - 25, 10, logoW, logoH);
         oc.restore();
     }
 
@@ -2171,15 +2171,17 @@ async function generateCustomTrailerBannerVideo() {
                 var aR = W / videoAreaH;
                 var dw, dh, ox, oy;
                 if (vR > aR) {
-                    dw = W;
-                    dh = W / vR;
-                    ox = 0;
-                    oy = (videoAreaH - dh) / 2;
-                } else {
+                    // Vídeo mais largo que a área - cobre a altura toda e corta as laterais
                     dh = videoAreaH;
                     dw = videoAreaH * vR;
                     ox = (W - dw) / 2;
                     oy = 0;
+                } else {
+                    // Vídeo mais alto/estreito que a área - cobre a largura toda e corta em cima/embaixo
+                    dw = W;
+                    dh = W / vR;
+                    ox = 0;
+                    oy = (videoAreaH - dh) / 2;
                 }
                 try {
                     oc.save();
@@ -2200,7 +2202,7 @@ async function generateCustomTrailerBannerVideo() {
                 if (logoW2 > 320) { logoW2 = 320; logoH2 = logoW2 / logoR2; }
                 oc.save();
                 oc.globalAlpha = 1.0;
-                oc.drawImage(uploadedLogo, W - logoW2 - 25, videoAreaH - logoH2 - 10, logoW2, logoH2);
+                oc.drawImage(uploadedLogo, W - logoW2 - 25, 10, logoW2, logoH2);
                 oc.restore();
             }
 

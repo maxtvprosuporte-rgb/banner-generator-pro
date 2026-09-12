@@ -901,7 +901,7 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
         oc.fill();
     }
 
-    // Calcula a altura total do conteúdo para centralizar verticalmente em relação ao poster
+    // Calcula a altura total do conteúdo (alinhado ao TOPO do poster, não mais centralizado)
     oc.font = '700 48px Oswald, sans-serif';
     var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), contentMaxW).slice(0, 2);
     var titleBlockH = titleLines.length * 55;
@@ -920,7 +920,7 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
 
     var gap1 = 10, gap2 = 30;
     var totalContentH = titleBlockH + gap1 + metaBlockH + gap2 + synBlockH;
-    var curY = posterY + Math.max(0, (posterH - totalContentH) / 2);
+    var curY = posterY;
 
     // Título
     oc.textAlign = 'left';
@@ -1101,7 +1101,7 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
         oc.fill();
     }
 
-    // Calcula a altura total do conteúdo para centralizar verticalmente em relação ao poster
+    // Calcula a altura total do conteúdo (alinhado ao TOPO do poster, não mais centralizado)
     oc.font = '700 56px Oswald, sans-serif';
     var titleLines = wrapText(oc, selectedContent.title.toUpperCase(), contentMaxW).slice(0, 3);
     var titleBlockH = titleLines.length * 65;
@@ -1120,7 +1120,7 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
 
     var gap1 = 15, gap2 = 35;
     var totalContentH = titleBlockH + gap1 + metaBlockH + gap2 + synBlockH;
-    var curY = posterY + Math.max(0, (posterH - totalContentH) / 2);
+    var curY = posterY;
 
     // Título
     oc.textAlign = 'left';

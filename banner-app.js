@@ -71,7 +71,7 @@ function drawBoxIcon(ctx, key, x, y, size, defaultDrawFn) {
         ctx.drawImage(icon, dx, dy, dw, dh);
         ctx.restore();
     } else if (defaultDrawFn) {
-        defaultDrawFn(x, y, size);
+        defaultDrawFn(ctx, x, y, size);
     }
 }
 

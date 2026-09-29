@@ -334,7 +334,9 @@ function setMovieTypeFilter(type) {
     if (inp && inp.value.trim()) searchMovies(inp.value);
 }
 
+let movieSearchSeq = 0;
 async function searchMovies(query) {
+    var mySeq = ++movieSearchSeq;
     if (!query.trim()) { document.getElementById('movieResults').innerHTML = ''; return; }
     try {
         var fetches = [];
@@ -345,12 +347,16 @@ async function searchMovies(query) {
             fetches.push(fetch(TMDB_BASE_URL + '/search/tv?language=pt-BR&query=' + encodeURIComponent(query)).then(function(r) { return r.json(); }));
         } else { fetches.push(Promise.resolve({ results: [] })); }
         var results = await Promise.all(fetches);
+        // Ignora esta resposta se o usuário já disparou uma busca mais recente
+        // (evita que uma resposta antiga/lenta sobrescreva o resultado atual)
+        if (mySeq !== movieSearchSeq) return;
         var moviesData = results[0];
         var seriesData = results[1];
         var movies = (moviesData.results || []).slice(0, 20).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: m.poster_path ? getTmdbImgUrl(m.poster_path) : null }; });
         var series = (seriesData.results || []).slice(0, 20).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: s.poster_path ? getTmdbImgUrl(s.poster_path) : null }; });
         displayMovieResults(movies.concat(series));
     } catch (error) {
+        if (mySeq !== movieSearchSeq) return;
         console.error('Erro:', error);
         document.getElementById('movieResults').innerHTML = '<p class="text-red-500 text-sm p-3">Erro: configure TMDB_API_KEY no backend/.env</p>';
     }
@@ -725,7 +731,9 @@ function updateVideoFormatButtons() {
     }
 }
 
+let videoSearchSeq = 0;
 async function searchVideos(query) {
+    var mySeq = ++videoSearchSeq;
     if (!query.trim()) { document.getElementById('videoResults').innerHTML = ''; return; }
     try {
         var fetches = [];
@@ -736,12 +744,15 @@ async function searchVideos(query) {
             fetches.push(fetch(TMDB_BASE_URL + '/search/tv?language=pt-BR&query=' + encodeURIComponent(query)).then(function(r) { return r.json(); }));
         } else { fetches.push(Promise.resolve({ results: [] })); }
         var results = await Promise.all(fetches);
+        // Ignora esta resposta se o usuário já disparou uma busca mais recente
+        if (mySeq !== videoSearchSeq) return;
         var moviesData = results[0];
         var seriesData = results[1];
         var movies = (moviesData.results || []).slice(0, 20).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || '', poster: m.poster_path ? getTmdbImgUrl(m.poster_path) : null }; });
         var series = (seriesData.results || []).slice(0, 20).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || '', poster: s.poster_path ? getTmdbImgUrl(s.poster_path) : null }; });
         displayVideoResults(movies.concat(series));
     } catch (error) {
+        if (mySeq !== videoSearchSeq) return;
         console.error('Erro:', error);
         document.getElementById('videoResults').innerHTML = '<p class="text-red-500 text-sm p-3">Erro: configure TMDB_API_KEY no backend/.env</p>';
     }

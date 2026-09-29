@@ -87,6 +87,71 @@
                     <label class="text-sm font-semibold text-zinc-300 mb-3 block">Texto do Botão CTA (Box Vermelho)</label>
                     <input type="text" id="settingsCtaText" value="ASSINA JÁ" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 w-full rounded-lg" data-testid="settings-cta-input">
                 </section>
+                <div class="border-t border-zinc-800 pt-2">
+                    <h3 class="font-oswald text-xl font-bold mb-1">Personalizar os 3 Boxes</h3>
+                    <p class="text-xs text-zinc-500 mb-4">Defina uma logo/ícone e cores próprias para cada box. Deixe desmarcado para manter o padrão.</p>
+                </div>
+
+                <!-- BOX INSTAGRAM -->
+                <section class="border border-zinc-800 rounded-lg p-5">
+                    <label class="text-sm font-semibold text-purple-400 mb-3 block">Box Instagram</label>
+                    <label class="border border-dashed border-zinc-700 p-4 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg mb-3">
+                        <span id="boxInstagramIconText" class="text-xs text-zinc-400">Ícone/logo personalizado (opcional)</span>
+                        <input type="file" id="boxInstagramIconInput" accept="image/*" class="hidden">
+                    </label>
+                    <button id="boxInstagramIconRemove" class="text-xs text-red-500 hover:text-red-400 transition-colors hidden mb-3">✕ Remover ícone</button>
+                    <div class="flex items-center gap-3 mb-2">
+                        <input type="checkbox" id="boxInstagramBgOn" class="w-4 h-4 accent-purple-500">
+                        <label class="text-xs text-zinc-400 flex-1">Cor de fundo personalizada</label>
+                        <input type="color" id="boxInstagramBgColor" value="#dc2743" class="w-10 h-8 rounded border border-zinc-700 bg-transparent cursor-pointer">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="boxInstagramTextOn" class="w-4 h-4 accent-purple-500">
+                        <label class="text-xs text-zinc-400 flex-1">Cor do texto personalizada</label>
+                        <input type="color" id="boxInstagramTextColor" value="#ffffff" class="w-10 h-8 rounded border border-zinc-700 bg-transparent cursor-pointer">
+                    </div>
+                </section>
+
+                <!-- BOX WHATSAPP -->
+                <section class="border border-zinc-800 rounded-lg p-5">
+                    <label class="text-sm font-semibold text-green-400 mb-3 block">Box WhatsApp</label>
+                    <label class="border border-dashed border-zinc-700 p-4 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg mb-3">
+                        <span id="boxWhatsappIconText" class="text-xs text-zinc-400">Ícone/logo personalizado (opcional)</span>
+                        <input type="file" id="boxWhatsappIconInput" accept="image/*" class="hidden">
+                    </label>
+                    <button id="boxWhatsappIconRemove" class="text-xs text-red-500 hover:text-red-400 transition-colors hidden mb-3">✕ Remover ícone</button>
+                    <div class="flex items-center gap-3 mb-2">
+                        <input type="checkbox" id="boxWhatsappBgOn" class="w-4 h-4 accent-green-500">
+                        <label class="text-xs text-zinc-400 flex-1">Cor de fundo personalizada</label>
+                        <input type="color" id="boxWhatsappBgColor" value="#25D366" class="w-10 h-8 rounded border border-zinc-700 bg-transparent cursor-pointer">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="boxWhatsappTextOn" class="w-4 h-4 accent-green-500">
+                        <label class="text-xs text-zinc-400 flex-1">Cor do texto personalizada</label>
+                        <input type="color" id="boxWhatsappTextColor" value="#ffffff" class="w-10 h-8 rounded border border-zinc-700 bg-transparent cursor-pointer">
+                    </div>
+                </section>
+
+                <!-- BOX CTA -->
+                <section class="border border-zinc-800 rounded-lg p-5">
+                    <label class="text-sm font-semibold text-red-400 mb-3 block">Box CTA</label>
+                    <label class="border border-dashed border-zinc-700 p-4 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg mb-3">
+                        <span id="boxCtaIconText" class="text-xs text-zinc-400">Ícone/logo personalizado (opcional)</span>
+                        <input type="file" id="boxCtaIconInput" accept="image/*" class="hidden">
+                    </label>
+                    <button id="boxCtaIconRemove" class="text-xs text-red-500 hover:text-red-400 transition-colors hidden mb-3">✕ Remover ícone</button>
+                    <div class="flex items-center gap-3 mb-2">
+                        <input type="checkbox" id="boxCtaBgOn" class="w-4 h-4 accent-red-500">
+                        <label class="text-xs text-zinc-400 flex-1">Cor de fundo personalizada</label>
+                        <input type="color" id="boxCtaBgColor" value="#ef4444" class="w-10 h-8 rounded border border-zinc-700 bg-transparent cursor-pointer">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="boxCtaTextOn" class="w-4 h-4 accent-red-500">
+                        <label class="text-xs text-zinc-400 flex-1">Cor do texto personalizada</label>
+                        <input type="color" id="boxCtaTextColor" value="#ffffff" class="w-10 h-8 rounded border border-zinc-700 bg-transparent cursor-pointer">
+                    </div>
+                </section>
+
                 <div class="flex gap-3 pt-4 border-t border-zinc-800">
                     <button onclick="saveSettings()" class="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-4 rounded-lg transition-all" data-testid="save-settings-btn">Salvar</button>
                     <button onclick="closeSettings()" class="px-8 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 rounded-lg transition-all">Cancelar</button>

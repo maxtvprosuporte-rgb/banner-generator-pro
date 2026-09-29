@@ -16,7 +16,64 @@ let videoFormat = 'post';
 let uploadedLogo = null;
 let posterImage = null;
 let currentTrailer = null;
-let globalSettings = { logo: null, whatsappText: '(00) 00000-0000', ctaText: 'ASSINA JÁ', instagramHandle: '@seuinstagram' };
+let globalSettings = {
+    logo: null, whatsappText: '(00) 00000-0000', ctaText: 'ASSINA JÁ', instagramHandle: '@seuinstagram',
+    boxCustom: {
+        instagram: { bg: null, text: null, icon: null },
+        whatsapp: { bg: null, text: null, icon: null },
+        cta: { bg: null, text: null, icon: null }
+    }
+};
+// Cache em memória dos ícones personalizados (Image já carregada), por box
+let customBoxIcons = { instagram: null, whatsapp: null, cta: null };
+
+// ============================================
+// PERSONALIZAÇÃO DOS BOXES (Instagram/WhatsApp/CTA)
+// Cada box pode ter: cor de fundo personalizada, cor do texto
+// personalizada e um ícone/logo personalizado (substitui o ícone padrão).
+// Quando algo não é personalizado, cai no padrão original.
+// ============================================
+function ensureBoxCustomDefaults() {
+    if (!globalSettings.boxCustom) globalSettings.boxCustom = {};
+    ['instagram', 'whatsapp', 'cta'].forEach(function(k) {
+        if (!globalSettings.boxCustom[k]) globalSettings.boxCustom[k] = { bg: null, text: null, icon: null };
+    });
+}
+
+// Aplica a cor de fundo personalizada (se houver) ou executa defaultSetFn() para o padrão
+function applyBoxBg(ctx, key, defaultSetFn) {
+    ensureBoxCustomDefaults();
+    var custom = globalSettings.boxCustom[key];
+    if (custom && custom.bg) { ctx.fillStyle = custom.bg; }
+    else { defaultSetFn(); }
+}
+
+// Retorna a cor do texto personalizada (se houver) ou o fallback padrão
+function getBoxTextColor(key, fallback) {
+    ensureBoxCustomDefaults();
+    var custom = globalSettings.boxCustom[key];
+    return (custom && custom.text) ? custom.text : (fallback || '#ffffff');
+}
+
+// Desenha o ícone personalizado (se houver) dentro do quadrado x,y,size,size;
+// caso contrário, executa defaultDrawFn(x,y,size) para o ícone padrão (pode ser null)
+function drawBoxIcon(ctx, key, x, y, size, defaultDrawFn) {
+    var icon = customBoxIcons[key];
+    if (icon) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, size, size);
+        ctx.clip();
+        var ir = icon.width / icon.height;
+        var dw, dh, dx, dy;
+        if (ir >= 1) { dh = size; dw = size * ir; dx = x - (dw - size) / 2; dy = y; }
+        else { dw = size; dh = size / ir; dx = x; dy = y - (dh - size) / 2; }
+        ctx.drawImage(icon, dx, dy, dw, dh);
+        ctx.restore();
+    } else if (defaultDrawFn) {
+        defaultDrawFn(x, y, size);
+    }
+}
 
 let movieTypeFilter = 'both';
 let videoTypeFilter = 'both';
@@ -125,6 +182,9 @@ function loadGlobalSettings() {
             if (w1) w1.value = globalSettings.instagramHandle || '@seuinstagram';
             if (w2) w2.value = globalSettings.whatsappText || '(00) 00000-0000';
             if (w3) w3.value = globalSettings.ctaText || 'ASSINA JÁ';
+
+            ensureBoxCustomDefaults();
+            loadBoxCustomizationUI();
         } else {
             console.log('ℹ️ Nenhuma configuração salva encontrada');
         }
@@ -132,6 +192,105 @@ function loadGlobalSettings() {
         console.error('❌ Erro ao carregar configurações:', e); 
     }
 }
+
+// Popula os controles de personalização dos 3 boxes a partir de globalSettings,
+// e carrega os ícones personalizados salvos (base64) em objetos Image na memória.
+var boxDefaultColors = {
+    instagram: { bg: '#dc2743', text: '#ffffff' },
+    whatsapp:  { bg: '#25D366', text: '#ffffff' },
+    cta:       { bg: '#ef4444', text: '#ffffff' }
+};
+function loadBoxCustomizationUI() {
+    ['instagram', 'whatsapp', 'cta'].forEach(function(key) {
+        var custom = globalSettings.boxCustom[key] || {};
+        var cap = key.charAt(0).toUpperCase() + key.slice(1);
+
+        var bgOn = document.getElementById('box' + cap + 'BgOn');
+        var bgColor = document.getElementById('box' + cap + 'BgColor');
+        var textOn = document.getElementById('box' + cap + 'TextOn');
+        var textColor = document.getElementById('box' + cap + 'TextColor');
+        if (bgOn) bgOn.checked = !!custom.bg;
+        if (bgColor) bgColor.value = custom.bg || boxDefaultColors[key].bg;
+        if (textOn) textOn.checked = !!custom.text;
+        if (textColor) textColor.value = custom.text || boxDefaultColors[key].text;
+
+        if (custom.icon) {
+            var img = new Image();
+            img.onload = function() { customBoxIcons[key] = img; };
+            img.onerror = function() { customBoxIcons[key] = null; };
+            img.src = custom.icon;
+            var iconText = document.getElementById('box' + cap + 'IconText');
+            var iconRemove = document.getElementById('box' + cap + 'IconRemove');
+            if (iconText) iconText.textContent = 'Ícone personalizado carregado';
+            if (iconRemove) iconRemove.classList.remove('hidden');
+        } else {
+            customBoxIcons[key] = null;
+        }
+    });
+}
+
+// Configura o upload/remoção de ícone personalizado para um box (instagram/whatsapp/cta)
+function setupBoxIconUpload(key) {
+    var cap = key.charAt(0).toUpperCase() + key.slice(1);
+    var input = document.getElementById('box' + cap + 'IconInput');
+    var removeBtn = document.getElementById('box' + cap + 'IconRemove');
+    var textEl = document.getElementById('box' + cap + 'IconText');
+    if (!input) return;
+
+    input.addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+            alert('A imagem é muito grande (máximo 2MB). Por favor, use uma imagem menor.');
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            var img = new Image();
+            img.onload = function() {
+                var maxSize = 200;
+                var w = img.width, h = img.height;
+                if (w > maxSize || h > maxSize) {
+                    var ratio = Math.min(maxSize / w, maxSize / h);
+                    w = w * ratio; h = h * ratio;
+                }
+                var cnv = document.createElement('canvas');
+                cnv.width = w; cnv.height = h;
+                var cctx = cnv.getContext('2d');
+                cctx.drawImage(img, 0, 0, w, h);
+                var dataUrl = cnv.toDataURL('image/png'); // PNG para preservar transparência
+
+                ensureBoxCustomDefaults();
+                globalSettings.boxCustom[key].icon = dataUrl;
+                customBoxIcons[key] = img;
+
+                try {
+                    localStorage.setItem('bannerGeneratorSettings', JSON.stringify(globalSettings));
+                } catch (e2) {
+                    console.error('❌ Erro ao salvar ícone personalizado:', e2);
+                    if (e2.name === 'QuotaExceededError') alert('Erro: localStorage cheio. Tente usar uma imagem menor.');
+                }
+            };
+            img.src = ev.target.result;
+            if (textEl) textEl.textContent = file.name;
+            if (removeBtn) removeBtn.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    });
+
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function() {
+            ensureBoxCustomDefaults();
+            globalSettings.boxCustom[key].icon = null;
+            customBoxIcons[key] = null;
+            input.value = '';
+            if (textEl) textEl.textContent = 'Ícone/logo personalizado (opcional)';
+            removeBtn.classList.add('hidden');
+            try { localStorage.setItem('bannerGeneratorSettings', JSON.stringify(globalSettings)); } catch (e3) {}
+        });
+    }
+}
+['instagram', 'whatsapp', 'cta'].forEach(setupBoxIconUpload);
 
 function openSettings() { document.getElementById('settingsModal').classList.add('active'); }
 function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
@@ -145,6 +304,20 @@ function saveSettings() {
     globalSettings.whatsappText = document.getElementById('settingsWhatsappText').value;
     globalSettings.ctaText = document.getElementById('settingsCtaText').value;
     // Logo já foi atribuído a globalSettings.logo no event listener do input
+
+    // Personalização dos boxes (cor de fundo / cor do texto). Ícones já são
+    // salvos automaticamente no momento do upload (ver setupBoxIconUpload).
+    ensureBoxCustomDefaults();
+    ['instagram', 'whatsapp', 'cta'].forEach(function(key) {
+        var cap = key.charAt(0).toUpperCase() + key.slice(1);
+        var bgOn = document.getElementById('box' + cap + 'BgOn');
+        var bgColor = document.getElementById('box' + cap + 'BgColor');
+        var textOn = document.getElementById('box' + cap + 'TextOn');
+        var textColor = document.getElementById('box' + cap + 'TextColor');
+        globalSettings.boxCustom[key].bg = (bgOn && bgOn.checked && bgColor) ? bgColor.value : null;
+        globalSettings.boxCustom[key].text = (textOn && textOn.checked && textColor) ? textColor.value : null;
+    });
+
     localStorage.setItem('bannerGeneratorSettings', JSON.stringify(globalSettings));
     console.log('✅ Configurações salvas:', {
         logo: globalSettings.logo ? 'Presente' : 'Ausente',
@@ -558,24 +731,34 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
     var iconSize = 22; var iconPad = 10;
     var textCenterY = footerY - boxH / 2 + 6;
     c.textAlign = 'center';
-    // Box Instagram (degradê laranja→rosa→roxo)
-    var instaGrad = c.createLinearGradient(mPadding, footerY - boxH, mPadding + boxW, footerY);
-    instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
-    c.fillStyle = instaGrad; roundRect(c, mPadding, footerY - boxH, boxW, boxH, 8); c.fill();
-    drawInstagramIcon(c, mPadding + iconPad, footerY - boxH / 2 - iconSize / 2, iconSize);
-    c.fillStyle = '#fff'; c.font = '600 15px Manrope, sans-serif';
+    // Box Instagram (degradê laranja→rosa→roxo, ou cor personalizada)
+    applyBoxBg(c, 'instagram', function() {
+        var instaGrad = c.createLinearGradient(mPadding, footerY - boxH, mPadding + boxW, footerY);
+        instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
+        c.fillStyle = instaGrad;
+    });
+    roundRect(c, mPadding, footerY - boxH, boxW, boxH, 8); c.fill();
+    drawBoxIcon(c, 'instagram', mPadding + iconPad, footerY - boxH / 2 - iconSize / 2, iconSize, drawInstagramIcon);
+    c.fillStyle = getBoxTextColor('instagram', '#fff'); c.font = '600 15px Manrope, sans-serif';
     c.fillText(globalSettings.instagramHandle, mPadding + iconPad + iconSize + (boxW - iconPad - iconSize) / 2, textCenterY);
-    // Box WhatsApp (verde)
+    // Box WhatsApp (verde, ou cor personalizada)
     var wppX = mPadding + boxW + boxGap;
-    c.fillStyle = '#25D366'; roundRect(c, wppX, footerY - boxH, boxW, boxH, 8); c.fill();
-    drawWhatsAppIcon(c, wppX + iconPad, footerY - boxH / 2 - iconSize / 2, iconSize);
-    c.fillStyle = '#fff'; c.font = '600 13px Manrope, sans-serif';
+    applyBoxBg(c, 'whatsapp', function() { c.fillStyle = '#25D366'; });
+    roundRect(c, wppX, footerY - boxH, boxW, boxH, 8); c.fill();
+    drawBoxIcon(c, 'whatsapp', wppX + iconPad, footerY - boxH / 2 - iconSize / 2, iconSize, drawWhatsAppIcon);
+    c.fillStyle = getBoxTextColor('whatsapp', '#fff'); c.font = '600 13px Manrope, sans-serif';
     c.fillText(globalSettings.whatsappText, wppX + iconPad + iconSize + (boxW - iconPad - iconSize) / 2, textCenterY);
-    // Box CTA (vermelho)
+    // Box CTA (vermelho, ou cor personalizada) — se houver ícone personalizado, mostra ele à esquerda
     var ctaX = wppX + boxW + boxGap;
-    c.fillStyle = '#ef4444'; roundRect(c, ctaX, footerY - boxH, boxW, boxH, 8); c.fill();
-    c.fillStyle = '#fff'; c.font = '700 17px Manrope, sans-serif';
-    c.fillText(globalSettings.ctaText, ctaX + boxW / 2, textCenterY);
+    applyBoxBg(c, 'cta', function() { c.fillStyle = '#ef4444'; });
+    roundRect(c, ctaX, footerY - boxH, boxW, boxH, 8); c.fill();
+    c.fillStyle = getBoxTextColor('cta', '#fff'); c.font = '700 17px Manrope, sans-serif';
+    if (customBoxIcons.cta) {
+        drawBoxIcon(c, 'cta', ctaX + iconPad, footerY - boxH / 2 - iconSize / 2, iconSize, null);
+        c.fillText(globalSettings.ctaText, ctaX + iconPad + iconSize + (boxW - iconPad - iconSize) / 2, textCenterY);
+    } else {
+        c.fillText(globalSettings.ctaText, ctaX + boxW / 2, textCenterY);
+    }
     var currentY = footerY - boxH - 25;
     var maxTextWidth = width - mPadding * 2;
     c.font = '400 24px Manrope, sans-serif'; c.fillStyle = 'rgba(255,255,255,0.9)'; c.textAlign = 'left';
@@ -993,35 +1176,42 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     var vTextCY = btnY + btnH / 2 + 6;
     oc.textAlign = 'center';
 
-    // Botão Instagram (degradê laranja→rosa→roxo)
-    var instaGrad = oc.createLinearGradient(pad, btnY, pad + btnW2, btnY + btnH);
-    instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
-    oc.fillStyle = instaGrad;
+    // Botão Instagram (degradê laranja→rosa→roxo, ou personalizado)
+    applyBoxBg(oc, 'instagram', function() {
+        var instaGrad = oc.createLinearGradient(pad, btnY, pad + btnW2, btnY + btnH);
+        instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
+        oc.fillStyle = instaGrad;
+    });
     roundRect(oc, pad, btnY, btnW2, btnH, 10);
     oc.fill();
-    drawInstagramIcon(oc, pad + vIconPad, btnY + btnH / 2 - vIconSize / 2, vIconSize);
-    oc.fillStyle = '#fff';
+    drawBoxIcon(oc, 'instagram', pad + vIconPad, btnY + btnH / 2 - vIconSize / 2, vIconSize, drawInstagramIcon);
+    oc.fillStyle = getBoxTextColor('instagram', '#fff');
     oc.font = '700 16px Manrope, sans-serif';
     oc.fillText(globalSettings.instagramHandle, pad + vIconPad + vIconSize + (btnW2 - vIconPad - vIconSize) / 2, vTextCY);
 
-    // Botão WhatsApp (centro)
+    // Botão WhatsApp (centro, ou personalizado)
     var wppBtnX = pad + btnW2 + btnGap;
-    oc.fillStyle = '#25D366';
+    applyBoxBg(oc, 'whatsapp', function() { oc.fillStyle = '#25D366'; });
     roundRect(oc, wppBtnX, btnY, btnW2, btnH, 10);
     oc.fill();
-    drawWhatsAppIcon(oc, wppBtnX + vIconPad, btnY + btnH / 2 - vIconSize / 2, vIconSize);
-    oc.fillStyle = '#fff';
+    drawBoxIcon(oc, 'whatsapp', wppBtnX + vIconPad, btnY + btnH / 2 - vIconSize / 2, vIconSize, drawWhatsAppIcon);
+    oc.fillStyle = getBoxTextColor('whatsapp', '#fff');
     oc.font = '700 14px Manrope, sans-serif';
     oc.fillText(globalSettings.whatsappText, wppBtnX + vIconPad + vIconSize + (btnW2 - vIconPad - vIconSize) / 2, vTextCY);
 
-    // Botão CTA (direita)
+    // Botão CTA (direita, ou personalizado — com ícone se enviado)
     var btnX2 = wppBtnX + btnW2 + btnGap;
-    oc.fillStyle = '#ef4444';
+    applyBoxBg(oc, 'cta', function() { oc.fillStyle = '#ef4444'; });
     roundRect(oc, btnX2, btnY, btnW2, btnH, 10);
     oc.fill();
-    oc.fillStyle = '#fff';
+    oc.fillStyle = getBoxTextColor('cta', '#fff');
     oc.font = '800 18px Manrope, sans-serif';
-    oc.fillText(globalSettings.ctaText, btnX2 + btnW2 / 2, vTextCY);
+    if (customBoxIcons.cta) {
+        drawBoxIcon(oc, 'cta', btnX2 + vIconPad, btnY + btnH / 2 - vIconSize / 2, vIconSize, null);
+        oc.fillText(globalSettings.ctaText, btnX2 + vIconPad + vIconSize + (btnW2 - vIconPad - vIconSize) / 2, vTextCY);
+    } else {
+        oc.fillText(globalSettings.ctaText, btnX2 + btnW2 / 2, vTextCY);
+    }
 
     oc.textAlign = 'left';
 }
@@ -1195,35 +1385,42 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     var sTextCY = btnY + btnH / 2 + 8;
     oc.textAlign = 'center';
 
-    // Botão Instagram (degradê laranja→rosa→roxo)
-    var instaGrad = oc.createLinearGradient(pad, btnY, pad + btnW2, btnY + btnH);
-    instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
-    oc.fillStyle = instaGrad;
+    // Botão Instagram (degradê laranja→rosa→roxo, ou personalizado)
+    applyBoxBg(oc, 'instagram', function() {
+        var instaGrad = oc.createLinearGradient(pad, btnY, pad + btnW2, btnY + btnH);
+        instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
+        oc.fillStyle = instaGrad;
+    });
     roundRect(oc, pad, btnY, btnW2, btnH, 12);
     oc.fill();
-    drawInstagramIcon(oc, pad + sIconPad, btnY + btnH / 2 - sIconSize / 2, sIconSize);
-    oc.fillStyle = '#fff';
+    drawBoxIcon(oc, 'instagram', pad + sIconPad, btnY + btnH / 2 - sIconSize / 2, sIconSize, drawInstagramIcon);
+    oc.fillStyle = getBoxTextColor('instagram', '#fff');
     oc.font = '700 20px Manrope, sans-serif';
     oc.fillText(globalSettings.instagramHandle, pad + sIconPad + sIconSize + (btnW2 - sIconPad - sIconSize) / 2, sTextCY);
 
-    // Botão WhatsApp (centro)
+    // Botão WhatsApp (centro, ou personalizado)
     var wppBtnX = pad + btnW2 + btnGap;
-    oc.fillStyle = '#25D366';
+    applyBoxBg(oc, 'whatsapp', function() { oc.fillStyle = '#25D366'; });
     roundRect(oc, wppBtnX, btnY, btnW2, btnH, 12);
     oc.fill();
-    drawWhatsAppIcon(oc, wppBtnX + sIconPad, btnY + btnH / 2 - sIconSize / 2, sIconSize);
-    oc.fillStyle = '#fff';
+    drawBoxIcon(oc, 'whatsapp', wppBtnX + sIconPad, btnY + btnH / 2 - sIconSize / 2, sIconSize, drawWhatsAppIcon);
+    oc.fillStyle = getBoxTextColor('whatsapp', '#fff');
     oc.font = '700 18px Manrope, sans-serif';
     oc.fillText(globalSettings.whatsappText, wppBtnX + sIconPad + sIconSize + (btnW2 - sIconPad - sIconSize) / 2, sTextCY);
 
-    // Botão CTA (direita)
+    // Botão CTA (direita, ou personalizado — com ícone se enviado)
     var btnX2 = wppBtnX + btnW2 + btnGap;
-    oc.fillStyle = '#ef4444';
+    applyBoxBg(oc, 'cta', function() { oc.fillStyle = '#ef4444'; });
     roundRect(oc, btnX2, btnY, btnW2, btnH, 12);
     oc.fill();
-    oc.fillStyle = '#fff';
+    oc.fillStyle = getBoxTextColor('cta', '#fff');
     oc.font = '800 22px Manrope, sans-serif';
-    oc.fillText(globalSettings.ctaText, btnX2 + btnW2 / 2, sTextCY);
+    if (customBoxIcons.cta) {
+        drawBoxIcon(oc, 'cta', btnX2 + sIconPad, btnY + btnH / 2 - sIconSize / 2, sIconSize, null);
+        oc.fillText(globalSettings.ctaText, btnX2 + sIconPad + sIconSize + (btnW2 - sIconPad - sIconSize) / 2, sTextCY);
+    } else {
+        oc.fillText(globalSettings.ctaText, btnX2 + btnW2 / 2, sTextCY);
+    }
 
     oc.textAlign = 'left';
 
@@ -1752,35 +1949,42 @@ function drawCustomBottomButtons(oc, x, y, totalW, btnH, btnGap, iconSize, iconP
     var textCY = y + btnH / 2 + Math.round(fontSizeHandle * 0.3);
     oc.textAlign = 'center';
 
-    // Instagram (degradê)
-    var instaGrad = oc.createLinearGradient(x, y, x + btnW, y + btnH);
-    instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
-    oc.fillStyle = instaGrad;
+    // Instagram (degradê, ou personalizado)
+    applyBoxBg(oc, 'instagram', function() {
+        var instaGrad = oc.createLinearGradient(x, y, x + btnW, y + btnH);
+        instaGrad.addColorStop(0, '#f09433'); instaGrad.addColorStop(0.3, '#e6683c'); instaGrad.addColorStop(0.6, '#dc2743'); instaGrad.addColorStop(0.8, '#cc2366'); instaGrad.addColorStop(1, '#bc1888');
+        oc.fillStyle = instaGrad;
+    });
     roundRect(oc, x, y, btnW, btnH, 10);
     oc.fill();
-    drawInstagramIcon(oc, x + iconPad, y + btnH / 2 - iconSize / 2, iconSize);
-    oc.fillStyle = '#fff';
+    drawBoxIcon(oc, 'instagram', x + iconPad, y + btnH / 2 - iconSize / 2, iconSize, drawInstagramIcon);
+    oc.fillStyle = getBoxTextColor('instagram', '#fff');
     oc.font = '700 ' + fontSizeHandle + 'px Manrope, sans-serif';
     oc.fillText(globalSettings.instagramHandle, x + iconPad + iconSize + (btnW - iconPad - iconSize) / 2, textCY);
 
-    // WhatsApp
+    // WhatsApp (ou personalizado)
     var wppX = x + btnW + btnGap;
-    oc.fillStyle = '#25D366';
+    applyBoxBg(oc, 'whatsapp', function() { oc.fillStyle = '#25D366'; });
     roundRect(oc, wppX, y, btnW, btnH, 10);
     oc.fill();
-    drawWhatsAppIcon(oc, wppX + iconPad, y + btnH / 2 - iconSize / 2, iconSize);
-    oc.fillStyle = '#fff';
+    drawBoxIcon(oc, 'whatsapp', wppX + iconPad, y + btnH / 2 - iconSize / 2, iconSize, drawWhatsAppIcon);
+    oc.fillStyle = getBoxTextColor('whatsapp', '#fff');
     oc.font = '700 ' + fontSizeHandle + 'px Manrope, sans-serif';
     oc.fillText(globalSettings.whatsappText, wppX + iconPad + iconSize + (btnW - iconPad - iconSize) / 2, textCY);
 
-    // CTA
+    // CTA (ou personalizado — com ícone se enviado)
     var ctaX = wppX + btnW + btnGap;
-    oc.fillStyle = '#ef4444';
+    applyBoxBg(oc, 'cta', function() { oc.fillStyle = '#ef4444'; });
     roundRect(oc, ctaX, y, btnW, btnH, 10);
     oc.fill();
-    oc.fillStyle = '#fff';
+    oc.fillStyle = getBoxTextColor('cta', '#fff');
     oc.font = '800 ' + fontSizeCta + 'px Manrope, sans-serif';
-    oc.fillText(globalSettings.ctaText, ctaX + btnW / 2, y + btnH / 2 + Math.round(fontSizeCta * 0.3));
+    if (customBoxIcons.cta) {
+        drawBoxIcon(oc, 'cta', ctaX + iconPad, y + btnH / 2 - iconSize / 2, iconSize, null);
+        oc.fillText(globalSettings.ctaText, ctaX + iconPad + iconSize + (btnW - iconPad - iconSize) / 2, y + btnH / 2 + Math.round(fontSizeCta * 0.3));
+    } else {
+        oc.fillText(globalSettings.ctaText, ctaX + btnW / 2, y + btnH / 2 + Math.round(fontSizeCta * 0.3));
+    }
 
     oc.textAlign = 'left';
 }

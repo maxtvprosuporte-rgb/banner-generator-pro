@@ -75,6 +75,21 @@ function drawBoxIcon(ctx, key, x, y, size, defaultDrawFn) {
     }
 }
 
+// Encontra o MAIOR tamanho de fonte que ainda cabe em maxWidth (uma linha só),
+// para o texto preencher o máximo do espaço disponível dentro do box,
+// sem nunca ultrapassar a largura/altura do próprio box.
+function fitBoxFontSize(ctx, text, maxWidth, maxFontSize, minFontSize, weight, family) {
+    weight = weight || '700';
+    family = family || 'Manrope, sans-serif';
+    var fontSize = maxFontSize;
+    while (fontSize > minFontSize) {
+        ctx.font = weight + ' ' + fontSize + 'px ' + family;
+        if (ctx.measureText(text).width <= maxWidth) break;
+        fontSize--;
+    }
+    return fontSize;
+}
+
 let movieTypeFilter = 'both';
 let videoTypeFilter = 'both';
 
@@ -729,7 +744,7 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
     var mPadding = 30; var footerY = height - mPadding; var boxH = 50; var boxGap = 12;
     var totalBoxW = width - mPadding * 2 - boxGap * 2; var boxW = Math.floor(totalBoxW / 3);
     var iconSize = 22; var iconPad = 10;
-    var textCenterY = footerY - boxH / 2 + 6;
+    var maxBoxFont = Math.floor(boxH * 0.5); var minBoxFont = 11;
     c.textAlign = 'center';
     // Box Instagram (degradê laranja→rosa→roxo, ou cor personalizada)
     applyBoxBg(c, 'instagram', function() {
@@ -739,25 +754,35 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
     });
     roundRect(c, mPadding, footerY - boxH, boxW, boxH, 8); c.fill();
     drawBoxIcon(c, 'instagram', mPadding + iconPad, footerY - boxH / 2 - iconSize / 2, iconSize, drawInstagramIcon);
-    c.fillStyle = getBoxTextColor('instagram', '#fff'); c.font = '600 15px Manrope, sans-serif';
-    c.fillText(globalSettings.instagramHandle, mPadding + iconPad + iconSize + (boxW - iconPad - iconSize) / 2, textCenterY);
+    var igTextMaxW = boxW - iconPad - iconSize - 12;
+    var igFontSize = fitBoxFontSize(c, globalSettings.instagramHandle, igTextMaxW, maxBoxFont, minBoxFont, '600', 'Manrope, sans-serif');
+    c.fillStyle = getBoxTextColor('instagram', '#fff'); c.font = '600 ' + igFontSize + 'px Manrope, sans-serif';
+    c.fillText(globalSettings.instagramHandle, mPadding + iconPad + iconSize + (boxW - iconPad - iconSize) / 2, footerY - boxH / 2 + Math.round(igFontSize * 0.32));
     // Box WhatsApp (verde, ou cor personalizada)
     var wppX = mPadding + boxW + boxGap;
     applyBoxBg(c, 'whatsapp', function() { c.fillStyle = '#25D366'; });
     roundRect(c, wppX, footerY - boxH, boxW, boxH, 8); c.fill();
     drawBoxIcon(c, 'whatsapp', wppX + iconPad, footerY - boxH / 2 - iconSize / 2, iconSize, drawWhatsAppIcon);
-    c.fillStyle = getBoxTextColor('whatsapp', '#fff'); c.font = '600 13px Manrope, sans-serif';
-    c.fillText(globalSettings.whatsappText, wppX + iconPad + iconSize + (boxW - iconPad - iconSize) / 2, textCenterY);
+    var wppTextMaxW = boxW - iconPad - iconSize - 12;
+    var wppFontSize = fitBoxFontSize(c, globalSettings.whatsappText, wppTextMaxW, maxBoxFont, minBoxFont, '600', 'Manrope, sans-serif');
+    c.fillStyle = getBoxTextColor('whatsapp', '#fff'); c.font = '600 ' + wppFontSize + 'px Manrope, sans-serif';
+    c.fillText(globalSettings.whatsappText, wppX + iconPad + iconSize + (boxW - iconPad - iconSize) / 2, footerY - boxH / 2 + Math.round(wppFontSize * 0.32));
     // Box CTA (vermelho, ou cor personalizada) — se houver ícone personalizado, mostra ele à esquerda
     var ctaX = wppX + boxW + boxGap;
     applyBoxBg(c, 'cta', function() { c.fillStyle = '#ef4444'; });
     roundRect(c, ctaX, footerY - boxH, boxW, boxH, 8); c.fill();
-    c.fillStyle = getBoxTextColor('cta', '#fff'); c.font = '700 17px Manrope, sans-serif';
+    c.fillStyle = getBoxTextColor('cta', '#fff');
     if (customBoxIcons.cta) {
         drawBoxIcon(c, 'cta', ctaX + iconPad, footerY - boxH / 2 - iconSize / 2, iconSize, null);
-        c.fillText(globalSettings.ctaText, ctaX + iconPad + iconSize + (boxW - iconPad - iconSize) / 2, textCenterY);
+        var ctaTextMaxW = boxW - iconPad - iconSize - 12;
+        var ctaFontSize = fitBoxFontSize(c, globalSettings.ctaText, ctaTextMaxW, maxBoxFont, minBoxFont, '700', 'Manrope, sans-serif');
+        c.font = '700 ' + ctaFontSize + 'px Manrope, sans-serif';
+        c.fillText(globalSettings.ctaText, ctaX + iconPad + iconSize + (boxW - iconPad - iconSize) / 2, footerY - boxH / 2 + Math.round(ctaFontSize * 0.32));
     } else {
-        c.fillText(globalSettings.ctaText, ctaX + boxW / 2, textCenterY);
+        var ctaTextMaxW2 = boxW - 16;
+        var ctaFontSize2 = fitBoxFontSize(c, globalSettings.ctaText, ctaTextMaxW2, maxBoxFont, minBoxFont, '700', 'Manrope, sans-serif');
+        c.font = '700 ' + ctaFontSize2 + 'px Manrope, sans-serif';
+        c.fillText(globalSettings.ctaText, ctaX + boxW / 2, footerY - boxH / 2 + Math.round(ctaFontSize2 * 0.32));
     }
     var currentY = footerY - boxH - 25;
     var maxTextWidth = width - mPadding * 2;
@@ -1173,7 +1198,7 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     var btnW2 = Math.floor((W - pad * 2 - btnGap * 2) / 3);
     var btnY = H - btnH - 30;
     var vIconSize = 24; var vIconPad = 12;
-    var vTextCY = btnY + btnH / 2 + 6;
+    var vMaxBoxFont = Math.floor(btnH * 0.5); var vMinBoxFont = 12;
     oc.textAlign = 'center';
 
     // Botão Instagram (degradê laranja→rosa→roxo, ou personalizado)
@@ -1185,9 +1210,11 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     roundRect(oc, pad, btnY, btnW2, btnH, 10);
     oc.fill();
     drawBoxIcon(oc, 'instagram', pad + vIconPad, btnY + btnH / 2 - vIconSize / 2, vIconSize, drawInstagramIcon);
+    var igMaxW = btnW2 - vIconPad - vIconSize - 14;
+    var igFS = fitBoxFontSize(oc, globalSettings.instagramHandle, igMaxW, vMaxBoxFont, vMinBoxFont, '700', 'Manrope, sans-serif');
     oc.fillStyle = getBoxTextColor('instagram', '#fff');
-    oc.font = '700 16px Manrope, sans-serif';
-    oc.fillText(globalSettings.instagramHandle, pad + vIconPad + vIconSize + (btnW2 - vIconPad - vIconSize) / 2, vTextCY);
+    oc.font = '700 ' + igFS + 'px Manrope, sans-serif';
+    oc.fillText(globalSettings.instagramHandle, pad + vIconPad + vIconSize + (btnW2 - vIconPad - vIconSize) / 2, btnY + btnH / 2 + Math.round(igFS * 0.32));
 
     // Botão WhatsApp (centro, ou personalizado)
     var wppBtnX = pad + btnW2 + btnGap;
@@ -1195,9 +1222,11 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     roundRect(oc, wppBtnX, btnY, btnW2, btnH, 10);
     oc.fill();
     drawBoxIcon(oc, 'whatsapp', wppBtnX + vIconPad, btnY + btnH / 2 - vIconSize / 2, vIconSize, drawWhatsAppIcon);
+    var wppMaxW = btnW2 - vIconPad - vIconSize - 14;
+    var wppFS = fitBoxFontSize(oc, globalSettings.whatsappText, wppMaxW, vMaxBoxFont, vMinBoxFont, '700', 'Manrope, sans-serif');
     oc.fillStyle = getBoxTextColor('whatsapp', '#fff');
-    oc.font = '700 14px Manrope, sans-serif';
-    oc.fillText(globalSettings.whatsappText, wppBtnX + vIconPad + vIconSize + (btnW2 - vIconPad - vIconSize) / 2, vTextCY);
+    oc.font = '700 ' + wppFS + 'px Manrope, sans-serif';
+    oc.fillText(globalSettings.whatsappText, wppBtnX + vIconPad + vIconSize + (btnW2 - vIconPad - vIconSize) / 2, btnY + btnH / 2 + Math.round(wppFS * 0.32));
 
     // Botão CTA (direita, ou personalizado — com ícone se enviado)
     var btnX2 = wppBtnX + btnW2 + btnGap;
@@ -1205,12 +1234,17 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     roundRect(oc, btnX2, btnY, btnW2, btnH, 10);
     oc.fill();
     oc.fillStyle = getBoxTextColor('cta', '#fff');
-    oc.font = '800 18px Manrope, sans-serif';
     if (customBoxIcons.cta) {
         drawBoxIcon(oc, 'cta', btnX2 + vIconPad, btnY + btnH / 2 - vIconSize / 2, vIconSize, null);
-        oc.fillText(globalSettings.ctaText, btnX2 + vIconPad + vIconSize + (btnW2 - vIconPad - vIconSize) / 2, vTextCY);
+        var ctaMaxW = btnW2 - vIconPad - vIconSize - 14;
+        var ctaFS = fitBoxFontSize(oc, globalSettings.ctaText, ctaMaxW, vMaxBoxFont, vMinBoxFont, '800', 'Manrope, sans-serif');
+        oc.font = '800 ' + ctaFS + 'px Manrope, sans-serif';
+        oc.fillText(globalSettings.ctaText, btnX2 + vIconPad + vIconSize + (btnW2 - vIconPad - vIconSize) / 2, btnY + btnH / 2 + Math.round(ctaFS * 0.32));
     } else {
-        oc.fillText(globalSettings.ctaText, btnX2 + btnW2 / 2, vTextCY);
+        var ctaMaxW2 = btnW2 - 20;
+        var ctaFS2 = fitBoxFontSize(oc, globalSettings.ctaText, ctaMaxW2, vMaxBoxFont, vMinBoxFont, '800', 'Manrope, sans-serif');
+        oc.font = '800 ' + ctaFS2 + 'px Manrope, sans-serif';
+        oc.fillText(globalSettings.ctaText, btnX2 + btnW2 / 2, btnY + btnH / 2 + Math.round(ctaFS2 * 0.32));
     }
 
     oc.textAlign = 'left';
@@ -1382,7 +1416,7 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     var btnW2 = Math.floor((W - pad * 2 - btnGap * 2) / 3);
     var btnY = Math.max(curY + 20, posterY + posterH + 20);
     var sIconSize = 32; var sIconPad = 16;
-    var sTextCY = btnY + btnH / 2 + 8;
+    var sMaxBoxFont = Math.floor(btnH * 0.45); var sMinBoxFont = 14;
     oc.textAlign = 'center';
 
     // Botão Instagram (degradê laranja→rosa→roxo, ou personalizado)
@@ -1394,9 +1428,11 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     roundRect(oc, pad, btnY, btnW2, btnH, 12);
     oc.fill();
     drawBoxIcon(oc, 'instagram', pad + sIconPad, btnY + btnH / 2 - sIconSize / 2, sIconSize, drawInstagramIcon);
+    var igMaxW = btnW2 - sIconPad - sIconSize - 18;
+    var igFS = fitBoxFontSize(oc, globalSettings.instagramHandle, igMaxW, sMaxBoxFont, sMinBoxFont, '700', 'Manrope, sans-serif');
     oc.fillStyle = getBoxTextColor('instagram', '#fff');
-    oc.font = '700 20px Manrope, sans-serif';
-    oc.fillText(globalSettings.instagramHandle, pad + sIconPad + sIconSize + (btnW2 - sIconPad - sIconSize) / 2, sTextCY);
+    oc.font = '700 ' + igFS + 'px Manrope, sans-serif';
+    oc.fillText(globalSettings.instagramHandle, pad + sIconPad + sIconSize + (btnW2 - sIconPad - sIconSize) / 2, btnY + btnH / 2 + Math.round(igFS * 0.32));
 
     // Botão WhatsApp (centro, ou personalizado)
     var wppBtnX = pad + btnW2 + btnGap;
@@ -1404,9 +1440,11 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     roundRect(oc, wppBtnX, btnY, btnW2, btnH, 12);
     oc.fill();
     drawBoxIcon(oc, 'whatsapp', wppBtnX + sIconPad, btnY + btnH / 2 - sIconSize / 2, sIconSize, drawWhatsAppIcon);
+    var wppMaxW = btnW2 - sIconPad - sIconSize - 18;
+    var wppFS = fitBoxFontSize(oc, globalSettings.whatsappText, wppMaxW, sMaxBoxFont, sMinBoxFont, '700', 'Manrope, sans-serif');
     oc.fillStyle = getBoxTextColor('whatsapp', '#fff');
-    oc.font = '700 18px Manrope, sans-serif';
-    oc.fillText(globalSettings.whatsappText, wppBtnX + sIconPad + sIconSize + (btnW2 - sIconPad - sIconSize) / 2, sTextCY);
+    oc.font = '700 ' + wppFS + 'px Manrope, sans-serif';
+    oc.fillText(globalSettings.whatsappText, wppBtnX + sIconPad + sIconSize + (btnW2 - sIconPad - sIconSize) / 2, btnY + btnH / 2 + Math.round(wppFS * 0.32));
 
     // Botão CTA (direita, ou personalizado — com ícone se enviado)
     var btnX2 = wppBtnX + btnW2 + btnGap;
@@ -1414,12 +1452,17 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     roundRect(oc, btnX2, btnY, btnW2, btnH, 12);
     oc.fill();
     oc.fillStyle = getBoxTextColor('cta', '#fff');
-    oc.font = '800 22px Manrope, sans-serif';
     if (customBoxIcons.cta) {
         drawBoxIcon(oc, 'cta', btnX2 + sIconPad, btnY + btnH / 2 - sIconSize / 2, sIconSize, null);
-        oc.fillText(globalSettings.ctaText, btnX2 + sIconPad + sIconSize + (btnW2 - sIconPad - sIconSize) / 2, sTextCY);
+        var ctaMaxW = btnW2 - sIconPad - sIconSize - 18;
+        var ctaFS = fitBoxFontSize(oc, globalSettings.ctaText, ctaMaxW, sMaxBoxFont, sMinBoxFont, '800', 'Manrope, sans-serif');
+        oc.font = '800 ' + ctaFS + 'px Manrope, sans-serif';
+        oc.fillText(globalSettings.ctaText, btnX2 + sIconPad + sIconSize + (btnW2 - sIconPad - sIconSize) / 2, btnY + btnH / 2 + Math.round(ctaFS * 0.32));
     } else {
-        oc.fillText(globalSettings.ctaText, btnX2 + btnW2 / 2, sTextCY);
+        var ctaMaxW2 = btnW2 - 24;
+        var ctaFS2 = fitBoxFontSize(oc, globalSettings.ctaText, ctaMaxW2, sMaxBoxFont, sMinBoxFont, '800', 'Manrope, sans-serif');
+        oc.font = '800 ' + ctaFS2 + 'px Manrope, sans-serif';
+        oc.fillText(globalSettings.ctaText, btnX2 + btnW2 / 2, btnY + btnH / 2 + Math.round(ctaFS2 * 0.32));
     }
 
     oc.textAlign = 'left';
@@ -1946,7 +1989,7 @@ function fitAutoText(oc, text, maxWidth, maxHeight, opts) {
 // Desenha as 3 boxes (Instagram / WhatsApp / CTA) numa faixa horizontal completa
 function drawCustomBottomButtons(oc, x, y, totalW, btnH, btnGap, iconSize, iconPad, fontSizeHandle, fontSizeCta) {
     var btnW = Math.floor((totalW - btnGap * 2) / 3);
-    var textCY = y + btnH / 2 + Math.round(fontSizeHandle * 0.3);
+    var minBoxFont = Math.max(12, Math.round(fontSizeHandle * 0.55));
     oc.textAlign = 'center';
 
     // Instagram (degradê, ou personalizado)
@@ -1958,9 +2001,11 @@ function drawCustomBottomButtons(oc, x, y, totalW, btnH, btnGap, iconSize, iconP
     roundRect(oc, x, y, btnW, btnH, 10);
     oc.fill();
     drawBoxIcon(oc, 'instagram', x + iconPad, y + btnH / 2 - iconSize / 2, iconSize, drawInstagramIcon);
+    var igMaxW = btnW - iconPad - iconSize - 14;
+    var igFS = fitBoxFontSize(oc, globalSettings.instagramHandle, igMaxW, fontSizeHandle, minBoxFont, '700', 'Manrope, sans-serif');
     oc.fillStyle = getBoxTextColor('instagram', '#fff');
-    oc.font = '700 ' + fontSizeHandle + 'px Manrope, sans-serif';
-    oc.fillText(globalSettings.instagramHandle, x + iconPad + iconSize + (btnW - iconPad - iconSize) / 2, textCY);
+    oc.font = '700 ' + igFS + 'px Manrope, sans-serif';
+    oc.fillText(globalSettings.instagramHandle, x + iconPad + iconSize + (btnW - iconPad - iconSize) / 2, y + btnH / 2 + Math.round(igFS * 0.32));
 
     // WhatsApp (ou personalizado)
     var wppX = x + btnW + btnGap;
@@ -1968,9 +2013,11 @@ function drawCustomBottomButtons(oc, x, y, totalW, btnH, btnGap, iconSize, iconP
     roundRect(oc, wppX, y, btnW, btnH, 10);
     oc.fill();
     drawBoxIcon(oc, 'whatsapp', wppX + iconPad, y + btnH / 2 - iconSize / 2, iconSize, drawWhatsAppIcon);
+    var wppMaxW = btnW - iconPad - iconSize - 14;
+    var wppFS = fitBoxFontSize(oc, globalSettings.whatsappText, wppMaxW, fontSizeHandle, minBoxFont, '700', 'Manrope, sans-serif');
     oc.fillStyle = getBoxTextColor('whatsapp', '#fff');
-    oc.font = '700 ' + fontSizeHandle + 'px Manrope, sans-serif';
-    oc.fillText(globalSettings.whatsappText, wppX + iconPad + iconSize + (btnW - iconPad - iconSize) / 2, textCY);
+    oc.font = '700 ' + wppFS + 'px Manrope, sans-serif';
+    oc.fillText(globalSettings.whatsappText, wppX + iconPad + iconSize + (btnW - iconPad - iconSize) / 2, y + btnH / 2 + Math.round(wppFS * 0.32));
 
     // CTA (ou personalizado — com ícone se enviado)
     var ctaX = wppX + btnW + btnGap;
@@ -1978,12 +2025,18 @@ function drawCustomBottomButtons(oc, x, y, totalW, btnH, btnGap, iconSize, iconP
     roundRect(oc, ctaX, y, btnW, btnH, 10);
     oc.fill();
     oc.fillStyle = getBoxTextColor('cta', '#fff');
-    oc.font = '800 ' + fontSizeCta + 'px Manrope, sans-serif';
+    var minBoxFontCta = Math.max(12, Math.round(fontSizeCta * 0.55));
     if (customBoxIcons.cta) {
         drawBoxIcon(oc, 'cta', ctaX + iconPad, y + btnH / 2 - iconSize / 2, iconSize, null);
-        oc.fillText(globalSettings.ctaText, ctaX + iconPad + iconSize + (btnW - iconPad - iconSize) / 2, y + btnH / 2 + Math.round(fontSizeCta * 0.3));
+        var ctaMaxW = btnW - iconPad - iconSize - 14;
+        var ctaFS = fitBoxFontSize(oc, globalSettings.ctaText, ctaMaxW, fontSizeCta, minBoxFontCta, '800', 'Manrope, sans-serif');
+        oc.font = '800 ' + ctaFS + 'px Manrope, sans-serif';
+        oc.fillText(globalSettings.ctaText, ctaX + iconPad + iconSize + (btnW - iconPad - iconSize) / 2, y + btnH / 2 + Math.round(ctaFS * 0.32));
     } else {
-        oc.fillText(globalSettings.ctaText, ctaX + btnW / 2, y + btnH / 2 + Math.round(fontSizeCta * 0.3));
+        var ctaMaxW2 = btnW - 20;
+        var ctaFS2 = fitBoxFontSize(oc, globalSettings.ctaText, ctaMaxW2, fontSizeCta, minBoxFontCta, '800', 'Manrope, sans-serif');
+        oc.font = '800 ' + ctaFS2 + 'px Manrope, sans-serif';
+        oc.fillText(globalSettings.ctaText, ctaX + btnW / 2, y + btnH / 2 + Math.round(ctaFS2 * 0.32));
     }
 
     oc.textAlign = 'left';

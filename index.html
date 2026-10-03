@@ -76,6 +76,24 @@
                     <button id="settingsRemoveLogo" class="mt-2 text-xs text-red-500 hover:text-red-400 transition-colors hidden">✕ Remover logo</button>
                 </section>
                 <section class="border border-zinc-800 rounded-lg p-5">
+                    <label class="text-sm font-semibold text-zinc-300 mb-3 block">Exibição da Marca d'água</label>
+                    <p class="text-xs text-zinc-500 mb-3">Vale para todos os geradores (Banner, Vídeo Trailer e Vídeo com Texto Livre) — o mesmo padrão escolhido aqui é usado em todos.</p>
+                    <div class="flex flex-col gap-3">
+                        <label class="flex items-center gap-3 cursor-pointer p-3 border border-zinc-800 rounded-lg hover:border-zinc-600">
+                            <input type="radio" name="watermarkMode" value="none" class="w-4 h-4 accent-purple-500" data-testid="watermark-none">
+                            <span class="text-sm text-zinc-300">Sem marca d'água</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-3 border border-zinc-800 rounded-lg hover:border-zinc-600">
+                            <input type="radio" name="watermarkMode" value="corner" class="w-4 h-4 accent-purple-500" checked data-testid="watermark-corner">
+                            <span class="text-sm text-zinc-300">Só no canto superior direito</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-3 border border-zinc-800 rounded-lg hover:border-zinc-600">
+                            <input type="radio" name="watermarkMode" value="full" class="w-4 h-4 accent-purple-500" data-testid="watermark-full">
+                            <span class="text-sm text-zinc-300">No banner/vídeo inteiro + canto superior direito</span>
+                        </label>
+                    </div>
+                </section>
+                <section class="border border-zinc-800 rounded-lg p-5">
                     <label class="text-sm font-semibold text-zinc-300 mb-3 block">Instagram (@)</label>
                     <input type="text" id="settingsInstagramHandle" placeholder="@seuinstagram" value="@seuinstagram" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 w-full rounded-lg" data-testid="settings-instagram-input">
                 </section>

@@ -18,6 +18,12 @@ let posterImage = null;
 let currentTrailer = null;
 let globalSettings = {
     logo: null, whatsappText: '(00) 00000-0000', ctaText: 'ASSINA JÁ', instagramHandle: '@seuinstagram',
+    // Modo da marca d'água, aplicado de forma unificada em TODOS os geradores
+    // (banner estático, vídeo trailer e vídeo com texto livre):
+    // 'none'   = sem marca d'água
+    // 'corner' = só no canto superior direito
+    // 'full'   = padrão repetido no banner/vídeo inteiro + canto superior direito
+    watermarkMode: 'corner',
     boxCustom: {
         instagram: { bg: null, text: null, icon: null },
         whatsapp: { bg: null, text: null, icon: null },
@@ -73,6 +79,54 @@ function drawBoxIcon(ctx, key, x, y, size, defaultDrawFn) {
     } else if (defaultDrawFn) {
         defaultDrawFn(ctx, x, y, size);
     }
+}
+
+// ============================================
+// MARCA D'ÁGUA (logo) — modo unificado para TODOS os geradores.
+// Lê globalSettings.watermarkMode ('none' | 'corner' | 'full') e desenha:
+// - 'none'   -> nada
+// - 'corner' -> só a logo no canto informado (cornerX,cornerY,cornerW,cornerH)
+// - 'full'   -> padrão repetido e sutil dentro de tileX,tileY,tileW,tileH + a logo no canto
+// ============================================
+function applyWatermark(ctx, tileX, tileY, tileW, tileH, cornerX, cornerY, cornerW, cornerH) {
+    if (!uploadedLogo) return;
+    var mode = globalSettings.watermarkMode || 'corner';
+    if (mode === 'none') return;
+
+    if (mode === 'full') {
+        ctx.save();
+        ctx.globalAlpha = 0.10;
+        var pSize = 80; var logoR = uploadedLogo.width / uploadedLogo.height;
+        var pW = pSize * logoR; var pH = pSize; var spX = pW + 60; var spY = pH + 60;
+        ctx.beginPath();
+        ctx.rect(tileX, tileY, tileW, tileH);
+        ctx.clip();
+        var cx = tileX + tileW / 2, cy = tileY + tileH / 2;
+        ctx.translate(cx, cy); ctx.rotate(-30 * Math.PI / 180); ctx.translate(-cx, -cy);
+        for (var py = tileY - tileH; py < tileY + tileH * 2; py += spY) {
+            for (var px = tileX - tileW; px < tileX + tileW * 2; px += spX) {
+                ctx.drawImage(uploadedLogo, px, py, pW, pH);
+            }
+        }
+        ctx.restore();
+    }
+
+    // 'full' e 'corner' sempre mostram a logo no canto
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.drawImage(uploadedLogo, cornerX, cornerY, cornerW, cornerH);
+    ctx.restore();
+}
+
+// Redesenha a marca d'água POR CIMA do vídeo (chamado a cada frame da gravação,
+// já que o vídeo em reprodução cobre o que foi desenhado na camada estática).
+// Se o modo for 'corner', só a logo do canto precisa ser redesenhada.
+// Se for 'full', o padrão também precisa ser redesenhado (clicado à área do vídeo).
+function redrawWatermarkOverVideo(ctx, videoRectX, videoRectY, videoRectW, videoRectH, cornerX, cornerY, cornerW, cornerH) {
+    if (!uploadedLogo) return;
+    var mode = globalSettings.watermarkMode || 'corner';
+    if (mode === 'none') return;
+    applyWatermark(ctx, videoRectX, videoRectY, videoRectW, videoRectH, cornerX, cornerY, cornerW, cornerH);
 }
 
 // Encontra o MAIOR tamanho de fonte que ainda cabe em maxWidth (uma linha só),
@@ -198,10 +252,15 @@ function loadGlobalSettings() {
             if (w2) w2.value = globalSettings.whatsappText || '(00) 00000-0000';
             if (w3) w3.value = globalSettings.ctaText || 'ASSINA JÁ';
 
+            var wmRadio = document.querySelector('input[name="watermarkMode"][value="' + (globalSettings.watermarkMode || 'corner') + '"]');
+            if (wmRadio) wmRadio.checked = true;
+
             ensureBoxCustomDefaults();
             loadBoxCustomizationUI();
         } else {
             console.log('ℹ️ Nenhuma configuração salva encontrada');
+            var wmRadioDefault = document.querySelector('input[name="watermarkMode"][value="corner"]');
+            if (wmRadioDefault) wmRadioDefault.checked = true;
         }
     } catch (e) { 
         console.error('❌ Erro ao carregar configurações:', e); 
@@ -319,6 +378,10 @@ function saveSettings() {
     globalSettings.whatsappText = document.getElementById('settingsWhatsappText').value;
     globalSettings.ctaText = document.getElementById('settingsCtaText').value;
     // Logo já foi atribuído a globalSettings.logo no event listener do input
+
+    // Modo da marca d'água, aplicado de forma unificada em todos os geradores
+    var wmChecked = document.querySelector('input[name="watermarkMode"]:checked');
+    globalSettings.watermarkMode = wmChecked ? wmChecked.value : 'corner';
 
     // Personalização dos boxes (cor de fundo / cor do texto). Ícones já são
     // salvos automaticamente no momento do upload (ver setupBoxIconUpload).
@@ -734,12 +797,8 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
     c.fillStyle = gradient;
     c.fillRect(0, 0, width, height);
     if (uploadedLogo) {
-        c.save(); c.globalAlpha = 0.10;
-        var pSize = 80; var logoR = uploadedLogo.width / uploadedLogo.height; var pW = pSize * logoR; var pH = pSize; var spX = pW + 60; var spY = pH + 60;
-        c.translate(width / 2, height / 2); c.rotate(-30 * Math.PI / 180); c.translate(-width / 2, -height / 2);
-        for (var py = -height; py < height * 2; py += spY) { for (var px = -width; px < width * 2; px += spX) { c.drawImage(uploadedLogo, px, py, pW, pH); } }
-        c.restore();
-        var cornerH = 240; var cornerW = cornerH * (uploadedLogo.width / uploadedLogo.height); c.globalAlpha = 1; c.drawImage(uploadedLogo, width - cornerW - 25, 25, cornerW, cornerH);
+        var cornerH = 240; var cornerW = cornerH * (uploadedLogo.width / uploadedLogo.height);
+        applyWatermark(c, 0, 0, width, height, width - cornerW - 25, 25, cornerW, cornerH);
     }
     var mPadding = 30; var footerY = height - mPadding; var boxH = 50; var boxGap = 12;
     var totalBoxW = width - mPadding * 2 - boxGap * 2; var boxW = Math.floor(totalBoxW / 3);
@@ -1071,16 +1130,13 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     oc.fillStyle = bgGrad;
     oc.fillRect(0, infoAreaY, W, infoAreaH);
 
-    // Logo no canto superior direito do vídeo (quase colada na borda)
+    // Marca d'água (logo) — modo unificado (none/corner/full), canto superior direito do vídeo
     if (uploadedLogo) {
         var logoR = uploadedLogo.width / uploadedLogo.height;
         var logoH = 140;
         var logoW = logoH * logoR;
         if (logoW > 320) { logoW = 320; logoH = logoW / logoR; }
-        oc.save();
-        oc.globalAlpha = 1.0;
-        oc.drawImage(uploadedLogo, W - logoW - 25, 10, logoW, logoH);
-        oc.restore();
+        applyWatermark(oc, 0, 0, W, H, W - logoW - 25, 10, logoW, logoH);
     }
 
     // ======== INFO AREA: poster ESQUERDA + conteúdo DIREITA ========
@@ -1265,36 +1321,24 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     var videoCenterY = Math.round(H * 0.44); // Centro deslocado para cima
     var videoY = videoCenterY - Math.floor(videoAreaH / 2);
 
-    // --- TOPO: Logo centralizada sobre o vídeo (quase colada) ---
-    var logoTopH = 260;
-    if (uploadedLogo) {
-        var logoR = uploadedLogo.width / uploadedLogo.height;
-        var logoH = 200;
-        var logoW = logoH * logoR;
-        if (logoW > 550) { logoW = 550; logoH = logoW / logoR; }
-        var logoX = (W - logoW) / 2;
-        var logoY = videoY - logoH + 15; // Logo sobre a borda superior do vídeo
-
-        // Efeito glow/destaque atrás da logo
-        var glowRadius = Math.max(logoW, logoH) * 0.9;
-        var glowX = W / 2;
-        var glowY = logoY + logoH / 2;
-        var glowGrad = oc.createRadialGradient(glowX, glowY, 0, glowX, glowY, glowRadius);
-        glowGrad.addColorStop(0, 'rgba(139, 92, 246, 0.35)');
-        glowGrad.addColorStop(0.5, 'rgba(139, 92, 246, 0.15)');
-        glowGrad.addColorStop(1, 'rgba(139, 92, 246, 0)');
-        oc.fillStyle = glowGrad;
-        oc.fillRect(0, 0, W, logoTopH);
-
-        // Logo por cima do glow
-        oc.drawImage(uploadedLogo, logoX, logoY, logoW, logoH);
-    }
     var infoAreaY = videoY + videoAreaH;
     var infoAreaH = H - infoAreaY;
 
     // Área do vídeo (preto base - será preenchida pelo drawFrame)
+    // IMPORTANTE: isso precisa vir ANTES da marca d'água, senão o preenchimento
+    // preto apaga o padrão da marca d'água dentro da área do vídeo (modo "full").
     oc.fillStyle = '#000';
     oc.fillRect(0, videoY, W, videoAreaH);
+
+    // --- Marca d'água (logo) — modo unificado (none/corner/full), canto superior direito do vídeo ---
+    // (mesmo padrão de posicionamento usado no formato Post, só que relativo à área do vídeo no Story)
+    if (uploadedLogo) {
+        var logoR = uploadedLogo.width / uploadedLogo.height;
+        var logoH = 140;
+        var logoW = logoH * logoR;
+        if (logoW > 320) { logoW = 320; logoH = logoW / logoR; }
+        applyWatermark(oc, 0, 0, W, H, W - logoW - 25, videoY + 10, logoW, logoH);
+    }
 
     // --- ÁREA DE INFORMAÇÕES (abaixo do vídeo) ---
 
@@ -1694,16 +1738,14 @@ async function generateTrailerBannerVideo() {
                 }
             }
 
-            // Redesenha a logo POR CIMA do vídeo (canto superior direito da área do vídeo) - apenas para Post
-            if (videoFormat === 'post' && uploadedLogo) {
+            // Redesenha a marca d'água POR CIMA do vídeo (o vídeo em reprodução cobre o que
+            // foi desenhado na camada estática dentro da área do vídeo) — Post e Story
+            if (uploadedLogo) {
                 var logoR2 = uploadedLogo.width / uploadedLogo.height;
                 var logoH2 = 140;
                 var logoW2 = logoH2 * logoR2;
                 if (logoW2 > 320) { logoW2 = 320; logoH2 = logoW2 / logoR2; }
-                oc.save();
-                oc.globalAlpha = 1.0;
-                oc.drawImage(uploadedLogo, W - logoW2 - 25, 10, logoW2, logoH2);
-                oc.restore();
+                redrawWatermarkOverVideo(oc, 0, videoY, W, videoAreaH, W - logoW2 - 25, videoY + 10, logoW2, logoH2);
             }
 
             // Progresso
@@ -2056,16 +2098,13 @@ function renderCustomStaticBannerLayer(oc, W, H, videoAreaH, customText) {
     oc.fillStyle = bgGrad;
     oc.fillRect(0, infoAreaY, W, infoAreaH);
 
-    // Logo no canto superior direito do vídeo (igual ao modo Trailer)
+    // Marca d'água (logo) — modo unificado (none/corner/full), canto superior direito do vídeo
     if (uploadedLogo) {
         var logoR = uploadedLogo.width / uploadedLogo.height;
         var logoH = 140;
         var logoW = logoH * logoR;
         if (logoW > 320) { logoW = 320; logoH = logoW / logoR; }
-        oc.save();
-        oc.globalAlpha = 1.0;
-        oc.drawImage(uploadedLogo, W - logoW - 25, 10, logoW, logoH);
-        oc.restore();
+        applyWatermark(oc, 0, 0, W, H, W - logoW - 25, 10, logoW, logoH);
     }
 
     var pad = 50;
@@ -2100,33 +2139,22 @@ function renderCustomStaticStoryLayer(oc, W, H, videoAreaH, customText) {
     var videoCenterY = Math.round(H * 0.44);
     var videoY = videoCenterY - Math.floor(videoAreaH / 2);
 
-    var logoTopH = 260;
-    if (uploadedLogo) {
-        var logoR = uploadedLogo.width / uploadedLogo.height;
-        var logoH = 200;
-        var logoW = logoH * logoR;
-        if (logoW > 550) { logoW = 550; logoH = logoW / logoR; }
-        var logoX = (W - logoW) / 2;
-        var logoY = videoY - logoH + 15;
-
-        var glowRadius = Math.max(logoW, logoH) * 0.9;
-        var glowX = W / 2;
-        var glowY = logoY + logoH / 2;
-        var glowGrad = oc.createRadialGradient(glowX, glowY, 0, glowX, glowY, glowRadius);
-        glowGrad.addColorStop(0, 'rgba(139, 92, 246, 0.35)');
-        glowGrad.addColorStop(0.5, 'rgba(139, 92, 246, 0.15)');
-        glowGrad.addColorStop(1, 'rgba(139, 92, 246, 0)');
-        oc.fillStyle = glowGrad;
-        oc.fillRect(0, 0, W, logoTopH);
-
-        oc.drawImage(uploadedLogo, logoX, logoY, logoW, logoH);
-    }
-
     var infoAreaY = videoY + videoAreaH;
     var infoAreaH = H - infoAreaY;
 
+    // IMPORTANTE: preencher a área do vídeo ANTES da marca d'água, senão o
+    // preenchimento preto apaga o padrão da marca d'água ali dentro (modo "full").
     oc.fillStyle = '#000';
     oc.fillRect(0, videoY, W, videoAreaH);
+
+    // Marca d'água (logo) — modo unificado (none/corner/full), canto superior direito do vídeo
+    if (uploadedLogo) {
+        var logoR = uploadedLogo.width / uploadedLogo.height;
+        var logoH = 140;
+        var logoW = logoH * logoR;
+        if (logoW > 320) { logoW = 320; logoH = logoW / logoR; }
+        applyWatermark(oc, 0, 0, W, H, W - logoW - 25, videoY + 10, logoW, logoH);
+    }
 
     var bgGrad = oc.createLinearGradient(0, infoAreaY, 0, H);
     bgGrad.addColorStop(0, '#0a0a0a');
@@ -2470,15 +2498,12 @@ async function generateCustomTrailerBannerVideo() {
                 }
             }
 
-            if (videoFormat === 'post' && uploadedLogo) {
+            if (uploadedLogo) {
                 var logoR2 = uploadedLogo.width / uploadedLogo.height;
                 var logoH2 = 140;
                 var logoW2 = logoH2 * logoR2;
                 if (logoW2 > 320) { logoW2 = 320; logoH2 = logoW2 / logoR2; }
-                oc.save();
-                oc.globalAlpha = 1.0;
-                oc.drawImage(uploadedLogo, W - logoW2 - 25, 10, logoW2, logoH2);
-                oc.restore();
+                redrawWatermarkOverVideo(oc, 0, videoY, W, videoAreaH, W - logoW2 - 25, videoY + 10, logoW2, logoH2);
             }
 
             if (srcVideo.duration > 0) {

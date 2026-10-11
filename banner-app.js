@@ -554,7 +554,7 @@ async function loadMoviesMode() {
             '<div id="movieSelectedInfo" class="border border-zinc-800 p-4 bg-black/30 rounded-lg"></div>' +
             '<section class="flex flex-col gap-3"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label><div class="flex gap-2"><button id="movieFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white">Post</button><button id="movieFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story</button></div></section>' +
             '<section class="flex flex-col gap-3"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Plataforma <span id="platformAutoText" class="text-green-400 text-xs normal-case"></span></label>' +
-            '<select id="moviePlatform" class="bg-black border border-zinc-800 p-4 text-white focus:outline-none focus:border-red-500 w-full appearance-none cursor-pointer rounded pr-10"><option value="">Selecione ou autom\u00E1tico</option><option value="Netflix">Netflix</option><option value="Prime Video">Prime Video</option><option value="Disney+">Disney+</option><option value="HBO Max">HBO Max</option><option value="Max">Max</option><option value="Apple TV+">Apple TV+</option><option value="Paramount+">Paramount+</option><option value="Globoplay">Globoplay</option><option value="Star+">Star+</option><option value="Crunchyroll">Crunchyroll</option><option value="WPlay">WPlay</option><option value="RushPlay">RushPlay</option><option value="WPlay / RushPlay">WPlay / RushPlay</option><option value="Cinema">Cinema</option></select></section>' +
+            '<input type="text" id="moviePlatform" maxlength="30" autocomplete="off" placeholder="Autom\u00E1tico (ou digite um texto livre)" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 w-full rounded"></section>' +
             '<button id="movieDownloadBtn" class="w-full bg-red-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-red-400 transition-all flex items-center justify-center gap-3 rounded-lg cursor-pointer" data-testid="movie-download-btn">BAIXAR BANNER FULL HD</button>' +
         '</section>';
 
@@ -563,7 +563,8 @@ async function loadMoviesMode() {
         document.getElementById('movieSearch').addEventListener('input', function(e) { clearTimeout(searchTimeout); searchTimeout = setTimeout(function() { searchMovies(e.target.value); }, 500); });
         document.getElementById('movieFormatPost').addEventListener('click', function() { currentFormat = 'post'; updateMovieFormatButtons(); generateMovieBanner(); });
         document.getElementById('movieFormatStory').addEventListener('click', function() { currentFormat = 'story'; updateMovieFormatButtons(); generateMovieBanner(); });
-        document.getElementById('moviePlatform').addEventListener('change', generateMovieBanner);
+        var platformTypingTimeout;
+        document.getElementById('moviePlatform').addEventListener('input', function() { clearTimeout(platformTypingTimeout); platformTypingTimeout = setTimeout(generateMovieBanner, 200); });
         document.getElementById('movieDownloadBtn').addEventListener('click', downloadMovieBanner);
         document.getElementById('movieTypeBoth').addEventListener('click', function() { setMovieTypeFilter('both'); });
         document.getElementById('movieTypeMovie').addEventListener('click', function() { setMovieTypeFilter('movie'); });
@@ -643,7 +644,7 @@ async function selectMovie(movie) {
         var watchRes = await fetch(TMDB_BASE_URL + '/' + endpoint + '/' + movie.id + '/watch');
         var watchData = await watchRes.json();
         var brProviders = (watchData.results && watchData.results.BR) ? (watchData.results.BR.flatrate || watchData.results.BR.ads || []) : [];
-        if (brProviders.length > 0) { selectedContent.autoProvider = brProviders[0].provider_name; document.getElementById('platformAutoText').textContent = '(Detectado: ' + selectedContent.autoProvider + ')'; document.getElementById('moviePlatform').value = matchPlatform(selectedContent.autoProvider); }
+        if (brProviders.length > 0) { selectedContent.autoProvider = matchPlatform(brProviders[0].provider_name) || brProviders[0].provider_name; document.getElementById('platformAutoText').textContent = '(Detectado: ' + selectedContent.autoProvider + ')'; }
         else { selectedContent.autoProvider = null; document.getElementById('platformAutoText').textContent = ''; }
     } catch (e) { console.error('Erro:', e); }
     if (movie.poster) { try { posterImage = await loadImage(movie.poster); } catch (e) { posterImage = null; } } else { posterImage = null; }
@@ -653,20 +654,26 @@ async function selectMovie(movie) {
     setTimeout(function() { generateMovieBanner(); }, 200);
 }
 
+function getPlatformInputValue(id) {
+    var el = document.getElementById(id);
+    return el ? (el.value || '').trim() : '';
+}
+
 function matchPlatform(name) {
     var map = { 'Netflix': 'Netflix', 'Amazon Prime Video': 'Prime Video', 'Prime Video': 'Prime Video', 'Disney Plus': 'Disney+', 'Disney+': 'Disney+', 'HBO Max': 'HBO Max', 'Max': 'Max', 'Apple TV Plus': 'Apple TV+', 'Apple TV+': 'Apple TV+', 'Paramount Plus': 'Paramount+', 'Paramount+': 'Paramount+', 'Globoplay': 'Globoplay', 'Star Plus': 'Star+', 'Star+': 'Star+', 'Crunchyroll': 'Crunchyroll', 'WPlay': 'WPlay', 'RushPlay': 'RushPlay' };
     return map[name] || '';
 }
 
 function getPlatformColor(platform) {
-    if (platform === 'WPlay') return '#0CA77F';
-    if (platform === 'RushPlay') return '#ef4444';
+    var p = (platform || '').trim().toLowerCase();
+    if (p === 'wplay') return '#0CA77F';
+    if (p === 'rushplay') return '#ef4444';
     return '#ef4444'; // default red
 }
 
 function drawPlatformText(c, platform, x, y, fontSize) {
     if (!platform) return;
-    if (platform === 'WPlay / RushPlay') {
+    if ((platform || '').trim().toLowerCase().replace(/\s+/g, '') === 'wplay/rushplay') {
         // Draw "WPlay" in green, " / " in white, "RushPlay" in dark red
         c.font = '600 ' + fontSize + 'px Manrope, sans-serif';
         c.fillStyle = '#0CA77F';
@@ -692,9 +699,9 @@ window.copyMovieInfo = function() {
     // Get platform from the appropriate selector
     var platform = '';
     if (currentMode === 'movies') {
-        platform = (document.getElementById('moviePlatform') ? document.getElementById('moviePlatform').value : '') || selectedContent.autoProvider || '';
+        platform = getPlatformInputValue('moviePlatform') || selectedContent.autoProvider || '';
     } else if (currentMode === 'video') {
-        platform = (document.getElementById('videoPlatform') ? document.getElementById('videoPlatform').value : '') || selectedContent.autoProvider || '';
+        platform = getPlatformInputValue('videoPlatform') || selectedContent.autoProvider || '';
     }
     var info = '\uD83D\uDC8E: *' + selectedContent.title + '*\n\n' +
     (selectedContent.type === 'movie' ? '\uD83C\uDFAC: Filme' : '\uD83D\uDCFA: S\u00E9rie') +
@@ -859,7 +866,7 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
     c.fillStyle = 'rgba(255,255,255,0.9)'; c.fillText(selectedContent.year, metaX, currentY); metaX += c.measureText(selectedContent.year).width;
     if (selectedContent.genres !== 'N/A') { c.fillStyle = 'rgba(255,255,255,0.6)'; c.fillText(sep, metaX, currentY); metaX += c.measureText(sep).width; c.fillStyle = 'rgba(255,255,255,0.9)'; var gg = selectedContent.genres.split(',')[0].trim(); c.fillText(gg, metaX, currentY); metaX += c.measureText(gg).width; }
     if (selectedContent.runtime !== 'N/A') { c.fillStyle = 'rgba(255,255,255,0.6)'; c.fillText(sep, metaX, currentY); metaX += c.measureText(sep).width; c.fillStyle = 'rgba(255,255,255,0.9)'; c.fillText(selectedContent.runtime, metaX, currentY); metaX += c.measureText(selectedContent.runtime).width; }
-    var plat = (document.getElementById('moviePlatform') ? document.getElementById('moviePlatform').value : '') || selectedContent.autoProvider;
+    var plat = getPlatformInputValue('moviePlatform') || selectedContent.autoProvider;
     if (plat) { c.fillStyle = 'rgba(255,255,255,0.6)'; c.fillText(sep, metaX, currentY); metaX += c.measureText(sep).width; var platW = drawPlatformText(c, plat, metaX, currentY, 24); metaX += platW; }
     currentY -= 50;
     c.font = '700 68px Oswald, sans-serif'; c.fillStyle = '#fff';
@@ -935,23 +942,7 @@ async function loadVideoMode() {
             '</section>' +
             '<section class="flex flex-col gap-2">' +
                 '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Plataforma <span id="videoPlatformAutoText" class="text-green-400 text-xs normal-case"></span></label>' +
-                '<select id="videoPlatform" class="bg-black border border-zinc-800 p-3 text-white text-sm w-full rounded focus:outline-none focus:border-purple-500 appearance-none cursor-pointer">' +
-                    '<option value="">Selecione ou autom\u00E1tico</option>' +
-                    '<option value="Netflix">Netflix</option>' +
-                    '<option value="Prime Video">Prime Video</option>' +
-                    '<option value="Disney+">Disney+</option>' +
-                    '<option value="HBO Max">HBO Max</option>' +
-                    '<option value="Max">Max</option>' +
-                    '<option value="Apple TV+">Apple TV+</option>' +
-                    '<option value="Paramount+">Paramount+</option>' +
-                    '<option value="Globoplay">Globoplay</option>' +
-                    '<option value="Star+">Star+</option>' +
-                    '<option value="Crunchyroll">Crunchyroll</option>' +
-                    '<option value="WPlay">WPlay</option>' +
-                    '<option value="RushPlay">RushPlay</option>' +
-                    '<option value="WPlay / RushPlay">WPlay / RushPlay</option>' +
-                    '<option value="Cinema">Cinema</option>' +
-                '</select>' +
+                '<input type="text" id="videoPlatform" maxlength="30" autocomplete="off" placeholder="Autom\u00E1tico (ou digite um texto livre)" class="bg-black border border-zinc-800 p-3 text-white text-sm placeholder-zinc-600 w-full rounded focus:outline-none focus:border-purple-500">' +
             '</section>' +
             '<button id="videoGenerateBtn" class="w-full bg-purple-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-purple-400 transition-all flex items-center justify-center gap-3 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled data-testid="video-generate-btn">GERAR BANNER MP4 (1080x1080)</button>' +
             '<div id="videoProgressBox" class="hidden text-center"><p class="text-xs text-zinc-400 mb-2" id="videoProgressLabel">Gerando v\u00EDdeo...</p><div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div id="videoProgressFill" class="h-full bg-purple-500 transition-all" style="width:0%"></div></div></div>' +
@@ -1062,8 +1053,6 @@ async function selectVideoContent(content) {
             selectedContent.autoProvider = matchPlatform(brProviders[0].provider_name) || brProviders[0].provider_name;
             var vpAuto = document.getElementById('videoPlatformAutoText');
             if (vpAuto) vpAuto.textContent = '(Detectado: ' + selectedContent.autoProvider + ')';
-            var vpSelect = document.getElementById('videoPlatform');
-            if (vpSelect) vpSelect.value = selectedContent.autoProvider;
         } else {
             selectedContent.autoProvider = null;
             var vpAuto2 = document.getElementById('videoPlatformAutoText');
@@ -1194,7 +1183,7 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
     if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push({ text: selectedContent.year, color: 'rgba(255,255,255,0.9)' });
     if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push({ text: selectedContent.genres.split(',')[0].trim(), color: 'rgba(255,255,255,0.9)' });
     if (selectedContent.runtime && selectedContent.runtime !== 'N/A') metaParts.push({ text: selectedContent.runtime, color: 'rgba(255,255,255,0.9)' });
-    var plat = (document.getElementById('videoPlatform') ? document.getElementById('videoPlatform').value : '') || selectedContent.autoProvider;
+    var plat = getPlatformInputValue('videoPlatform') || selectedContent.autoProvider;
     var metaBlockH = 22;
 
     oc.font = '400 20px Manrope, sans-serif';
@@ -1399,7 +1388,7 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
     if (selectedContent.year && selectedContent.year !== 'N/A') metaParts.push({ text: selectedContent.year, color: 'rgba(255,255,255,0.9)' });
     if (selectedContent.genres && selectedContent.genres !== 'N/A') metaParts.push({ text: selectedContent.genres.split(',')[0].trim(), color: 'rgba(255,255,255,0.9)' });
     if (selectedContent.runtime && selectedContent.runtime !== 'N/A') metaParts.push({ text: selectedContent.runtime, color: 'rgba(255,255,255,0.9)' });
-    var plat = (document.getElementById('videoPlatform') ? document.getElementById('videoPlatform').value : '') || selectedContent.autoProvider;
+    var plat = getPlatformInputValue('videoPlatform') || selectedContent.autoProvider;
     var metaBlockH = 28;
 
     oc.font = '400 24px Manrope, sans-serif';

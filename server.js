@@ -249,6 +249,51 @@ app.get('/api/tmdb/tv/:id/watch', async (req, res) => {
 });
 
 // ============================================
+// TMDB API - CAPAS (POSTERS) DISPONÍVEIS
+// Retorna as capas em Português ("pt", que cobre as versões do Brasil)
+// e as capas sem idioma/texto ("null"), para o usuário escolher qual usar.
+// ============================================
+app.get('/api/tmdb/:type/:id/images', async (req, res) => {
+    try {
+        const { type, id } = req.params;
+
+        if (type !== 'movie' && type !== 'tv') {
+            return res.status(400).json({ error: 'Tipo deve ser "movie" ou "tv"' });
+        }
+        if (!/^\d+$/.test(id)) {
+            return res.status(400).json({ error: 'ID inválido' });
+        }
+
+        const cacheKey = `images:${type}:${id}`;
+        const cached = getCache(cacheKey);
+        if (cached) return res.json(cached);
+
+        const response = await axios.get(`${TMDB_API_URL}/${type}/${id}/images`, {
+            params: {
+                api_key: TMDB_API_KEY,
+                include_image_language: 'pt,null'
+            },
+            timeout: 15000
+        });
+
+        const posters = (response.data.posters || []).map(p => ({
+            file_path: p.file_path,
+            iso_639_1: p.iso_639_1,
+            width: p.width,
+            height: p.height,
+            vote_average: p.vote_average
+        }));
+
+        const result = { posters };
+        setCache(cacheKey, result);
+        res.json(result);
+    } catch (error) {
+        console.error('❌ Erro TMDB images:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================
 // TMDB API - TRAILERS
 // ============================================
 app.get('/api/tmdb/movie/:id/videos', async (req, res) => {

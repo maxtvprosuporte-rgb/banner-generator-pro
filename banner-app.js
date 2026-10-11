@@ -603,8 +603,8 @@ async function searchMovies(query) {
         if (mySeq !== movieSearchSeq) return;
         var moviesData = results[0];
         var seriesData = results[1];
-        var movies = (moviesData.results || []).slice(0, 20).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: m.poster_path ? getTmdbImgUrl(m.poster_path) : null }; });
-        var series = (seriesData.results || []).slice(0, 20).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: s.poster_path ? getTmdbImgUrl(s.poster_path) : null }; });
+        var movies = (moviesData.results || []).slice(0, 20).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: m.poster_path ? getTmdbImgUrl(m.poster_path) : null, posterPath: m.poster_path || null }; });
+        var series = (seriesData.results || []).slice(0, 20).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || 'Sinopse n\u00E3o dispon\u00EDvel.', poster: s.poster_path ? getTmdbImgUrl(s.poster_path) : null, posterPath: s.poster_path || null }; });
         displayMovieResults(movies.concat(series));
     } catch (error) {
         if (mySeq !== movieSearchSeq) return;
@@ -648,7 +648,8 @@ async function selectMovie(movie) {
     } catch (e) { console.error('Erro:', e); }
     if (movie.poster) { try { posterImage = await loadImage(movie.poster); } catch (e) { posterImage = null; } } else { posterImage = null; }
     document.getElementById('movieControls').classList.remove('hidden');
-    document.getElementById('movieSelectedInfo').innerHTML = '<div class="flex gap-3 mb-3">' + (movie.poster ? '<img src="' + movie.poster + '" class="w-20 h-30 object-cover rounded">' : '') + '<div class="flex-1"><h3 class="font-oswald text-lg font-bold">' + movie.title + '</h3><p class="text-zinc-500 text-sm">' + movie.year + ' - ' + (movie.type === 'movie' ? 'Filme' : 'S\u00E9rie') + ' - ' + movie.rating + '</p><p class="text-zinc-400 text-xs mt-2 line-clamp-3">' + movie.overview + '</p></div></div><button onclick="copyMovieInfo()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2">Copiar Informa\u00E7\u00F5es</button>';
+    document.getElementById('movieSelectedInfo').innerHTML = '<div class="flex gap-3 mb-3">' + (movie.poster ? '<img id="moviePosterPreview" src="' + movie.poster + '" class="w-20 h-30 object-cover rounded">' : '<img id="moviePosterPreview" class="w-20 h-30 object-cover rounded hidden">') + '<div class="flex-1"><h3 class="font-oswald text-lg font-bold">' + movie.title + '</h3><p class="text-zinc-500 text-sm">' + movie.year + ' - ' + (movie.type === 'movie' ? 'Filme' : 'S\u00E9rie') + ' - ' + movie.rating + '</p><p class="text-zinc-400 text-xs mt-2 line-clamp-3">' + movie.overview + '</p></div></div><div id="moviePosterPicker" class="mb-3"></div><button onclick="copyMovieInfo()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2">Copiar Informa\u00E7\u00F5es</button>';
+    loadPosterOptions(movie, 'moviePosterPicker', 'moviePosterPreview', function() { generateMovieBanner(); });
     setTimeout(function() { generateMovieBanner(); }, 200);
 }
 
@@ -1015,8 +1016,8 @@ async function searchVideos(query) {
         if (mySeq !== videoSearchSeq) return;
         var moviesData = results[0];
         var seriesData = results[1];
-        var movies = (moviesData.results || []).slice(0, 20).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || '', poster: m.poster_path ? getTmdbImgUrl(m.poster_path) : null }; });
-        var series = (seriesData.results || []).slice(0, 20).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || '', poster: s.poster_path ? getTmdbImgUrl(s.poster_path) : null }; });
+        var movies = (moviesData.results || []).slice(0, 20).map(function(m) { return { id: m.id, type: 'movie', title: m.title, year: m.release_date ? m.release_date.split('-')[0] : 'N/A', rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A', overview: m.overview || '', poster: m.poster_path ? getTmdbImgUrl(m.poster_path) : null, posterPath: m.poster_path || null }; });
+        var series = (seriesData.results || []).slice(0, 20).map(function(s) { return { id: s.id, type: 'tv', title: s.name, year: s.first_air_date ? s.first_air_date.split('-')[0] : 'N/A', rating: s.vote_average ? s.vote_average.toFixed(1) : 'N/A', overview: s.overview || '', poster: s.poster_path ? getTmdbImgUrl(s.poster_path) : null, posterPath: s.poster_path || null }; });
         displayVideoResults(movies.concat(series));
     } catch (error) {
         if (mySeq !== videoSearchSeq) return;
@@ -1077,15 +1078,17 @@ async function selectVideoContent(content) {
 
     document.getElementById('videoSelectedInfo').innerHTML =
         '<div class="flex gap-3 mb-3">' +
-            (content.poster ? '<img src="' + content.poster + '" class="w-20 h-30 object-cover rounded">' : '') +
+            (content.poster ? '<img id="videoPosterPreview" src="' + content.poster + '" class="w-20 h-30 object-cover rounded">' : '<img id="videoPosterPreview" class="w-20 h-30 object-cover rounded hidden">') +
             '<div class="flex-1"><h3 class="font-oswald text-lg font-bold">' + content.title + '</h3>' +
             '<p class="text-zinc-500 text-sm">' + content.year + ' - ' + (content.type === 'movie' ? 'Filme' : 'S\u00E9rie') + ' - \u2605 ' + content.rating + '</p>' +
             (selectedContent.genres ? '<p class="text-zinc-400 text-xs mt-1">' + selectedContent.genres + '</p>' : '') +
             (selectedContent.autoProvider ? '<p class="text-green-400 text-xs mt-1">Plataforma: ' + selectedContent.autoProvider + '</p>' : '') +
             '</div></div>' +
+        '<div id="videoPosterPicker" class="mb-3"></div>' +
         '<button onclick="copyMovieInfo()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2" data-testid="video-copy-info-btn">Copiar Informa\u00E7\u00F5es</button>';
 
     updateGenerateBtnState();
+    loadPosterOptions(content, 'videoPosterPicker', 'videoPosterPreview', null);
 }
 
 function handleVideoFileUpload(e) {
@@ -2817,6 +2820,84 @@ function showPlaceholder(icon, title, subtitle, color1, color2) {
     ctx.font = '400 28px Manrope, sans-serif';
     ctx.fillStyle = '#71717a';
     ctx.fillText(subtitle, 540, 650);
+}
+
+// ============================================
+// ESCOLHA DE CAPA — carrega da API (TMDB) as capas disponíveis em Português
+// e deixa o usuário escolher qual usar. Usada no gerador de Banner e no de Vídeo.
+// (a TMDB identifica as capas só pelo idioma "pt", que cobre as versões do Brasil)
+// ============================================
+let posterPickerSeq = 0;
+async function loadPosterOptions(content, containerId, previewId, onChange) {
+    var box = document.getElementById(containerId);
+    if (!box || !content) return;
+    var mySeq = ++posterPickerSeq;
+    var endpoint = content.type === 'movie' ? 'movie' : 'tv';
+    var headerHtml = '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-2">Escolher capa (Portugu\u00EAs / Brasil)</label>';
+    box.innerHTML = headerHtml + '<p class="text-xs text-zinc-500">Carregando capas dispon\u00EDveis...</p>';
+
+    var posters = [];
+    try {
+        var res = await fetch(TMDB_BASE_URL + '/' + endpoint + '/' + content.id + '/images');
+        var data = await res.json();
+        posters = data.posters || [];
+    } catch (e) {
+        console.error('Erro ao carregar capas:', e);
+        if (mySeq === posterPickerSeq) box.innerHTML = headerHtml + '<p class="text-xs text-red-400">N\u00E3o foi poss\u00EDvel carregar as capas.</p>';
+        return;
+    }
+    // Ignora se o usuário já escolheu outro conteúdo enquanto carregava
+    if (mySeq !== posterPickerSeq || selectedContent !== content) return;
+
+    var ptPosters = posters.filter(function(p) { return p.iso_639_1 === 'pt'; }).slice(0, 30);
+    var otherPosters = posters.filter(function(p) { return !p.iso_639_1; }).slice(0, 30);
+    var showOthers = false;
+
+    function render() {
+        var list = showOthers ? ptPosters.concat(otherPosters) : ptPosters;
+        var html = headerHtml;
+        if (list.length === 0) {
+            html += '<p class="text-xs text-zinc-500 mb-2">Nenhuma capa em Portugu\u00EAs encontrada para este t\u00EDtulo.</p>';
+        } else {
+            html += '<div class="flex gap-2 overflow-x-auto pb-2">';
+            list.forEach(function(p) {
+                var selected = content.posterPath === p.file_path;
+                html += '<button type="button" data-path="' + p.file_path + '" class="flex-shrink-0 rounded overflow-hidden border-2 ' + (selected ? 'border-red-500' : 'border-zinc-700 hover:border-zinc-400') + '" style="width:72px">' +
+                        '<img src="' + TMDB_IMG_BASE + '/w185' + p.file_path + '" loading="lazy" class="w-full block" style="aspect-ratio:2/3;object-fit:cover" alt="capa"></button>';
+            });
+            html += '</div>';
+        }
+        if (otherPosters.length > 0) {
+            html += '<button type="button" data-toggle="others" class="text-xs text-zinc-400 hover:text-white underline mb-1">' + (showOthers ? 'Ocultar capas sem idioma' : 'Mostrar tamb\u00E9m capas sem idioma/texto (' + otherPosters.length + ')') + '</button>';
+        }
+        box.innerHTML = html;
+
+        box.querySelectorAll('button[data-path]').forEach(function(btn) {
+            btn.addEventListener('click', function() { pickPoster(btn.getAttribute('data-path')); });
+        });
+        var toggle = box.querySelector('button[data-toggle="others"]');
+        if (toggle) toggle.addEventListener('click', function() { showOthers = !showOthers; render(); });
+    }
+
+    async function pickPoster(path) {
+        var url = getTmdbImgUrl(path);
+        try {
+            var img = await loadImage(url);
+            if (selectedContent !== content) return;
+            posterImage = img;
+            content.poster = url;
+            content.posterPath = path;
+            var preview = document.getElementById(previewId);
+            if (preview) { preview.src = url; preview.classList.remove('hidden'); }
+            render();
+            if (typeof onChange === 'function') onChange();
+        } catch (e) {
+            console.error('Erro ao carregar a capa escolhida:', e);
+            alert('N\u00E3o foi poss\u00EDvel carregar essa capa. Tente outra.');
+        }
+    }
+
+    render();
 }
 
 function loadImage(url) {

@@ -532,6 +532,7 @@ async function loadMoviesMode() {
     canvas.classList.remove('hidden');
     videoContainer.classList.add('hidden');
     movieTypeFilter = 'both';
+    platformColorOverride = null;
 
     controlPanel.innerHTML =
         '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-red-400">Filmes e S\u00E9ries</h2></header>' +
@@ -554,7 +555,7 @@ async function loadMoviesMode() {
             '<div id="movieSelectedInfo" class="border border-zinc-800 p-4 bg-black/30 rounded-lg"></div>' +
             '<section class="flex flex-col gap-3"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label><div class="flex gap-2"><button id="movieFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white">Post</button><button id="movieFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story</button></div></section>' +
             '<section class="flex flex-col gap-3"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Plataforma <span id="platformAutoText" class="text-green-400 text-xs normal-case"></span></label>' +
-            '<input type="text" id="moviePlatform" maxlength="30" autocomplete="off" placeholder="Autom\u00E1tico (ou digite um texto livre)" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 w-full rounded"></section>' +
+            '<input type="text" id="moviePlatform" maxlength="30" autocomplete="off" placeholder="Autom\u00E1tico (ou digite um texto livre)" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 w-full rounded"><div class="flex items-center gap-3"><label class="text-xs text-zinc-400 flex-1">Cor do texto da plataforma <span id="moviePlatformColorState" class="text-zinc-600">(padr\u00E3o)</span></label><input type="color" id="moviePlatformColor" value="#ef4444" class="w-10 h-8 rounded border border-zinc-700 bg-transparent cursor-pointer"><button type="button" id="moviePlatformColorReset" class="text-xs text-zinc-400 hover:text-white underline">Padr\u00E3o</button></div></section>' +
             '<button id="movieDownloadBtn" class="w-full bg-red-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-red-400 transition-all flex items-center justify-center gap-3 rounded-lg cursor-pointer" data-testid="movie-download-btn">BAIXAR BANNER FULL HD</button>' +
         '</section>';
 
@@ -563,6 +564,7 @@ async function loadMoviesMode() {
         document.getElementById('movieSearch').addEventListener('input', function(e) { clearTimeout(searchTimeout); searchTimeout = setTimeout(function() { searchMovies(e.target.value); }, 500); });
         document.getElementById('movieFormatPost').addEventListener('click', function() { currentFormat = 'post'; updateMovieFormatButtons(); generateMovieBanner(); });
         document.getElementById('movieFormatStory').addEventListener('click', function() { currentFormat = 'story'; updateMovieFormatButtons(); generateMovieBanner(); });
+        setupPlatformColorControls('movie', generateMovieBanner);
         var platformTypingTimeout;
         document.getElementById('moviePlatform').addEventListener('input', function() { clearTimeout(platformTypingTimeout); platformTypingTimeout = setTimeout(generateMovieBanner, 200); });
         document.getElementById('movieDownloadBtn').addEventListener('click', downloadMovieBanner);
@@ -654,6 +656,27 @@ async function selectMovie(movie) {
     setTimeout(function() { generateMovieBanner(); }, 200);
 }
 
+// Cor do texto da plataforma escolhida pelo usuário (null = cores padrão de cada plataforma)
+let platformColorOverride = null;
+
+function setupPlatformColorControls(prefix, onChange) {
+    var input = document.getElementById(prefix + 'PlatformColor');
+    var reset = document.getElementById(prefix + 'PlatformColorReset');
+    var state = document.getElementById(prefix + 'PlatformColorState');
+    if (!input) return;
+    input.addEventListener('input', function() {
+        platformColorOverride = input.value;
+        if (state) state.textContent = '(personalizada)';
+        if (onChange) onChange();
+    });
+    if (reset) reset.addEventListener('click', function() {
+        platformColorOverride = null;
+        input.value = '#ef4444';
+        if (state) state.textContent = '(padr\u00E3o)';
+        if (onChange) onChange();
+    });
+}
+
 function getPlatformInputValue(id) {
     var el = document.getElementById(id);
     return el ? (el.value || '').trim() : '';
@@ -665,6 +688,7 @@ function matchPlatform(name) {
 }
 
 function getPlatformColor(platform) {
+    if (platformColorOverride) return platformColorOverride;
     var p = (platform || '').trim().toLowerCase();
     if (p === 'wplay') return '#0CA77F';
     if (p === 'rushplay') return '#ef4444';
@@ -673,7 +697,7 @@ function getPlatformColor(platform) {
 
 function drawPlatformText(c, platform, x, y, fontSize) {
     if (!platform) return;
-    if ((platform || '').trim().toLowerCase().replace(/\s+/g, '') === 'wplay/rushplay') {
+    if (!platformColorOverride && (platform || '').trim().toLowerCase().replace(/\s+/g, '') === 'wplay/rushplay') {
         // Draw "WPlay" in green, " / " in white, "RushPlay" in dark red
         c.font = '600 ' + fontSize + 'px Manrope, sans-serif';
         c.fillStyle = '#0CA77F';
@@ -883,6 +907,7 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
 // ============================================
 async function loadVideoMode() {
     videoTypeFilter = 'both';
+    platformColorOverride = null;
     uploadedVideoFile = null;
     if (uploadedVideoUrl) { try { URL.revokeObjectURL(uploadedVideoUrl); } catch(e) {} }
     uploadedVideoUrl = null;
@@ -943,6 +968,7 @@ async function loadVideoMode() {
             '<section class="flex flex-col gap-2">' +
                 '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Plataforma <span id="videoPlatformAutoText" class="text-green-400 text-xs normal-case"></span></label>' +
                 '<input type="text" id="videoPlatform" maxlength="30" autocomplete="off" placeholder="Autom\u00E1tico (ou digite um texto livre)" class="bg-black border border-zinc-800 p-3 text-white text-sm placeholder-zinc-600 w-full rounded focus:outline-none focus:border-purple-500">' +
+            '<div class="flex items-center gap-3"><label class="text-xs text-zinc-400 flex-1">Cor do texto da plataforma <span id="videoPlatformColorState" class="text-zinc-600">(padr\u00E3o)</span></label><input type="color" id="videoPlatformColor" value="#ef4444" class="w-10 h-8 rounded border border-zinc-700 bg-transparent cursor-pointer"><button type="button" id="videoPlatformColorReset" class="text-xs text-zinc-400 hover:text-white underline">Padr\u00E3o</button></div>' +
             '</section>' +
             '<button id="videoGenerateBtn" class="w-full bg-purple-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-purple-400 transition-all flex items-center justify-center gap-3 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled data-testid="video-generate-btn">GERAR BANNER MP4 (1080x1080)</button>' +
             '<div id="videoProgressBox" class="hidden text-center"><p class="text-xs text-zinc-400 mb-2" id="videoProgressLabel">Gerando v\u00EDdeo...</p><div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden"><div id="videoProgressFill" class="h-full bg-purple-500 transition-all" style="width:0%"></div></div></div>' +
@@ -954,6 +980,7 @@ async function loadVideoMode() {
         document.getElementById('videoTypeBoth').addEventListener('click', function() { setVideoTypeFilter('both'); });
         document.getElementById('videoTypeMovie').addEventListener('click', function() { setVideoTypeFilter('movie'); });
         document.getElementById('videoTypeTv').addEventListener('click', function() { setVideoTypeFilter('tv'); });
+        setupPlatformColorControls('video', null);
         document.getElementById('videoFormatPost').addEventListener('click', function() { videoFormat = 'post'; updateVideoFormatButtons(); });
         document.getElementById('videoFormatStory').addEventListener('click', function() { videoFormat = 'story'; updateVideoFormatButtons(); });
         document.getElementById('videoFileInput').addEventListener('change', handleVideoFileUpload);

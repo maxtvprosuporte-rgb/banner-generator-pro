@@ -2822,7 +2822,7 @@ async function loadPosterOptions(content, containerId, previewId, onChange) {
     if (!box || !content) return;
     var mySeq = ++posterPickerSeq;
     var endpoint = content.type === 'movie' ? 'movie' : 'tv';
-    var headerHtml = '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-2">Escolher capa (Portugu\u00EAs / Brasil)</label>';
+    var headerHtml = '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold block mb-2">Escolher capa</label>';
     box.innerHTML = headerHtml + '<p class="text-xs text-zinc-500">Carregando capas dispon\u00EDveis...</p>';
 
     var posters = [];
@@ -2839,14 +2839,24 @@ async function loadPosterOptions(content, containerId, previewId, onChange) {
     if (mySeq !== posterPickerSeq || selectedContent !== content) return;
 
     var ptPosters = posters.filter(function(p) { return p.iso_639_1 === 'pt'; }).slice(0, 30);
-    var otherPosters = posters.filter(function(p) { return !p.iso_639_1; }).slice(0, 30);
-    var showOthers = false;
+    var noLangPosters = posters.filter(function(p) { return !p.iso_639_1; }).slice(0, 30);
+    var activeFilter = 'pt';
 
     function render() {
-        var list = showOthers ? ptPosters.concat(otherPosters) : ptPosters;
+        var list = activeFilter === 'pt' ? ptPosters : noLangPosters;
         var html = headerHtml;
+
+        // Filtros: Português / Sem Idioma
+        html += '<div class="flex gap-2 mb-2">';
+        [['pt', 'Portugu\u00EAs', ptPosters.length], ['none', 'Sem Idioma', noLangPosters.length]].forEach(function(f) {
+            var on = activeFilter === f[0];
+            html += '<button type="button" data-filter="' + f[0] + '" class="flex-1 py-2 px-3 border text-xs font-semibold uppercase tracking-wider rounded ' +
+                    (on ? 'bg-white text-black border-white' : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600') + '">' + f[1] + ' (' + f[2] + ')</button>';
+        });
+        html += '</div>';
+
         if (list.length === 0) {
-            html += '<p class="text-xs text-zinc-500 mb-2">Nenhuma capa em Portugu\u00EAs encontrada para este t\u00EDtulo.</p>';
+            html += '<p class="text-xs text-zinc-500 mb-2">' + (activeFilter === 'pt' ? 'Nenhuma capa em Portugu\u00EAs encontrada para este t\u00EDtulo.' : 'Nenhuma capa sem idioma encontrada para este t\u00EDtulo.') + '</p>';
         } else {
             html += '<div class="flex gap-2 overflow-x-auto pb-2">';
             list.forEach(function(p) {
@@ -2856,16 +2866,14 @@ async function loadPosterOptions(content, containerId, previewId, onChange) {
             });
             html += '</div>';
         }
-        if (otherPosters.length > 0) {
-            html += '<button type="button" data-toggle="others" class="text-xs text-zinc-400 hover:text-white underline mb-1">' + (showOthers ? 'Ocultar capas sem idioma' : 'Mostrar tamb\u00E9m capas sem idioma/texto (' + otherPosters.length + ')') + '</button>';
-        }
         box.innerHTML = html;
 
+        box.querySelectorAll('button[data-filter]').forEach(function(btn) {
+            btn.addEventListener('click', function() { activeFilter = btn.getAttribute('data-filter'); render(); });
+        });
         box.querySelectorAll('button[data-path]').forEach(function(btn) {
             btn.addEventListener('click', function() { pickPoster(btn.getAttribute('data-path')); });
         });
-        var toggle = box.querySelector('button[data-toggle="others"]');
-        if (toggle) toggle.addEventListener('click', function() { showOthers = !showOthers; render(); });
     }
 
     async function pickPoster(path) {

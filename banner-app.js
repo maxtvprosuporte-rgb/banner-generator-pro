@@ -696,20 +696,20 @@ function applyAutoPlatform(inputId, detected) {
 
 // ============================================
 // FORMATOS / RESOLUÇÕES
-// post   = Post do feed | story = Story 9:16 | status = Status do WhatsApp (800x1100)
+// post   = Post do feed | story = Story 9:16 | status = Status do WhatsApp (1230x2050)
 // ============================================
 var FORMAT_BUTTON_ON = 'flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-white text-black border-white';
 var FORMAT_BUTTON_OFF = 'flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
 
 function getBannerSize(format) {
     if (format === 'story')  return { w: 1080, h: 1920, scale: 1.5, isPost: false, label: '1080x1920', previewMax: '280px' };
-    if (format === 'status') return { w: 800,  h: 1100, scale: 1,   isPost: true,  label: '800x1100 \u00B7 Status do WhatsApp', previewMax: '340px' };
+    if (format === 'status') return { w: 1230, h: 2050, scale: 1,   isPost: false, label: '1230x2050 \u00B7 Status do WhatsApp', previewMax: '280px' };
     return { w: 1080, h: 1350, scale: 1.5, isPost: true, label: '1080x1350', previewMax: '400px' };
 }
 
 function getVideoSizeInfo(format) {
     if (format === 'story')  return { W: 1080, H: 1920, label: '1080x1920 (9:16 Story)', title: '1080x1920 (9:16) \u2014 Formato Story', suffix: '_story', previewMax: '250px', resultMax: '350px' };
-    if (format === 'status') return { W: 800,  H: 1100, label: '800x1100 (Status WhatsApp)', title: '800x1100 \u2014 Status do WhatsApp', suffix: '_status', previewMax: '300px', resultMax: '450px' };
+    if (format === 'status') return { W: 1230, H: 2050, label: '1230x2050 (Status WhatsApp)', title: '1230x2050 \u2014 Status do WhatsApp', suffix: '_status', previewMax: '250px', resultMax: '350px' };
     return { W: 1080, H: 1080, label: '1080x1080 (1:1 Post)', title: '1080x1080 (1:1) \u2014 Formato Post', suffix: '_post', previewMax: '350px', resultMax: '600px' };
 }
 
@@ -731,7 +731,7 @@ function setVideoGenerateButtonLabel(btnId) {
 }
 
 // Reduz o tamanho da fonte da linha de informações (nota • ano • gênero • duração • plataforma)
-// até ela caber em maxW, para não estourar a borda em formatos mais estreitos (ex.: 800x1100).
+// até ela caber em maxW, para não estourar a borda em formatos mais estreitos.
 function fitMetaFontSize(oc, parts, plat, sep, maxW, baseFS, minFS) {
     for (var size = baseFS; size > minFS; size--) {
         oc.font = '600 ' + size + 'px Manrope, sans-serif';
@@ -823,7 +823,7 @@ function updateMovieFormatButtons() {
     var hint = document.getElementById('movieFormatHint');
     if (hint) hint.textContent = size.label;
     var dl = document.getElementById('movieDownloadBtn');
-    if (dl) dl.textContent = currentFormat === 'status' ? 'BAIXAR BANNER 800x1100' : 'BAIXAR BANNER FULL HD';
+    if (dl) dl.textContent = currentFormat === 'status' ? 'BAIXAR BANNER 1230x2050' : 'BAIXAR BANNER FULL HD';
 }
 
 function downloadMovieBanner() {
@@ -836,7 +836,7 @@ function downloadMovieBanner() {
         var baseH = bsize.h;
         // scale reduzido de 2x para 1.5x: 1080x1920 j\u00E1 \u00E9 Full HD;
         // 2x virava 2160x3840 (quase 4K) e derrubava a aba no Safari iOS por falta de mem\u00F3ria
-        var scale = bsize.scale; // Status do WhatsApp sai exatamente em 800x1100 (escala 1)
+        var scale = bsize.scale; // Status do WhatsApp sai exatamente em 1230x2050 (escala 1)
         hdCanvas.width = baseW * scale;
         hdCanvas.height = baseH * scale;
         var hdCtx = hdCanvas.getContext('2d');
@@ -846,7 +846,7 @@ function downloadMovieBanner() {
         renderMovieBannerToCtx(hdCtx, baseW, baseH, isPost);
 
         var safeTitle = (selectedContent.title || 'banner').replace(/[^a-zA-Z0-9]/g, '_') || 'banner';
-        var fileName = safeTitle + '_' + currentFormat + (currentFormat === 'status' ? '_800x1100.png' : '_FULLHD.png');
+        var fileName = safeTitle + '_' + currentFormat + (currentFormat === 'status' ? '_1230x2050.png' : '_FULLHD.png');
 
         // toBlob em vez de toDataURL: evita manter uma string base64 gigante
         // na mem\u00F3ria (principal causa de crash de aba em imagens grandes no iOS)
@@ -1021,7 +1021,7 @@ async function loadVideoMode() {
                 '<div class="flex gap-2">' +
                     '<button id="videoFormatPost" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-white text-black border-white">Post (1:1)</button>' +
                     '<button id="videoFormatStory" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story (9:16)</button>' +
-                    '<button id="videoFormatStatus" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Status (800x1100)</button>' +
+                    '<button id="videoFormatStatus" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Status (1230x2050)</button>' +
                 '</div>' +
             '</section>' +
             '<section class="flex flex-col gap-2">' +
@@ -1710,7 +1710,7 @@ async function generateTrailerBannerVideo() {
 
         // Renderiza a camada estática UMA VEZ no offscreen
         var videoY = 0; // Posição Y do vídeo (necessário para Story)
-        if (videoFormat === 'story') {
+        if (videoFormat === 'story' || videoFormat === 'status') {
             videoY = renderStaticStoryLayer(sc, W, H, videoAreaH);
         } else {
             renderStaticBannerLayer(sc, W, H, videoAreaH);
@@ -2313,7 +2313,7 @@ async function loadCustomVideoMode() {
             '<div class="flex gap-2">' +
                 '<button id="cvFormatPost" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-white text-black border-white">Post (1:1)</button>' +
                 '<button id="cvFormatStory" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story (9:16)</button>' +
-                '<button id="cvFormatStatus" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Status (800x1100)</button>' +
+                '<button id="cvFormatStatus" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Status (1230x2050)</button>' +
             '</div>' +
         '</section>' +
         '<section class="flex flex-col gap-2 mt-5">' +
@@ -2478,7 +2478,7 @@ async function generateCustomTrailerBannerVideo() {
         });
 
         var videoY = 0;
-        if (videoFormat === 'story') {
+        if (videoFormat === 'story' || videoFormat === 'status') {
             videoY = renderCustomStaticStoryLayer(sc, W, H, videoAreaH, customText);
         } else {
             renderCustomStaticBannerLayer(sc, W, H, videoAreaH, customText);

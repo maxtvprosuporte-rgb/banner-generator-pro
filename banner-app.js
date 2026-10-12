@@ -533,6 +533,7 @@ async function loadMoviesMode() {
     videoContainer.classList.add('hidden');
     movieTypeFilter = 'both';
     platformColorOverride = null;
+    platformAutoFilled.moviePlatform = '';
 
     controlPanel.innerHTML =
         '<header class="border-b border-zinc-800 pb-5"><h2 class="font-oswald text-2xl font-bold text-red-400">Filmes e S\u00E9ries</h2></header>' +
@@ -553,7 +554,7 @@ async function loadMoviesMode() {
         '</section>' +
         '<section id="movieControls" class="hidden flex flex-col gap-5 mt-5">' +
             '<div id="movieSelectedInfo" class="border border-zinc-800 p-4 bg-black/30 rounded-lg"></div>' +
-            '<section class="flex flex-col gap-3"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label><div class="flex gap-2"><button id="movieFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white">Post</button><button id="movieFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story</button></div></section>' +
+            '<section class="flex flex-col gap-3"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label><div class="flex gap-2"><button id="movieFormatPost" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-white text-black border-white">Post</button><button id="movieFormatStory" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story</button><button id="movieFormatStatus" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Status</button></div><p id="movieFormatHint" class="text-xs text-zinc-500">1080x1350</p></section>' +
             '<section class="flex flex-col gap-3"><label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Plataforma <span id="platformAutoText" class="text-green-400 text-xs normal-case"></span></label>' +
             '<input type="text" id="moviePlatform" maxlength="30" autocomplete="off" placeholder="Autom\u00E1tico (ou digite um texto livre)" class="bg-black border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 w-full rounded"><div class="flex items-center gap-3"><label class="text-xs text-zinc-400 flex-1">Cor do texto da plataforma <span id="moviePlatformColorState" class="text-zinc-600">(padr\u00E3o)</span></label><input type="color" id="moviePlatformColor" value="#ef4444" class="w-10 h-8 rounded border border-zinc-700 bg-transparent cursor-pointer"><button type="button" id="moviePlatformColorReset" class="text-xs text-zinc-400 hover:text-white underline">Padr\u00E3o</button></div></section>' +
             '<button id="movieDownloadBtn" class="w-full bg-red-500 text-white font-bold uppercase tracking-widest py-4 hover:bg-red-400 transition-all flex items-center justify-center gap-3 rounded-lg cursor-pointer" data-testid="movie-download-btn">BAIXAR BANNER FULL HD</button>' +
@@ -564,6 +565,7 @@ async function loadMoviesMode() {
         document.getElementById('movieSearch').addEventListener('input', function(e) { clearTimeout(searchTimeout); searchTimeout = setTimeout(function() { searchMovies(e.target.value); }, 500); });
         document.getElementById('movieFormatPost').addEventListener('click', function() { currentFormat = 'post'; updateMovieFormatButtons(); generateMovieBanner(); });
         document.getElementById('movieFormatStory').addEventListener('click', function() { currentFormat = 'story'; updateMovieFormatButtons(); generateMovieBanner(); });
+        document.getElementById('movieFormatStatus').addEventListener('click', function() { currentFormat = 'status'; updateMovieFormatButtons(); generateMovieBanner(); });
         setupPlatformColorControls('movie', generateMovieBanner);
         var platformTypingTimeout;
         document.getElementById('moviePlatform').addEventListener('input', function() { clearTimeout(platformTypingTimeout); platformTypingTimeout = setTimeout(generateMovieBanner, 200); });
@@ -646,8 +648,8 @@ async function selectMovie(movie) {
         var watchRes = await fetch(TMDB_BASE_URL + '/' + endpoint + '/' + movie.id + '/watch');
         var watchData = await watchRes.json();
         var brProviders = (watchData.results && watchData.results.BR) ? (watchData.results.BR.flatrate || watchData.results.BR.ads || []) : [];
-        if (brProviders.length > 0) { selectedContent.autoProvider = matchPlatform(brProviders[0].provider_name) || brProviders[0].provider_name; document.getElementById('platformAutoText').textContent = '(Detectado: ' + selectedContent.autoProvider + ')'; }
-        else { selectedContent.autoProvider = null; document.getElementById('platformAutoText').textContent = ''; }
+        if (brProviders.length > 0) { selectedContent.autoProvider = matchPlatform(brProviders[0].provider_name) || brProviders[0].provider_name; document.getElementById('platformAutoText').textContent = '(Detectado: ' + selectedContent.autoProvider + ')'; applyAutoPlatform('moviePlatform', selectedContent.autoProvider); }
+        else { selectedContent.autoProvider = null; document.getElementById('platformAutoText').textContent = ''; applyAutoPlatform('moviePlatform', ''); }
     } catch (e) { console.error('Erro:', e); }
     if (movie.poster) { try { posterImage = await loadImage(movie.poster); } catch (e) { posterImage = null; } } else { posterImage = null; }
     document.getElementById('movieControls').classList.remove('hidden');
@@ -675,6 +677,71 @@ function setupPlatformColorControls(prefix, onChange) {
         if (state) state.textContent = '(padr\u00E3o)';
         if (onChange) onChange();
     });
+}
+
+// Preenche o campo da plataforma com a detectada pelo sistema.
+// Só mexe no campo se ele estiver vazio ou ainda tiver o valor que o próprio sistema
+// preencheu antes; se o usuário digitou um texto livre, esse texto é mantido.
+let platformAutoFilled = { moviePlatform: '', videoPlatform: '' };
+function applyAutoPlatform(inputId, detected) {
+    var el = document.getElementById(inputId);
+    if (!el) return;
+    var current = (el.value || '').trim();
+    var lastAuto = platformAutoFilled[inputId] || '';
+    if (current === '' || current === lastAuto) {
+        el.value = detected || '';
+        platformAutoFilled[inputId] = detected || '';
+    }
+}
+
+// ============================================
+// FORMATOS / RESOLUÇÕES
+// post   = Post do feed | story = Story 9:16 | status = Status do WhatsApp (800x1100)
+// ============================================
+var FORMAT_BUTTON_ON = 'flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-white text-black border-white';
+var FORMAT_BUTTON_OFF = 'flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
+
+function getBannerSize(format) {
+    if (format === 'story')  return { w: 1080, h: 1920, scale: 1.5, isPost: false, label: '1080x1920', previewMax: '280px' };
+    if (format === 'status') return { w: 800,  h: 1100, scale: 1,   isPost: true,  label: '800x1100 \u00B7 Status do WhatsApp', previewMax: '340px' };
+    return { w: 1080, h: 1350, scale: 1.5, isPost: true, label: '1080x1350', previewMax: '400px' };
+}
+
+function getVideoSizeInfo(format) {
+    if (format === 'story')  return { W: 1080, H: 1920, label: '1080x1920 (9:16 Story)', title: '1080x1920 (9:16) \u2014 Formato Story', suffix: '_story', previewMax: '250px', resultMax: '350px' };
+    if (format === 'status') return { W: 800,  H: 1100, label: '800x1100 (Status WhatsApp)', title: '800x1100 \u2014 Status do WhatsApp', suffix: '_status', previewMax: '300px', resultMax: '450px' };
+    return { W: 1080, H: 1080, label: '1080x1080 (1:1 Post)', title: '1080x1080 (1:1) \u2014 Formato Post', suffix: '_post', previewMax: '350px', resultMax: '600px' };
+}
+
+function getVideoGenerateLabel() {
+    var s = getVideoSizeInfo(videoFormat);
+    return 'GERAR BANNER MP4 (' + s.W + 'x' + s.H + ')';
+}
+
+function styleFormatButtons(ids, active) {
+    ['post', 'story', 'status'].forEach(function(f) {
+        var el = document.getElementById(ids[f]);
+        if (el) el.className = (f === active) ? FORMAT_BUTTON_ON : FORMAT_BUTTON_OFF;
+    });
+}
+
+function setVideoGenerateButtonLabel(btnId) {
+    var btn = document.getElementById(btnId);
+    if (btn && !btn.disabled && !btn.querySelector('.spinner')) btn.textContent = getVideoGenerateLabel();
+}
+
+// Reduz o tamanho da fonte da linha de informações (nota • ano • gênero • duração • plataforma)
+// até ela caber em maxW, para não estourar a borda em formatos mais estreitos (ex.: 800x1100).
+function fitMetaFontSize(oc, parts, plat, sep, maxW, baseFS, minFS) {
+    for (var size = baseFS; size > minFS; size--) {
+        oc.font = '600 ' + size + 'px Manrope, sans-serif';
+        var sepW = oc.measureText(sep).width;
+        var w = 0;
+        for (var i = 0; i < parts.length; i++) { w += oc.measureText(parts[i].text).width + (i > 0 ? sepW : 0); }
+        if (plat) w += sepW + oc.measureText(plat).width;
+        if (w <= maxW) return size;
+    }
+    return minFS;
 }
 
 function getPlatformInputValue(id) {
@@ -740,38 +807,36 @@ window.copyMovieInfo = function() {
 
 function generateMovieBanner() {
     if (!selectedContent || currentMode !== 'movies') return;
-    var isPost = currentFormat === 'post';
-    var width = 1080;
-    var height = isPost ? 1350 : 1920;
+    var size = getBannerSize(currentFormat);
+    var width = size.w;
+    var height = size.h;
     canvas.width = width;
     canvas.height = height;
-    canvas.style.maxWidth = isPost ? '400px' : '280px';
+    canvas.style.maxWidth = size.previewMax;
     canvas.style.display = 'block';
-    renderMovieBannerToCtx(ctx, width, height, isPost);
+    renderMovieBannerToCtx(ctx, width, height, size.isPost);
 }
 
 function updateMovieFormatButtons() {
-    var postBtn = document.getElementById('movieFormatPost');
-    var storyBtn = document.getElementById('movieFormatStory');
-    if (currentFormat === 'post') {
-        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
-        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
-    } else {
-        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
-        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
-    }
+    styleFormatButtons({ post: 'movieFormatPost', story: 'movieFormatStory', status: 'movieFormatStatus' }, currentFormat);
+    var size = getBannerSize(currentFormat);
+    var hint = document.getElementById('movieFormatHint');
+    if (hint) hint.textContent = size.label;
+    var dl = document.getElementById('movieDownloadBtn');
+    if (dl) dl.textContent = currentFormat === 'status' ? 'BAIXAR BANNER 800x1100' : 'BAIXAR BANNER FULL HD';
 }
 
 function downloadMovieBanner() {
     if (!selectedContent) { alert('Selecione um filme ou s\u00E9rie primeiro!'); return; }
     try {
         var hdCanvas = document.createElement('canvas');
-        var isPost = currentFormat === 'post';
-        var baseW = 1080;
-        var baseH = isPost ? 1350 : 1920;
+        var bsize = getBannerSize(currentFormat);
+        var isPost = bsize.isPost;
+        var baseW = bsize.w;
+        var baseH = bsize.h;
         // scale reduzido de 2x para 1.5x: 1080x1920 j\u00E1 \u00E9 Full HD;
         // 2x virava 2160x3840 (quase 4K) e derrubava a aba no Safari iOS por falta de mem\u00F3ria
-        var scale = 1.5;
+        var scale = bsize.scale; // Status do WhatsApp sai exatamente em 800x1100 (escala 1)
         hdCanvas.width = baseW * scale;
         hdCanvas.height = baseH * scale;
         var hdCtx = hdCanvas.getContext('2d');
@@ -781,7 +846,7 @@ function downloadMovieBanner() {
         renderMovieBannerToCtx(hdCtx, baseW, baseH, isPost);
 
         var safeTitle = (selectedContent.title || 'banner').replace(/[^a-zA-Z0-9]/g, '_') || 'banner';
-        var fileName = safeTitle + '_' + currentFormat + '_FULLHD.png';
+        var fileName = safeTitle + '_' + currentFormat + (currentFormat === 'status' ? '_800x1100.png' : '_FULLHD.png');
 
         // toBlob em vez de toDataURL: evita manter uma string base64 gigante
         // na mem\u00F3ria (principal causa de crash de aba em imagens grandes no iOS)
@@ -908,6 +973,7 @@ function renderMovieBannerToCtx(c, width, height, isPost) {
 async function loadVideoMode() {
     videoTypeFilter = 'both';
     platformColorOverride = null;
+    platformAutoFilled.videoPlatform = '';
     uploadedVideoFile = null;
     if (uploadedVideoUrl) { try { URL.revokeObjectURL(uploadedVideoUrl); } catch(e) {} }
     uploadedVideoUrl = null;
@@ -953,8 +1019,9 @@ async function loadVideoMode() {
             '<section class="flex flex-col gap-2">' +
                 '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label>' +
                 '<div class="flex gap-2">' +
-                    '<button id="videoFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white">Post (1:1)</button>' +
-                    '<button id="videoFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story (9:16)</button>' +
+                    '<button id="videoFormatPost" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-white text-black border-white">Post (1:1)</button>' +
+                    '<button id="videoFormatStory" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story (9:16)</button>' +
+                    '<button id="videoFormatStatus" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Status (800x1100)</button>' +
                 '</div>' +
             '</section>' +
             '<section class="flex flex-col gap-2">' +
@@ -983,6 +1050,7 @@ async function loadVideoMode() {
         setupPlatformColorControls('video', null);
         document.getElementById('videoFormatPost').addEventListener('click', function() { videoFormat = 'post'; updateVideoFormatButtons(); });
         document.getElementById('videoFormatStory').addEventListener('click', function() { videoFormat = 'story'; updateVideoFormatButtons(); });
+        document.getElementById('videoFormatStatus').addEventListener('click', function() { videoFormat = 'status'; updateVideoFormatButtons(); });
         document.getElementById('videoFileInput').addEventListener('change', handleVideoFileUpload);
         document.getElementById('videoGenerateBtn').addEventListener('click', generateTrailerBannerVideo);
     }, 100);
@@ -1006,15 +1074,8 @@ function setVideoTypeFilter(type) {
 }
 
 function updateVideoFormatButtons() {
-    var postBtn = document.getElementById('videoFormatPost');
-    var storyBtn = document.getElementById('videoFormatStory');
-    if (videoFormat === 'post') {
-        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
-        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
-    } else {
-        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
-        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
-    }
+    styleFormatButtons({ post: 'videoFormatPost', story: 'videoFormatStory', status: 'videoFormatStatus' }, videoFormat);
+    setVideoGenerateButtonLabel('videoGenerateBtn');
 }
 
 let videoSearchSeq = 0;
@@ -1080,8 +1141,10 @@ async function selectVideoContent(content) {
             selectedContent.autoProvider = matchPlatform(brProviders[0].provider_name) || brProviders[0].provider_name;
             var vpAuto = document.getElementById('videoPlatformAutoText');
             if (vpAuto) vpAuto.textContent = '(Detectado: ' + selectedContent.autoProvider + ')';
+            applyAutoPlatform('videoPlatform', selectedContent.autoProvider);
         } else {
             selectedContent.autoProvider = null;
+            applyAutoPlatform('videoPlatform', '');
             var vpAuto2 = document.getElementById('videoPlatformAutoText');
             if (vpAuto2) vpAuto2.textContent = '';
         }
@@ -1236,8 +1299,9 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
 
     // Meta
     curY += gap1;
-    oc.font = '600 24px Manrope, sans-serif';
     var sep = '  \u2022  ';
+    var metaFS = fitMetaFontSize(oc, metaParts, plat, sep, contentMaxW, 24, 14);
+    oc.font = '600 ' + metaFS + 'px Manrope, sans-serif';
     var metaCursorX = contentX;
     for (var mi = 0; mi < metaParts.length; mi++) {
         if (mi > 0) {
@@ -1254,7 +1318,7 @@ function renderStaticBannerLayer(oc, W, H, videoAreaH) {
         oc.fillStyle = 'rgba(255,255,255,0.6)';
         oc.fillText(sep, metaCursorX, curY);
         metaCursorX += oc.measureText(sep).width;
-        var platW = drawPlatformText(oc, plat, metaCursorX, curY, 24);
+        var platW = drawPlatformText(oc, plat, metaCursorX, curY, metaFS);
         metaCursorX += platW;
     }
 
@@ -1441,8 +1505,9 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
 
     // Meta
     curY += gap1;
-    oc.font = '600 28px Manrope, sans-serif';
     var sep = '  \u2022  ';
+    var metaFS = fitMetaFontSize(oc, metaParts, plat, sep, contentMaxW, 28, 14);
+    oc.font = '600 ' + metaFS + 'px Manrope, sans-serif';
     var metaCursorX = contentX;
     for (var mi = 0; mi < metaParts.length; mi++) {
         if (mi > 0) {
@@ -1459,7 +1524,7 @@ function renderStaticStoryLayer(oc, W, H, videoAreaH) {
         oc.fillStyle = 'rgba(255,255,255,0.6)';
         oc.fillText(sep, metaCursorX, curY);
         metaCursorX += oc.measureText(sep).width;
-        var platW = drawPlatformText(oc, plat, metaCursorX, curY, 28);
+        var platW = drawPlatformText(oc, plat, metaCursorX, curY, metaFS);
         metaCursorX += platW;
     }
 
@@ -1569,7 +1634,7 @@ async function generateTrailerBannerVideo() {
     }
     if (!mimeType) {
         btn.disabled = false;
-        btn.innerHTML = 'GERAR BANNER MP4 (1080x1080)';
+        btn.innerHTML = getVideoGenerateLabel();
         progressBox.classList.add('hidden');
         alert('Navegador n\u00E3o suporta MediaRecorder');
         return;
@@ -1597,10 +1662,11 @@ async function generateTrailerBannerVideo() {
 
     try {
         // Define dimensões baseado no formato
-        var W = 1080;
-        var H = videoFormat === 'story' ? 1920 : 1080;
+        var vsize = getVideoSizeInfo(videoFormat);
+        var W = vsize.W;
+        var H = vsize.H;
         var videoAreaH = Math.round(W * 0.61); // Vídeo 16:9 ampliado (~659px)
-        var formatLabel = videoFormat === 'story' ? '1080x1920 (9:16 Story)' : '1080x1080 (1:1 Post)';
+        var formatLabel = vsize.label;
 
         // Canvas final (o que vai pro MediaRecorder)
         var outCanvas = document.createElement('canvas');
@@ -1619,7 +1685,7 @@ async function generateTrailerBannerVideo() {
         videoContainer.innerHTML = '<div class="text-center"><p class="text-purple-300 mb-3 font-semibold">Gerando banner vídeo ' + formatLabel
             + (nativeMp4 ? ' (modo rápido MP4 nativo)' : ' (modo compatível)') + '...</p></div>';
         videoContainer.appendChild(outCanvas);
-        outCanvas.style.maxWidth = videoFormat === 'story' ? '250px' : '350px';
+        outCanvas.style.maxWidth = vsize.previewMax;
         outCanvas.style.borderRadius = '12px';
         outCanvas.style.boxShadow = '0 0 60px rgba(168,85,247,0.4)';
 
@@ -1896,7 +1962,7 @@ async function generateTrailerBannerVideo() {
         var savedPct = compressed ? Math.round((1 - finalBlob.size / rawResult.blob.size) * 100) : 0;
         var url = URL.createObjectURL(finalBlob);
         var safeTitle = (selectedContent.title || 'trailer').replace(/[^a-zA-Z0-9]/g, '_');
-        var formatSuffix = videoFormat === 'story' ? '_story' : '_post';
+        var formatSuffix = vsize.suffix;
         var fileName = safeTitle + '_trailer' + formatSuffix + '_whatsapp_hd.' + finalExt;
         var exceedsLimit = finalSizeBytes > (100 * 1024 * 1024); // 100MB
 
@@ -1911,7 +1977,7 @@ async function generateTrailerBannerVideo() {
         var titleDiv = document.createElement('div');
         titleDiv.className = 'text-center mb-6';
         titleDiv.innerHTML = '<h3 class="font-oswald text-3xl font-bold text-purple-400 mb-2">Banner Gerado com Sucesso!</h3>' +
-            '<p class="text-zinc-400 text-sm">' + (videoFormat === 'story' ? '1080x1920 (9:16) — Formato Story' : '1080x1080 (1:1) — Formato Post') + '</p>';
+            '<p class="text-zinc-400 text-sm">' + vsize.title + '</p>';
         resultContainer.appendChild(titleDiv);
         
         // Preview do vídeo
@@ -1921,7 +1987,7 @@ async function generateTrailerBannerVideo() {
         vidEl.autoplay = true;
         vidEl.loop = true;
         vidEl.muted = true;
-        vidEl.style.cssText = 'width: 100%; max-width: ' + (videoFormat === 'story' ? '350px' : '600px') + '; border-radius: 12px; box-shadow: 0 0 60px rgba(168,85,247,0.5); margin: 0 auto; display: block;';
+        vidEl.style.cssText = 'width: 100%; max-width: ' + vsize.resultMax + '; border-radius: 12px; box-shadow: 0 0 60px rgba(168,85,247,0.5); margin: 0 auto; display: block;';
         resultContainer.appendChild(vidEl);
         
         // Informações técnicas
@@ -1986,7 +2052,7 @@ async function generateTrailerBannerVideo() {
         setTimeout(function() { progressBox.classList.add('hidden'); }, 1500);
 
         btn.disabled = false;
-        btn.innerHTML = 'GERAR BANNER MP4 (1080x1080)';
+        btn.innerHTML = getVideoGenerateLabel();
     } catch (error) {
         console.error('Erro:', error);
         clearTimeout(failsafeTimer);
@@ -1994,7 +2060,7 @@ async function generateTrailerBannerVideo() {
         try { if (recorder && recorder.state !== 'inactive') recorder.stop(); } catch(e) {}
         alert('Erro ao gerar banner: ' + error.message);
         btn.disabled = false;
-        btn.innerHTML = 'GERAR BANNER MP4 (1080x1080)';
+        btn.innerHTML = getVideoGenerateLabel();
         progressBox.classList.add('hidden');
     }
 }
@@ -2245,8 +2311,9 @@ async function loadCustomVideoMode() {
         '<section class="flex flex-col gap-2 mt-5">' +
             '<label class="text-xs uppercase tracking-widest text-zinc-500 font-semibold">Formato</label>' +
             '<div class="flex gap-2">' +
-                '<button id="cvFormatPost" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white">Post (1:1)</button>' +
-                '<button id="cvFormatStory" class="flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story (9:16)</button>' +
+                '<button id="cvFormatPost" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-white text-black border-white">Post (1:1)</button>' +
+                '<button id="cvFormatStory" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Story (9:16)</button>' +
+                '<button id="cvFormatStatus" class="flex-1 py-3 px-2 border font-semibold text-xs uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800">Status (800x1100)</button>' +
             '</div>' +
         '</section>' +
         '<section class="flex flex-col gap-2 mt-5">' +
@@ -2263,6 +2330,7 @@ async function loadCustomVideoMode() {
     setTimeout(function() {
         document.getElementById('cvFormatPost').addEventListener('click', function() { videoFormat = 'post'; updateCustomVideoFormatButtons(); });
         document.getElementById('cvFormatStory').addEventListener('click', function() { videoFormat = 'story'; updateCustomVideoFormatButtons(); });
+        document.getElementById('cvFormatStatus').addEventListener('click', function() { videoFormat = 'status'; updateCustomVideoFormatButtons(); });
         document.getElementById('cvFileInput').addEventListener('change', handleCustomVideoFileUpload);
         document.getElementById('cvCustomText').addEventListener('input', function(e) {
             var count = e.target.value.length;
@@ -2279,16 +2347,8 @@ async function loadCustomVideoMode() {
 }
 
 function updateCustomVideoFormatButtons() {
-    var postBtn = document.getElementById('cvFormatPost');
-    var storyBtn = document.getElementById('cvFormatStory');
-    if (!postBtn || !storyBtn) return;
-    if (videoFormat === 'post') {
-        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
-        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
-    } else {
-        storyBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-white text-black border-white';
-        postBtn.className = 'flex-1 py-3 px-4 border font-semibold text-sm uppercase tracking-wider rounded bg-zinc-900 text-zinc-400 border-zinc-800';
-    }
+    styleFormatButtons({ post: 'cvFormatPost', story: 'cvFormatStory', status: 'cvFormatStatus' }, videoFormat);
+    setVideoGenerateButtonLabel('cvGenerateBtn');
 }
 
 function handleCustomVideoFileUpload(e) {
@@ -2348,7 +2408,7 @@ async function generateCustomTrailerBannerVideo() {
     }
     if (!mimeType) {
         btn.disabled = false;
-        btn.innerHTML = 'GERAR BANNER MP4 (1080x1080)';
+        btn.innerHTML = getVideoGenerateLabel();
         progressBox.classList.add('hidden');
         alert('Navegador n\u00E3o suporta MediaRecorder');
         return;
@@ -2373,10 +2433,11 @@ async function generateCustomTrailerBannerVideo() {
     }
 
     try {
-        var W = 1080;
-        var H = videoFormat === 'story' ? 1920 : 1080;
+        var vsize = getVideoSizeInfo(videoFormat);
+        var W = vsize.W;
+        var H = vsize.H;
         var videoAreaH = Math.round(W * 0.61);
-        var formatLabel = videoFormat === 'story' ? '1080x1920 (9:16 Story)' : '1080x1080 (1:1 Post)';
+        var formatLabel = vsize.label;
 
         var outCanvas = document.createElement('canvas');
         outCanvas.width = W; outCanvas.height = H;
@@ -2393,7 +2454,7 @@ async function generateCustomTrailerBannerVideo() {
         videoContainer.innerHTML = '<div class="text-center"><p class="text-blue-300 mb-3 font-semibold">Gerando banner v\u00EDdeo ' + formatLabel
             + (nativeMp4 ? ' (modo r\u00E1pido MP4 nativo)' : ' (modo compat\u00EDvel)') + '...</p></div>';
         videoContainer.appendChild(outCanvas);
-        outCanvas.style.maxWidth = videoFormat === 'story' ? '250px' : '350px';
+        outCanvas.style.maxWidth = vsize.previewMax;
         outCanvas.style.borderRadius = '12px';
         outCanvas.style.boxShadow = '0 0 60px rgba(59,130,246,0.4)';
 
@@ -2643,7 +2704,7 @@ async function generateCustomTrailerBannerVideo() {
         var savedPct = compressed ? Math.round((1 - finalBlob.size / rawResult.blob.size) * 100) : 0;
         var url = URL.createObjectURL(finalBlob);
         var safeTitle = customText.slice(0, 30).replace(/[^a-zA-Z0-9]/g, '_') || 'video_personalizado';
-        var formatSuffix = videoFormat === 'story' ? '_story' : '_post';
+        var formatSuffix = vsize.suffix;
         var fileName = safeTitle + formatSuffix + '_whatsapp_hd.' + finalExt;
         var exceedsLimit = finalSizeBytes > (100 * 1024 * 1024);
 
@@ -2655,7 +2716,7 @@ async function generateCustomTrailerBannerVideo() {
         var titleDiv = document.createElement('div');
         titleDiv.className = 'text-center mb-6';
         titleDiv.innerHTML = '<h3 class="font-oswald text-3xl font-bold text-blue-400 mb-2">Banner Gerado com Sucesso!</h3>' +
-            '<p class="text-zinc-400 text-sm">' + (videoFormat === 'story' ? '1080x1920 (9:16) — Formato Story' : '1080x1080 (1:1) — Formato Post') + '</p>';
+            '<p class="text-zinc-400 text-sm">' + vsize.title + '</p>';
         resultContainer.appendChild(titleDiv);
 
         var vidEl = document.createElement('video');
@@ -2664,7 +2725,7 @@ async function generateCustomTrailerBannerVideo() {
         vidEl.autoplay = true;
         vidEl.loop = true;
         vidEl.muted = true;
-        vidEl.style.cssText = 'width: 100%; max-width: ' + (videoFormat === 'story' ? '350px' : '600px') + '; border-radius: 12px; box-shadow: 0 0 60px rgba(59,130,246,0.5); margin: 0 auto; display: block;';
+        vidEl.style.cssText = 'width: 100%; max-width: ' + vsize.resultMax + '; border-radius: 12px; box-shadow: 0 0 60px rgba(59,130,246,0.5); margin: 0 auto; display: block;';
         resultContainer.appendChild(vidEl);
 
         var infoDiv = document.createElement('div');
@@ -2725,7 +2786,7 @@ async function generateCustomTrailerBannerVideo() {
         setTimeout(function() { progressBox.classList.add('hidden'); }, 1500);
 
         btn.disabled = false;
-        btn.innerHTML = 'GERAR BANNER MP4 (1080x1080)';
+        btn.innerHTML = getVideoGenerateLabel();
     } catch (error) {
         console.error('Erro:', error);
         clearTimeout(failsafeTimer);
@@ -2733,7 +2794,7 @@ async function generateCustomTrailerBannerVideo() {
         try { if (recorder && recorder.state !== 'inactive') recorder.stop(); } catch(e) {}
         alert('Erro ao gerar banner: ' + error.message);
         btn.disabled = false;
-        btn.innerHTML = 'GERAR BANNER MP4 (1080x1080)';
+        btn.innerHTML = getVideoGenerateLabel();
         progressBox.classList.add('hidden');
     }
 }

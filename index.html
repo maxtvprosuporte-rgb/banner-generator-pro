@@ -107,12 +107,13 @@
                 </section>
                 <div class="border-t border-zinc-800 pt-2">
                     <h3 class="font-oswald text-xl font-bold mb-1">Personalizar os 3 Boxes</h3>
-                    <p class="text-xs text-zinc-500 mb-4">Defina uma logo/ícone e cores próprias para cada box. Deixe desmarcado para manter o padrão.</p>
+                    <p class="text-xs text-zinc-500 mb-4">Defina uma logo/ícone e cores próprias para cada box, ou oculte os que não quiser (os boxes visíveis dividem a largura). Deixe desmarcado para manter o padrão.</p>
                 </div>
 
                 <!-- BOX INSTAGRAM -->
                 <section class="border border-zinc-800 rounded-lg p-5">
                     <label class="text-sm font-semibold text-purple-400 mb-3 block">Box Esquerdo</label>
+                    <label class="flex items-center gap-3 cursor-pointer mb-3 p-3 border border-zinc-800 rounded-lg hover:border-zinc-600"><input type="checkbox" id="boxInstagramHide" class="w-4 h-4 accent-purple-500" data-testid="box-instagram-hide"><span class="text-xs text-zinc-300">Ocultar este box (não aparece no banner/vídeo)</span></label>
                     <label class="border border-dashed border-zinc-700 p-4 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg mb-3">
                         <span id="boxInstagramIconText" class="text-xs text-zinc-400">Ícone/logo personalizado (opcional)</span>
                         <input type="file" id="boxInstagramIconInput" accept="image/*" class="hidden">
@@ -133,6 +134,7 @@
                 <!-- BOX WHATSAPP -->
                 <section class="border border-zinc-800 rounded-lg p-5">
                     <label class="text-sm font-semibold text-green-400 mb-3 block">Box Central</label>
+                    <label class="flex items-center gap-3 cursor-pointer mb-3 p-3 border border-zinc-800 rounded-lg hover:border-zinc-600"><input type="checkbox" id="boxWhatsappHide" class="w-4 h-4 accent-green-500" data-testid="box-whatsapp-hide"><span class="text-xs text-zinc-300">Ocultar este box (não aparece no banner/vídeo)</span></label>
                     <label class="border border-dashed border-zinc-700 p-4 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg mb-3">
                         <span id="boxWhatsappIconText" class="text-xs text-zinc-400">Ícone/logo personalizado (opcional)</span>
                         <input type="file" id="boxWhatsappIconInput" accept="image/*" class="hidden">
@@ -153,6 +155,7 @@
                 <!-- BOX CTA -->
                 <section class="border border-zinc-800 rounded-lg p-5">
                     <label class="text-sm font-semibold text-red-400 mb-3 block">Box Direito</label>
+                    <label class="flex items-center gap-3 cursor-pointer mb-3 p-3 border border-zinc-800 rounded-lg hover:border-zinc-600"><input type="checkbox" id="boxCtaHide" class="w-4 h-4 accent-red-500" data-testid="box-cta-hide"><span class="text-xs text-zinc-300">Ocultar este box (não aparece no banner/vídeo)</span></label>
                     <label class="border border-dashed border-zinc-700 p-4 text-center cursor-pointer hover:border-zinc-500 transition-colors flex flex-col items-center gap-2 rounded-lg mb-3">
                         <span id="boxCtaIconText" class="text-xs text-zinc-400">Ícone/logo personalizado (opcional)</span>
                         <input type="file" id="boxCtaIconInput" accept="image/*" class="hidden">
